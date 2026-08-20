@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — CropManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/notifications.css">
+    <link rel="stylesheet" href="css/utilities.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon"><i class="fas fa-seedling"></i></div>
+                <div class="sidebar-logo-text">Crop<span>Manager</span></div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-active">
+                    <i class="fas fa-th-large"></i>
+                    <span class="sidebar-nav-text">Dashboard</span>
+                </a>
+
+                <div class="sidebar-label">Farm Management</div>
+                <a href="pages/farms.html">
+                    <i class="fas fa-tractor"></i>
+                    <span class="sidebar-nav-text">Farms</span>
+                </a>
+                <a href="pages/fields.html">
+                    <i class="fas fa-map"></i>
+                    <span class="sidebar-nav-text">Fields</span>
+                </a>
+                <a href="pages/crops.html">
+                    <i class="fas fa-leaf"></i>
+                    <span class="sidebar-nav-text">Crops</span>
+                </a>
+                <a href="pages/varieties.html">
+                    <i class="fas fa-seedling"></i>
+                    <span class="sidebar-nav-text">Varieties</span>
+                </a>
+                <a href="pages/seasons.html">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="sidebar-nav-text">Seasons</span>
+                </a>
+
+                <div class="sidebar-label">Production</div>
+                <a href="pages/crop-cycles.html">
+                    <i class="fas fa-sync-alt"></i>
+                    <span class="sidebar-nav-text">Crop Cycles</span>
+                </a>
+                <a href="pages/planting.html">
+                    <i class="fas fa-hand-holding-seedling"></i>
+                    <span class="sidebar-nav-text">Planting</span>
+                </a>
+                <a href="pages/activities.html">
+                    <i class="fas fa-tasks"></i>
+                    <span class="sidebar-nav-text">Field Activities</span>
+                </a>
+                <a href="pages/irrigation.html">
+                    <i class="fas fa-tint"></i>
+                    <span class="sidebar-nav-text">Irrigation</span>
+                </a>
+                <a href="pages/fertilizers.html">
+                    <i class="fas fa-flask"></i>
+                    <span class="sidebar-nav-text">Fertilizer</span>
+                </a>
+                <a href="pages/crop-protection.html">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="sidebar-nav-text">Crop Protection</span>
+                </a>
+                <a href="pages/scouting.html">
+                    <i class="fas fa-search"></i>
+                    <span class="sidebar-nav-text">Crop Scouting</span>
+                </a>
+                <a href="pages/harvest.html">
+                    <i class="fas fa-wheat-awn"></i>
+                    <span class="sidebar-nav-text">Harvest</span>
+                </a>
+
+                <div class="sidebar-label">Resources</div>
+                <a href="pages/inventory.html">
+                    <i class="fas fa-boxes"></i>
+                    <span class="sidebar-nav-text">Inventory</span>
+                </a>
+                <a href="pages/equipment.html">
+                    <i class="fas fa-cog"></i>
+                    <span class="sidebar-nav-text">Equipment</span>
+                </a>
+                <a href="pages/maintenance.html">
+                    <i class="fas fa-wrench"></i>
+                    <span class="sidebar-nav-text">Equipment Maintenance</span>
+                </a>
+
+                <div class="sidebar-label">Finance</div>
+                <a href="pages/expenses.html">
+                    <i class="fas fa-receipt"></i>
+                    <span class="sidebar-nav-text">Expenses</span>
+                </a>
+                <a href="pages/sales.html">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span class="sidebar-nav-text">Sales</span>
+                </a>
+
+                <div class="sidebar-label">Tools</div>
+                <a href="pages/calculators.html">
+                    <i class="fas fa-calculator"></i>
+                    <span class="sidebar-nav-text">Agricultural Calculators</span>
+                </a>
+
+                <div class="sidebar-label">Analytics</div>
+                <a href="pages/reports.html">
+                    <i class="fas fa-file-alt"></i>
+                    <span class="sidebar-nav-text">Reports</span>
+                </a>
+                <a href="pages/calendar.html">
+                    <i class="fas fa-calendar-check"></i>
+                    <span class="sidebar-nav-text">Calendar</span>
+                </a>
+
+                <div class="sidebar-label">System</div>
+                <a href="pages/settings.html">
+                    <i class="fas fa-cog"></i>
+                    <span class="sidebar-nav-text">Settings</span>
+                </a>
+                <a href="#" onclick="App.logout(); return false;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="sidebar-nav-text">Logout</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i class="fas fa-chevron-left"></i>
+                    <span class="sidebar-nav-text">Collapse</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                    <div class="topbar-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="global-search" placeholder="Search farms, fields, crops...">
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <button class="topbar-btn" id="dark-mode-toggle" title="Toggle Dark Mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="dropdown">
+                        <button class="topbar-btn" id="notif-btn" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge-count" id="notif-count">0</span>
+                        </button>
+                        <div class="dropdown-menu notif-dropdown" id="notif-dropdown">
+                            <div class="dropdown-menu-header">
+                                <span>Notifications</span>
+                                <button>Mark all read</button>
+                            </div>
+                            <div class="dropdown-empty">No new notifications</div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <div class="topbar-user" id="user-btn">
+                            <div class="topbar-user-avatar" id="user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="topbar-user-info">
+                                <div class="topbar-user-name" id="user-display-name">User</div>
+                                <div class="topbar-user-role" id="user-display-role">Farmer</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-menu" id="user-dropdown">
+                            <a class="dropdown-item" href="pages/settings.html">
+                                <i class="fas fa-user-cog"></i> Profile Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item danger" href="#" onclick="App.logout(); return false;">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="main-content-inner">
+                <div id="dashboard-content">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Loading dashboard...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script>
+        App.init().then(() => Dashboard.init());
+    </script>
+</body>
+</html>

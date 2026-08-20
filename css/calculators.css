@@ -1,0 +1,123 @@
+/* ============================================================
+   CALCULATOR STYLES
+   ============================================================ */
+
+.calculator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.calc-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.calc-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.calc-card-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    background: var(--primary-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: var(--primary);
+    transition: all var(--transition);
+}
+
+.calc-card:hover .calc-card-icon {
+    background: var(--primary);
+    color: #fff;
+}
+
+.calc-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.calc-card p {
+    font-size: 12px;
+    color: var(--text-light);
+    line-height: 1.5;
+}
+
+/* Calculator form */
+.calc-form {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    max-width: 600px;
+}
+
+.calc-result {
+    background: var(--primary-light);
+    border: 1px solid #C8E6C9;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.calc-result h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 12px;
+}
+
+.calc-result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(46,125,50,0.1);
+    font-size: 13px;
+}
+
+.calc-result-item:last-child {
+    border-bottom: none;
+}
+
+.calc-result-item .label {
+    color: var(--text-light);
+}
+
+.calc-result-item .value {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.calc-disclaimer {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 16px;
+    padding: 12px;
+    background: #FFF8E1;
+    border-radius: 8px;
+    line-height: 1.5;
+    border: 1px solid #FFE082;
+}
+
+.dark-mode .calc-disclaimer {
+    background: #3D3420;
+    border-color: #5D4A20;
+}
+
+.dark-mode .calc-result {
+    background: #1A3D1E;
+    border-color: #2E5A32;
+}

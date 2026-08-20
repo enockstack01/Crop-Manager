@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — CropManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/forms.css">
+    <link rel="stylesheet" href="../css/modals.css">
+    <link rel="stylesheet" href="../css/notifications.css">
+    <link rel="stylesheet" href="../css/utilities.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+    <div class="app-layout">
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon"><i class="fas fa-seedling"></i></div>
+                <div class="sidebar-logo-text">Crop<span>Manager</span></div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="../dashboard.html"><i class="fas fa-th-large"></i><span class="sidebar-nav-text">Dashboard</span></a>
+                <div class="sidebar-label">Farm Management</div>
+                <a href="farms.html"><i class="fas fa-tractor"></i><span class="sidebar-nav-text">Farms</span></a>
+                <a href="fields.html"><i class="fas fa-map"></i><span class="sidebar-nav-text">Fields</span></a>
+                <a href="crops.html"><i class="fas fa-leaf"></i><span class="sidebar-nav-text">Crops</span></a>
+                <a href="varieties.html"><i class="fas fa-seedling"></i><span class="sidebar-nav-text">Varieties</span></a>
+                <a href="seasons.html"><i class="fas fa-calendar-alt"></i><span class="sidebar-nav-text">Seasons</span></a>
+                <div class="sidebar-label">Production</div>
+                <a href="crop-cycles.html"><i class="fas fa-sync-alt"></i><span class="sidebar-nav-text">Crop Cycles</span></a>
+                <a href="planting.html"><i class="fas fa-hand-holding-seedling"></i><span class="sidebar-nav-text">Planting</span></a>
+                <a href="activities.html"><i class="fas fa-tasks"></i><span class="sidebar-nav-text">Field Activities</span></a>
+                <a href="irrigation.html"><i class="fas fa-tint"></i><span class="sidebar-nav-text">Irrigation</span></a>
+                <a href="fertilizers.html"><i class="fas fa-flask"></i><span class="sidebar-nav-text">Fertilizer</span></a>
+                <a href="crop-protection.html"><i class="fas fa-shield-alt"></i><span class="sidebar-nav-text">Crop Protection</span></a>
+                <a href="scouting.html"><i class="fas fa-search"></i><span class="sidebar-nav-text">Crop Scouting</span></a>
+                <a href="harvest.html"><i class="fas fa-wheat-awn"></i><span class="sidebar-nav-text">Harvest</span></a>
+                <div class="sidebar-label">Resources</div>
+                <a href="inventory.html"><i class="fas fa-boxes"></i><span class="sidebar-nav-text">Inventory</span></a>
+                <a href="equipment.html"><i class="fas fa-cog"></i><span class="sidebar-nav-text">Equipment</span></a>
+                <a href="maintenance.html"><i class="fas fa-wrench"></i><span class="sidebar-nav-text">Equipment Maintenance</span></a>
+                <div class="sidebar-label">Finance</div>
+                <a href="expenses.html"><i class="fas fa-receipt"></i><span class="sidebar-nav-text">Expenses</span></a>
+                <a href="sales.html"><i class="fas fa-hand-holding-usd"></i><span class="sidebar-nav-text">Sales</span></a>
+                <div class="sidebar-label">Tools</div>
+                <a href="calculators.html"><i class="fas fa-calculator"></i><span class="sidebar-nav-text">Agricultural Calculators</span></a>
+                <div class="sidebar-label">Analytics</div>
+                <a href="reports.html"><i class="fas fa-file-alt"></i><span class="sidebar-nav-text">Reports</span></a>
+                <a href="calendar.html"><i class="fas fa-calendar-check"></i><span class="sidebar-nav-text">Calendar</span></a>
+                <div class="sidebar-label">System</div>
+                <a href="settings.html" class="nav-active"><i class="fas fa-cog"></i><span class="sidebar-nav-text">Settings</span></a>
+                <a href="#" onclick="App.logout(); return false;"><i class="fas fa-sign-out-alt"></i><span class="sidebar-nav-text">Logout</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-left"></i><span class="sidebar-nav-text">Collapse</span></button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                    <div class="topbar-search"><i class="fas fa-search"></i><input type="text" id="global-search" placeholder="Search..."></div>
+                </div>
+                <div class="topbar-right">
+                    <button class="topbar-btn" id="dark-mode-toggle" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
+                    <div class="dropdown">
+                        <button class="topbar-btn" id="notif-btn"><i class="fas fa-bell"></i><span class="badge-count" id="notif-count">0</span></button>
+                        <div class="dropdown-menu notif-dropdown" id="notif-dropdown">
+                            <div class="dropdown-menu-header"><span>Notifications</span><button>Mark all read</button></div>
+                            <div class="dropdown-empty">No new notifications</div>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <div class="topbar-user" id="user-btn">
+                            <div class="topbar-user-avatar" id="user-avatar"><i class="fas fa-user"></i></div>
+                            <div class="topbar-user-info">
+                                <div class="topbar-user-name" id="user-display-name">User</div>
+                                <div class="topbar-user-role" id="user-display-role">Farmer</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-menu" id="user-dropdown">
+                            <a class="dropdown-item" href="settings.html"><i class="fas fa-user-cog"></i> Profile Settings</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item danger" href="#" onclick="App.logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="main-content-inner">
+                <h1 class="page-title mb-24">Profile Settings</h1>
+
+                <div class="card" style="max-width:700px;">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user" style="color:var(--primary);margin-right:8px;"></i> Personal Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="profile-form">
+                            <!-- Avatar upload -->
+                            <div class="flex items-center gap-16 mb-24">
+                                <div style="position:relative;">
+                                    <div id="profile-avatar-preview" style="width:80px;height:80px;border-radius:12px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--primary);overflow:hidden;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <label for="avatar-upload" style="position:absolute;bottom:-4px;right:-4px;width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-camera"></i>
+                                    </label>
+                                    <input type="file" id="avatar-upload" accept="image/*" style="display:none;">
+                                </div>
+                                <div>
+                                    <p class="font-semibold" style="font-size:14px;">Profile Photo</p>
+                                    <p class="text-light text-sm">JPG, PNG. Max 2MB.</p>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name <span class="required">*</span></label>
+                                    <input type="text" class="form-control" name="profile_name" required>
+                                    <div class="form-error"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="profile_email" disabled style="opacity:0.6;cursor:not-allowed;">
+                                    <div class="form-hint">Email cannot be changed here.</div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" name="profile_phone" placeholder="+260 xxx xxx xxx">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" class="form-control" name="profile_location" placeholder="City, Country">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Role</label>
+                                <select class="form-control form-select" name="profile_role" disabled style="opacity:0.6;cursor:not-allowed;">
+                                    <option value="Farmer">Farmer</option>
+                                    <option value="Farm Manager">Farm Manager</option>
+                                    <option value="Agronomist">Agronomist</option>
+                                    <option value="Cooperative Manager">Cooperative Manager</option>
+                                    <option value="Administrator">Administrator</option>
+                                </select>
+                                <div class="form-hint">Role is set during registration.</div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        App.init().then(() => {
+            const form = document.getElementById('profile-form');
+            const profile = App.currentProfile;
+            if (profile) {
+                form.profile_name.value = profile.full_name || '';
+                form.profile_email.value = profile.email || '';
+                form.profile_phone.value = profile.phone || '';
+                form.profile_location.value = profile.location || '';
+                form.profile_role.value = profile.role || 'Farmer';
+
+                if (profile.avatar_url) {
+                    const preview = document.getElementById('profile-avatar-preview');
+                    preview.innerHTML = '<img src="' + profile.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+                    const topAvatar = document.getElementById('user-avatar');
+                    if (topAvatar) topAvatar.innerHTML = '<img src="' + profile.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+                }
+            }
+
+            // Avatar upload
+            document.getElementById('avatar-upload').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                    Utils.toast('Image must be under 2MB', 'error');
+                    return;
+                }
+                try {
+                    Utils.toast('Uploading avatar...', 'info', 2000);
+                    const url = await Auth.uploadAvatar(file);
+                    const preview = document.getElementById('profile-avatar-preview');
+                    preview.innerHTML = '<img src="' + url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+                    const topAvatar = document.getElementById('user-avatar');
+                    if (topAvatar) topAvatar.innerHTML = '<img src="' + url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+                    Utils.toast('Avatar updated successfully');
+                } catch (err) {
+                    console.error('Avatar upload error:', err);
+                    Utils.toast('Failed to upload avatar', 'error');
+                }
+            });
+
+            // Save profile
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!Utils.validateForm(form)) return;
+
+                const btn = form.querySelector('button[type="submit"]');
+                Utils.setBtnLoading(btn, true);
+
+                try {
+                    const updated = await Auth.updateProfile({
+                        full_name: form.profile_name.value.trim(),
+                        phone: form.profile_phone.value.trim(),
+                        location: form.profile_location.value.trim()
+                    });
+
+                    App.currentProfile = updated;
+                    document.getElementById('user-display-name').textContent = updated.full_name || 'User';
+
+                    Utils.toast('Profile updated successfully');
+                } catch (err) {
+                    console.error('Profile update error:', err);
+                    Utils.toast(err.message || 'Failed to update profile', 'error');
+                } finally {
+                    Utils.setBtnLoading(btn, false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
