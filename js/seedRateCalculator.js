@@ -1,6 +1,0 @@
-const SeedRateCalc = {
-    init(){const f=document.getElementById('sr-form');if(f)f.addEventListener('submit',e=>{e.preventDefault();this.calculate();});this.loadReopen();},
-    calculate(){const area=parseFloat(document.getElementById('sr-area').value)||0,unit=document.getElementById('sr-unit').value,rate=parseFloat(document.getElementById('sr-rate').value)||0,rateUnit=document.getElementById('sr-rate-unit').value;
-    const total=area*rate;document.getElementById('sr-result').innerHTML=`<h4>Result</h4><div class="calc-result-item"><span class="label">Total Seed Required</span><span class="value">${Utils.formatNumber(total.toFixed(2))} ${Utils.escapeHtml(rateUnit)}/${Utils.escapeHtml(unit)}</span></div>`;document.getElementById('sr-result').style.display='block';},
-    loadReopen(){const s=localStorage.getItem('calc_reopen');if(!s)return;try{const d=JSON.parse(s);if(d.calculator_type!=='seed-rate')return;localStorage.removeItem('calc_reopen');if(d.inputs){document.getElementById('sr-area').value=d.inputs.area||'';document.getElementById('sr-unit').value=d.inputs.unit||'hectares';document.getElementById('sr-rate').value=d.inputs.rate||'';document.getElementById('sr-rate-unit').value=d.inputs.rateUnit||'kg/ha';}if(d.result)this.calculate();}catch(e){localStorage.removeItem('calc_reopen');}}
-};

@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+server/uploads/*
+!server/uploads/.gitkeep
+*.log
+npm-debug.log*
+.DS_Store
+coverage/
+.vite/

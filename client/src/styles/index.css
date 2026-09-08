@@ -1,0 +1,27 @@
+/* Original CropManager design system — imported verbatim, load order matters. */
+@import './style.css';
+@import './layout.css';
+@import './auth.css';
+@import './dashboard.css';
+@import './forms.css';
+@import './tables.css';
+@import './cards.css';
+@import './charts.css';
+@import './modals.css';
+@import './notifications.css';
+@import './calculators.css';
+@import './utilities.css';
+@import './responsive.css';
+
+/* --- small additions for the React port (no visual change to existing classes) --- */
+#root {
+  min-height: 100vh;
+}
+.clerk-auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
