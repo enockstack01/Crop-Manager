@@ -1,6 +1,7 @@
 import { clerkClient } from '@clerk/express';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { serialize } from '../lib/serialize.js';
+import { env } from '../config/env.js';
 import { Profile } from '../models/index.js';
 
 const EDITABLE = ['full_name', 'phone', 'location', 'role', 'onboarded'];
@@ -14,27 +15,34 @@ export const getMe = asyncHandler(async (req, res) => {
     /* Clerk unreachable — fall back to whatever we already stored */
   }
 
-  const derived = {};
+  const set = {};
+  let email;
   if (clerkUser) {
-    derived.email =
+    email =
       clerkUser.primaryEmailAddress?.emailAddress ||
       clerkUser.emailAddresses?.[0]?.emailAddress ||
       undefined;
-    derived.avatar_url = clerkUser.imageUrl || undefined;
-    const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim();
-    derived.fullNameFallback = name || clerkUser.username || undefined;
+    if (email) set.email = email;
+    if (clerkUser.imageUrl) set.avatar_url = clerkUser.imageUrl;
   }
+
+  // bootstrap platform admins from ADMIN_EMAILS
+  if (email && env.adminEmails.includes(email.toLowerCase())) {
+    set.is_admin = true;
+    set.is_active = true;
+  }
+
+  const name = clerkUser
+    ? [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim() || clerkUser.username
+    : undefined;
 
   const profile = await Profile.findOneAndUpdate(
     { user_id: req.userId },
     {
-      $set: {
-        ...(derived.email ? { email: derived.email } : {}),
-        ...(derived.avatar_url ? { avatar_url: derived.avatar_url } : {}),
-      },
+      $set: set,
       $setOnInsert: {
         user_id: req.userId,
-        full_name: derived.fullNameFallback || '',
+        full_name: name || '',
         role: 'Farmer',
       },
     },

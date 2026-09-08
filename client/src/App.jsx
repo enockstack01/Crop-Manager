@@ -26,6 +26,11 @@ import CalculatorDetail from './pages/CalculatorDetail.jsx';
 import Reports from './pages/Reports.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Settings from './pages/Settings.jsx';
+import { AdminGuard } from './components/AdminGuard.jsx';
+import AdminOverview from './pages/admin/AdminOverview.jsx';
+import AdminUsers from './pages/admin/AdminUsers.jsx';
+import AdminUserDetail from './pages/admin/AdminUserDetail.jsx';
+import AdminData from './pages/admin/AdminData.jsx';
 
 function AuthScreen({ children }) {
   return <div className="clerk-auth-wrap">{children}</div>;
@@ -87,6 +92,14 @@ export function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="settings" element={<Settings />} />
+
+        <Route path="admin" element={<AdminGuard />}>
+          <Route index element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="users/:userId" element={<AdminUserDetail />} />
+          <Route path="data" element={<AdminData />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

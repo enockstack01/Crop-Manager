@@ -46,18 +46,46 @@ onboarding step, and you land on the dashboard.
 
 ## Seed demo data
 
-To populate a realistic dataset (farms, fields, crop cycles, 12 months of
-harvests / expenses / sales, inventory, scouting, alerts) so every dashboard
-chart renders:
+**Everything at once** — creates three demo accounts (one admin) and seeds each
+with a full realistic dataset:
 
 ```bash
-npm run seed -- <your-clerk-user-id>
+npm run bootstrap-demo
 ```
 
-Find your Clerk user id in the Clerk dashboard, or run this in the browser
-console while signed in: `window.Clerk.user.id`.
+It prints the sign-in emails and a shared password. The admin account is the
+first address in `ADMIN_EMAILS`. Test-mode emails use Clerk verification code
+`424242`. Re-running re-seeds the same users.
 
-The seeder **replaces** that user's existing rows each run.
+**One user** — populate a dataset (farms, fields, crop cycles, 12 months of
+harvests / expenses / sales, inventory, scouting, alerts):
+
+```bash
+npm run seed -- <clerk-user-id>
+```
+
+Find a Clerk user id in the Clerk dashboard, or run `window.Clerk.user.id` in
+the browser console while signed in. The seeder **replaces** that user's rows.
+
+## Administration
+
+A user is a **platform admin** when their `Profile.is_admin` is true. Admins are
+granted automatically on sign-in if their email is listed in `ADMIN_EMAILS`
+(`server/.env`); other admins can also be promoted from the admin UI. `is_admin`
+is never settable through the normal profile update.
+
+Admins get an **Administration** section in the sidebar:
+
+| Page | What it does |
+|---|---|
+| `/admin` | Platform-wide KPIs, record counts per module, recent sign-ups |
+| `/admin/users` | Every user with data counts; promote/demote admin, deactivate/reactivate, delete (removes the Clerk account + all their data) |
+| `/admin/users/:id` | One user's account, access controls and data breakdown |
+| `/admin/data` | Read-only browser over every collection, filterable by user |
+
+Deactivated non-admin accounts are blocked from the entire API
+(`403 — account deactivated`). `/api/admin/*` requires an active admin; a user
+cannot revoke their own admin or active status.
 
 ## Architecture
 
@@ -77,8 +105,13 @@ The seeder **replaces** that user's existing rows each run.
   aggregates), `GET/PUT /api/profile`, `POST /api/uploads` (scouting photos →
   `server/uploads/`, swap for S3 later), `POST /api/inventory-items/:id/stock`.
 - **Auth** — `@clerk/express` `clerkMiddleware()` + a `requireAuth` guard that
-  sets `req.userId`. Helmet, CORS, rate-limiting and a central error handler are
-  applied to `/api`.
+  sets `req.userId`; `loadProfile` then upserts the profile, stamps
+  `last_seen_at`, blocks deactivated accounts and attaches `req.profile`.
+  Helmet, CORS, rate-limiting and a central error handler are applied to `/api`.
+- **Admin** — `/api/admin/*` (guarded by `requireAdmin`): platform overview,
+  user management (`is_admin` / `is_active` / delete), and a cross-user data
+  browser. Seeding lives in `lib/seedData.js` (`seedUser`), reused by the
+  `seed` and `bootstrap-demo` scripts and the admin delete path.
 
 ### Client (`client/src`)
 

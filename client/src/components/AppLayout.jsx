@@ -38,6 +38,7 @@ function Shell() {
       <Sidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}
+        isAdmin={!!profile?.is_admin}
         onToggle={() => setCollapsed((c) => !c)}
         onNavigate={() => setMobileOpen(false)}
       />

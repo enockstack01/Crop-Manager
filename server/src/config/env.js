@@ -23,6 +23,11 @@ export const env = {
   mongoUri: required('MONGODB_URI'),
   clerkPublishableKey: required('CLERK_PUBLISHABLE_KEY'),
   clerkSecretKey: required('CLERK_SECRET_KEY'),
+  // emails that are auto-granted platform admin on first sign-in
+  adminEmails: (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
   get isProd() {
     return this.nodeEnv === 'production';
   },

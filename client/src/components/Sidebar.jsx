@@ -52,7 +52,16 @@ const SECTIONS = [
   { label: 'System', items: [{ to: '/settings', icon: 'fa-cog', label: 'Settings' }] },
 ];
 
-export function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }) {
+const ADMIN_SECTION = {
+  label: 'Administration',
+  items: [
+    { to: '/admin', icon: 'fa-gauge-high', label: 'Admin Overview', end: true },
+    { to: '/admin/users', icon: 'fa-users-gear', label: 'User Management' },
+    { to: '/admin/data', icon: 'fa-database', label: 'Data Browser' },
+  ],
+};
+
+export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }) {
   const { signOut } = useClerk();
 
   return (
@@ -70,7 +79,7 @@ export function Sidebar({ collapsed, mobileOpen, onToggle, onNavigate }) {
       </div>
 
       <nav className="sidebar-nav">
-        {SECTIONS.map((section, i) => (
+        {(isAdmin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS).map((section, i) => (
           <div key={section.label || i}>
             {section.label && <div className="sidebar-label">{section.label}</div>}
             {section.items.map((item) => (

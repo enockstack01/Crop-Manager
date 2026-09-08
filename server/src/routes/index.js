@@ -1,16 +1,21 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { loadProfile } from '../middleware/profile.js';
 import { resources } from '../resources.js';
 import { genericRouter } from './generic.routes.js';
 import { getDashboard } from '../controllers/dashboard.controller.js';
 import { getMe, updateMe } from '../controllers/profile.controller.js';
 import { adjustStock } from '../controllers/inventory.controller.js';
 import uploadsRouter from './uploads.routes.js';
+import adminRouter from './admin.routes.js';
 
 const api = Router();
 
-// Everything below requires a signed-in Clerk user
+// Everything below requires a signed-in Clerk user + an active profile
 api.use(requireAuth);
+api.use(loadProfile);
+
+api.use('/admin', adminRouter);
 
 api.get('/dashboard', getDashboard);
 
