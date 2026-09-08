@@ -28,6 +28,20 @@ const CalculationHistorySchema = ownedSchema({
   result: { type: mongoose.Schema.Types.Mixed, default: {} },
 });
 
+// Platform-wide key/value config (not user-owned).
+const SystemSettingSchema = new mongoose.Schema(
+  {
+    key: { type: String, required: true, unique: true },
+    value: { type: mongoose.Schema.Types.Mixed, default: null },
+    updated_by: { type: String, default: null },
+  },
+  {
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    toJSON: { versionKey: false, transform: (_d, r) => { r.id = r._id?.toString(); delete r._id; return r; } },
+  }
+);
+
 export const Profile = mongoose.model('Profile', ProfileSchema);
 export const Notification = mongoose.model('Notification', NotificationSchema);
 export const CalculationHistory = mongoose.model('CalculationHistory', CalculationHistorySchema);
+export const SystemSetting = mongoose.model('SystemSetting', SystemSettingSchema);

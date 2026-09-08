@@ -14,7 +14,8 @@
     "build": "npm run build --workspace client",
     "start": "npm run start --workspace server",
     "seed": "npm run seed --workspace server --",
-    "bootstrap-demo": "npm run bootstrap-demo --workspace server"
+    "bootstrap-demo": "npm run bootstrap-demo --workspace server",
+    "grant-admin": "npm run grant-admin --workspace server --"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

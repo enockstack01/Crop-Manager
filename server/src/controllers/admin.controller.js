@@ -1,10 +1,14 @@
+import mongoose from 'mongoose';
+import os from 'node:os';
 import { clerkClient } from '@clerk/express';
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { serialize } from '../lib/serialize.js';
-import { reshapeMany, toPopulate } from '../lib/shape.js';
+import { reshape, reshapeMany, toPopulate } from '../lib/shape.js';
+import { env } from '../config/env.js';
 import { resourceByPath } from '../resources.js';
-import { OWNED_MODELS, clearUser } from '../lib/seedData.js';
+import { OWNED_MODELS, clearUser, seedUser } from '../lib/seedData.js';
+import { getDbAdminEmails, addAdminEmail as addEmail, removeAdminEmail as removeEmail } from '../lib/adminAllowlist.js';
 import * as M from '../models/index.js';
 
 const COUNT_MODELS = OWNED_MODELS.map((model) => [model.modelName, model]);
@@ -201,4 +205,97 @@ export const browseResource = asyncHandler(async (req, res) => {
 
 export const resourceList = asyncHandler(async (_req, res) => {
   res.json(Object.values(resourceByPath).map((r) => ({ path: r.path, name: r.name })));
+});
+
+// ---- GET /api/admin/data/:resource/:id ----
+export const getRecord = asyncHandler(async (req, res) => {
+  const resource = resourceByPath[req.params.resource];
+  if (!resource) throw createHttpError(404, `Unknown resource: ${req.params.resource}`);
+
+  const populate = toPopulate(resource.relations || []);
+  let query = resource.model.findById(req.params.id);
+  if (populate.length) query = query.populate(populate);
+  const doc = await query.lean();
+  if (!doc) throw createHttpError(404, 'Record not found');
+
+  const shaped = reshape(serialize(doc), resource.relations || []);
+  const owner = await M.Profile.findOne({ user_id: shaped.user_id }, 'user_id full_name email').lean();
+  res.json({ ...shaped, owner: owner ? { full_name: owner.full_name, email: owner.email } : null });
+});
+
+// ---- DELETE /api/admin/data/:resource/:id ----
+export const deleteRecord = asyncHandler(async (req, res) => {
+  const resource = resourceByPath[req.params.resource];
+  if (!resource) throw createHttpError(404, `Unknown resource: ${req.params.resource}`);
+  const doc = await resource.model.findByIdAndDelete(req.params.id);
+  if (!doc) throw createHttpError(404, 'Record not found');
+  res.json({ id: req.params.id, resource: resource.path, deleted: true });
+});
+
+// ---- POST /api/admin/users/:userId/reseed ----
+export const reseedUser = asyncHandler(async (req, res) => {
+  const profile = await M.Profile.findOne({ user_id: req.params.userId }).lean();
+  if (!profile) throw createHttpError(404, 'User not found');
+  const counts = await seedUser(req.params.userId, {
+    profile: { full_name: profile.full_name, role: profile.role, location: profile.location, phone: profile.phone },
+  });
+  res.json({ user_id: req.params.userId, counts, total: Object.values(counts).reduce((s, n) => s + n, 0) });
+});
+
+// ---- GET /api/admin/settings ----
+export const getSettings = asyncHandler(async (_req, res) => {
+  const conn = mongoose.connection;
+  const [dbStats, dbAdmins, collectionCounts] = await Promise.all([
+    conn.db.stats().catch(() => null),
+    getDbAdminEmails(),
+    Promise.all(
+      OWNED_MODELS.concat([M.Profile, M.SystemSetting]).map(async (Model) => [
+        Model.modelName,
+        await Model.estimatedDocumentCount().catch(() => 0),
+      ])
+    ),
+  ]);
+
+  res.json({
+    app: {
+      version: process.env.npm_package_version || '2.0.0',
+      node: process.version,
+      env: env.nodeEnv,
+      uptime_seconds: Math.round(process.uptime()),
+      host: os.hostname(),
+    },
+    database: {
+      name: conn.name,
+      state: ['disconnected', 'connected', 'connecting', 'disconnecting'][conn.readyState] || String(conn.readyState),
+      collections: dbStats?.collections ?? null,
+      documents: dbStats?.objects ?? null,
+      data_size_mb: dbStats ? +(dbStats.dataSize / 1048576).toFixed(2) : null,
+      storage_size_mb: dbStats ? +(dbStats.storageSize / 1048576).toFixed(2) : null,
+    },
+    collection_counts: Object.fromEntries(collectionCounts),
+    admin_allowlist: {
+      env: env.adminEmails, // immutable, from server/.env
+      managed: dbAdmins, // editable here
+    },
+  });
+});
+
+// ---- POST /api/admin/settings/admins  { email } ----
+export const addAdminEmail = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw createHttpError(400, 'Enter a valid email address');
+  const managed = await addEmail(email, req.userId);
+  // if that user already signed up, promote them now
+  await M.Profile.updateOne({ email }, { $set: { is_admin: true, is_active: true } });
+  res.json({ managed });
+});
+
+// ---- DELETE /api/admin/settings/admins/:email ----
+export const removeAdminEmail = asyncHandler(async (req, res) => {
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+  if (env.adminEmails.includes(email)) {
+    throw createHttpError(400, 'This admin is configured in server/.env and cannot be removed here');
+  }
+  const managed = await removeEmail(email, req.userId);
+  res.json({ managed });
 });

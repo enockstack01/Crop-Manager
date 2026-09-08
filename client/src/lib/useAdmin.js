@@ -38,6 +38,33 @@ export function useAdminData(resource, params = {}) {
   });
 }
 
+export function useAdminSettings() {
+  return useQuery({ queryKey: ['admin', 'settings'], queryFn: () => api.get('/admin/settings').then((r) => r.data) });
+}
+
+export function useAdminSettingsMutations() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['admin'] });
+  const addAdmin = useMutation({
+    mutationFn: (email) => api.post('/admin/settings/admins', { email }).then((r) => r.data),
+    onSuccess: invalidate,
+  });
+  const removeAdmin = useMutation({
+    mutationFn: (email) => api.delete(`/admin/settings/admins/${encodeURIComponent(email)}`).then((r) => r.data),
+    onSuccess: invalidate,
+  });
+  return { addAdmin, removeAdmin };
+}
+
+export function useAdminDataMutations() {
+  const qc = useQueryClient();
+  const deleteRecord = useMutation({
+    mutationFn: ({ resource, id }) => api.delete(`/admin/data/${resource}/${id}`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'data'] }),
+  });
+  return { deleteRecord };
+}
+
 export function useAdminUserMutations() {
   const qc = useQueryClient();
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin'] });
@@ -50,5 +77,9 @@ export function useAdminUserMutations() {
     mutationFn: (userId) => api.delete(`/admin/users/${userId}`).then((r) => r.data),
     onSuccess: invalidate,
   });
-  return { update, remove };
+  const reseed = useMutation({
+    mutationFn: (userId) => api.post(`/admin/users/${userId}/reseed`).then((r) => r.data),
+    onSuccess: invalidate,
+  });
+  return { update, remove, reseed };
 }

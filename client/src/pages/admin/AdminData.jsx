@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { useAdminResources, useAdminData, useAdminUsers } from '../../lib/useAdmin.js';
-import { PageHeader, DataTable, Pagination, TableToolbar, FilterSelect, EmptyState } from '../../components/ui.jsx';
+import { useAdminResources, useAdminData, useAdminUsers, useAdminDataMutations } from '../../lib/useAdmin.js';
+import { useToast } from '../../components/Toast.jsx';
+import { useConfirm } from '../../components/Confirm.jsx';
+import { Modal } from '../../components/Modal.jsx';
+import { PageHeader, DataTable, Pagination, TableToolbar, FilterSelect, EmptyState, IconButton } from '../../components/ui.jsx';
 import { debounce, formatDate } from '../../lib/format.js';
 
 const PREFERRED = ['name', 'buyer', 'fertilizer_name', 'problem_name', 'activity_type', 'scout_name', 'category'];
@@ -27,11 +30,15 @@ function pickColumns(rows) {
 export default function AdminData() {
   const { data: resources } = useAdminResources();
   const { data: usersData } = useAdminUsers({ perPage: 100 });
+  const { deleteRecord } = useAdminDataMutations();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [resource, setResource] = useState('farms');
   const [userId, setUserId] = useState('');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
+  const [viewRow, setViewRow] = useState(null);
 
   const params = { page, perPage: 20 };
   if (userId) params.userId = userId;
@@ -41,6 +48,17 @@ export default function AdminData() {
 
   const onSearch = debounce((v) => { setQ(v.trim()); setPage(1); }, 300);
 
+  const del = async (row) => {
+    const label = row.name || row.buyer || row.fertilizer_name || row.id;
+    if (!(await confirm(`Delete this ${resource.replace(/s$/, '')} record (<strong>${label}</strong>)?`))) return;
+    try {
+      await deleteRecord.mutateAsync({ resource, id: row.id });
+      toast('Record deleted');
+    } catch (e) {
+      toast(e.message || 'Failed', 'error');
+    }
+  };
+
   const columns = [
     ...pickColumns(rows),
     { key: 'owner', label: 'Owner', render: (r) => r.owner?.full_name || r.owner?.email || '—' },
@@ -49,7 +67,7 @@ export default function AdminData() {
 
   return (
     <>
-      <PageHeader title="Data Browser" subtitle="Read-only view of every record across all users." />
+      <PageHeader title="Data Browser" subtitle="View and manage every record across all users." />
 
       <TableToolbar onSearch={onSearch} searchPlaceholder="Search records...">
         <FilterSelect
@@ -73,11 +91,36 @@ export default function AdminData() {
           columns={columns}
           rows={rows}
           loading={isLoading}
+          actions={(row) => (
+            <>
+              <IconButton icon="fa-eye" title="Inspect" onClick={() => setViewRow(row)} />
+              <IconButton icon="fa-trash" title="Delete record" danger onClick={() => del(row)} />
+            </>
+          )}
           empty={<EmptyState icon="fa-database" title="No records" />}
         />
       )}
 
       <Pagination page={page} totalPages={data?.totalPages || 1} onChange={setPage} />
+
+      {viewRow && (
+        <Modal open onClose={() => setViewRow(null)} title="Record" size="modal-lg">
+          <pre
+            style={{
+              fontSize: 12,
+              lineHeight: 1.5,
+              background: 'var(--bg)',
+              padding: 16,
+              borderRadius: 8,
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {JSON.stringify(viewRow, null, 2)}
+          </pre>
+        </Modal>
+      )}
     </>
   );
 }

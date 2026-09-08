@@ -31,6 +31,7 @@ import AdminOverview from './pages/admin/AdminOverview.jsx';
 import AdminUsers from './pages/admin/AdminUsers.jsx';
 import AdminUserDetail from './pages/admin/AdminUserDetail.jsx';
 import AdminData from './pages/admin/AdminData.jsx';
+import AdminSettings from './pages/admin/AdminSettings.jsx';
 
 function AuthScreen({ children }) {
   return <div className="clerk-auth-wrap">{children}</div>;
@@ -98,6 +99,7 @@ export function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:userId" element={<AdminUserDetail />} />
           <Route path="data" element={<AdminData />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

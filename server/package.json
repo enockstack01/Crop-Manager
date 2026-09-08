@@ -8,7 +8,8 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "seed": "node src/scripts/seed.js",
-    "bootstrap-demo": "node src/scripts/bootstrap-demo.js"
+    "bootstrap-demo": "node src/scripts/bootstrap-demo.js",
+    "grant-admin": "node src/scripts/grant-admin.js"
   },
   "dependencies": {
     "@clerk/express": "^1.3.4",

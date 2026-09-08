@@ -24,7 +24,7 @@ export default function AdminUserDetail() {
   const confirm = useConfirm();
   const { profile: me } = useProfile();
   const { data: u, isLoading, isError } = useAdminUser(userId);
-  const { update, remove } = useAdminUserMutations();
+  const { update, remove, reseed } = useAdminUserMutations();
 
   if (isLoading) return <Loading />;
   if (isError || !u) return <EmptyState icon="fa-exclamation-triangle" title="User not found" />;
@@ -48,6 +48,20 @@ export default function AdminUserDetail() {
       const res = await remove.mutateAsync(userId);
       toast(`Deleted user and ${res.documents_removed} records`);
       navigate('/admin/users');
+    } catch (e) {
+      toast(e.message || 'Failed', 'error');
+    }
+  };
+
+  const doReseed = async () => {
+    const ok = await confirm(
+      `Replace <strong>${u.full_name || u.email}</strong>'s data with a fresh demo dataset? Existing records are removed first.`,
+      { confirmLabel: 'Re-seed', danger: false }
+    );
+    if (!ok) return;
+    try {
+      const res = await reseed.mutateAsync(userId);
+      toast(`Seeded ${res.total} records`);
     } catch (e) {
       toast(e.message || 'Failed', 'error');
     }
@@ -126,13 +140,16 @@ export default function AdminUserDetail() {
               onChange={(e) => patch({ role: e.target.value }, 'Job title updated')}
               options={USER_ROLES}
             />
-            {!isSelf && (
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary" onClick={doReseed} disabled={reseed.isPending}>
+                <i className="fas fa-seedling" /> Re-seed demo data
+              </button>
+              {!isSelf && (
                 <button className="btn btn-danger" onClick={del}>
                   <i className="fas fa-trash" /> Delete user & all data
                 </button>
-              </div>
-            )}
+              )}
+            </div>
             {isSelf && <p className="form-hint">You cannot change your own access here.</p>}
           </div>
         </div>

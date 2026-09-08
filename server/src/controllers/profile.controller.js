@@ -1,7 +1,7 @@
 import { clerkClient } from '@clerk/express';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { serialize } from '../lib/serialize.js';
-import { env } from '../config/env.js';
+import { isAllowlistedAdmin } from '../lib/adminAllowlist.js';
 import { Profile } from '../models/index.js';
 
 const EDITABLE = ['full_name', 'phone', 'location', 'role', 'onboarded'];
@@ -26,8 +26,8 @@ export const getMe = asyncHandler(async (req, res) => {
     if (clerkUser.imageUrl) set.avatar_url = clerkUser.imageUrl;
   }
 
-  // bootstrap platform admins from ADMIN_EMAILS
-  if (email && env.adminEmails.includes(email.toLowerCase())) {
+  // bootstrap platform admins from the allowlist (env + DB-managed)
+  if (email && (await isAllowlistedAdmin(email))) {
     set.is_admin = true;
     set.is_active = true;
   }

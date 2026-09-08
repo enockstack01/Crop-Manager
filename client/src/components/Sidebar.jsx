@@ -58,6 +58,7 @@ const ADMIN_SECTION = {
     { to: '/admin', icon: 'fa-gauge-high', label: 'Admin Overview', end: true },
     { to: '/admin/users', icon: 'fa-users-gear', label: 'User Management' },
     { to: '/admin/data', icon: 'fa-database', label: 'Data Browser' },
+    { to: '/admin/settings', icon: 'fa-sliders', label: 'System Settings' },
   ],
 };
 

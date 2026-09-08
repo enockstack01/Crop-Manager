@@ -70,22 +70,29 @@ the browser console while signed in. The seeder **replaces** that user's rows.
 ## Administration
 
 A user is a **platform admin** when their `Profile.is_admin` is true. Admins are
-granted automatically on sign-in if their email is listed in `ADMIN_EMAILS`
-(`server/.env`); other admins can also be promoted from the admin UI. `is_admin`
-is never settable through the normal profile update.
+granted automatically on sign-in if their email is on the allowlist — the
+`ADMIN_EMAILS` env list (immutable) plus a DB-managed list editable in the UI.
+`is_admin` is never settable through the normal profile update.
 
 Admins get an **Administration** section in the sidebar:
 
 | Page | What it does |
 |---|---|
 | `/admin` | Platform-wide KPIs, record counts per module, recent sign-ups |
-| `/admin/users` | Every user with data counts; promote/demote admin, deactivate/reactivate, delete (removes the Clerk account + all their data) |
-| `/admin/users/:id` | One user's account, access controls and data breakdown |
-| `/admin/data` | Read-only browser over every collection, filterable by user |
+| `/admin/users` | Every user with data counts; promote/demote admin, deactivate/reactivate, re-seed, delete (removes the Clerk account + all their data) |
+| `/admin/users/:id` | One user's account, access controls, data breakdown, recent activity |
+| `/admin/data` | Browse every collection (filter by user), inspect a record's JSON, delete any record |
+| `/admin/settings` | App + database health, collection counts, and the admin allowlist manager |
 
 Deactivated non-admin accounts are blocked from the entire API
 (`403 — account deactivated`). `/api/admin/*` requires an active admin; a user
 cannot revoke their own admin or active status.
+
+**Grant admin (and optionally seed) from the CLI:**
+
+```bash
+npm run grant-admin -- someone@example.com --seed
+```
 
 ## Architecture
 
