@@ -1,0 +1,217 @@
+import React, { useCallback, useState } from 'react';
+import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeProvider';
+import { radius, spacing } from '../theme/theme';
+import { formatDate, parseISODate, toISODate } from '../lib/format';
+import { AppText } from './ui';
+import { Sheet } from './Sheet';
+
+/* --------------------------------------------------------------- useForm */
+export type FormApi<T = Record<string, any>> = {
+  values: T;
+  setValues: React.Dispatch<React.SetStateAction<T>>;
+  set: (name: keyof T, value: any) => void;
+  reset: (next?: T) => void;
+  bind: (name: keyof T) => { value: any; onChangeValue: (v: any) => void };
+};
+
+export function useForm<T extends Record<string, any>>(initial: T): FormApi<T> {
+  const [values, setValues] = useState<T>(initial);
+  const set = useCallback((name: keyof T, value: any) => setValues((v) => ({ ...v, [name]: value })), []);
+  const reset = useCallback((next: T = initial) => setValues(next), [initial]);
+  const bind = useCallback(
+    (name: keyof T) => ({
+      value: values[name] ?? '',
+      onChangeValue: (v: any) => set(name, v),
+    }),
+    [values, set],
+  );
+  return { values, setValues, set, reset, bind };
+}
+
+/* ----------------------------------------------------------------- Field */
+export type Option = string | { value: string; label: string };
+const optValue = (o: Option) => (typeof o === 'object' ? o.value : o);
+const optLabel = (o: Option) => (typeof o === 'object' ? o.label : o);
+
+function Field({
+  label,
+  required,
+  hint,
+  children,
+}: {
+  label?: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ gap: 5 }}>
+      {label ? (
+        <AppText variant="label">
+          {label}
+          {required ? <AppText style={{ color: colors.red }}> *</AppText> : null}
+        </AppText>
+      ) : null}
+      {children}
+      {hint ? <AppText variant="caption">{hint}</AppText> : null}
+    </View>
+  );
+}
+
+const inputStyle = (colors: any) => ({
+  borderWidth: 1,
+  borderColor: colors.border,
+  backgroundColor: colors.input,
+  borderRadius: radius.md,
+  paddingHorizontal: spacing.md,
+  paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
+  fontSize: 14,
+  color: colors.text,
+});
+
+/* ------------------------------------------------------------- TextField */
+export function TextField({
+  label, required, hint, value, onChangeValue, placeholder, keyboardType, multiline, autoCapitalize, secureTextEntry, editable = true,
+}: {
+  label?: string; required?: boolean; hint?: string;
+  value: any; onChangeValue: (v: string) => void;
+  placeholder?: string; keyboardType?: any; multiline?: boolean;
+  autoCapitalize?: any; secureTextEntry?: boolean; editable?: boolean;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Field label={label} required={required} hint={hint}>
+      <TextInput
+        value={value == null ? '' : String(value)}
+        onChangeText={onChangeValue}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textLight}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        secureTextEntry={secureTextEntry}
+        editable={editable}
+        multiline={multiline}
+        style={[inputStyle(colors), multiline ? { minHeight: 84, textAlignVertical: 'top' } : null, !editable ? { opacity: 0.6 } : null]}
+      />
+    </Field>
+  );
+}
+
+export function NumberField(props: Omit<Parameters<typeof TextField>[0], 'keyboardType'>) {
+  return <TextField {...props} keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'} />;
+}
+
+export function TextAreaField(props: Parameters<typeof TextField>[0]) {
+  return <TextField {...props} multiline />;
+}
+
+/* ----------------------------------------------------------- SelectField */
+export function SelectField({
+  label, required, hint, value, onChangeValue, options = [], placeholder = 'Select…',
+}: {
+  label?: string; required?: boolean; hint?: string;
+  value: any; onChangeValue: (v: string) => void;
+  options: Option[]; placeholder?: string;
+}) {
+  const { colors } = useTheme();
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => optValue(o) === value);
+  const display = current ? optLabel(current) : '';
+
+  return (
+    <Field label={label} required={required} hint={hint}>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+      >
+        <AppText style={{ color: display ? colors.text : colors.textLight }}>{display || placeholder}</AppText>
+        <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textLight} />
+      </Pressable>
+
+      <Sheet visible={open} onClose={() => setOpen(false)} title={label || 'Select'}>
+        {placeholder ? (
+          <SelectRow label={placeholder} selected={!value} onPress={() => { onChangeValue(''); setOpen(false); }} />
+        ) : null}
+        {options.map((o) => (
+          <SelectRow
+            key={optValue(o)}
+            label={optLabel(o)}
+            selected={optValue(o) === value}
+            onPress={() => { onChangeValue(optValue(o)); setOpen(false); }}
+          />
+        ))}
+      </Sheet>
+    </Field>
+  );
+}
+
+function SelectRow({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingVertical: spacing.md, paddingHorizontal: spacing.sm, borderRadius: radius.sm,
+        backgroundColor: pressed ? colors.bg : 'transparent',
+        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
+      })}
+    >
+      <AppText style={{ color: selected ? colors.primary : colors.text, fontWeight: selected ? '700' : '400' }}>
+        {label}
+      </AppText>
+      {selected ? <MaterialCommunityIcons name="check" size={18} color={colors.primary} /> : null}
+    </Pressable>
+  );
+}
+
+/* ------------------------------------------------------------- DateField */
+export function DateField({
+  label, required, hint, value, onChangeValue,
+}: {
+  label?: string; required?: boolean; hint?: string;
+  value: any; onChangeValue: (v: string) => void;
+}) {
+  const { colors } = useTheme();
+  const [show, setShow] = useState(false);
+
+  return (
+    <Field label={label} required={required} hint={hint}>
+      <Pressable
+        onPress={() => setShow(true)}
+        style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+      >
+        <AppText style={{ color: value ? colors.text : colors.textLight }}>
+          {value ? formatDate(value) : 'Select date'}
+        </AppText>
+        <MaterialCommunityIcons name="calendar" size={18} color={colors.textLight} />
+      </Pressable>
+      {value ? (
+        <Pressable onPress={() => onChangeValue('')} hitSlop={6}>
+          <AppText variant="caption" style={{ color: colors.red }}>Clear</AppText>
+        </Pressable>
+      ) : null}
+      {show ? (
+        <DateTimePicker
+          value={parseISODate(value)}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShow(false);
+            if (event.type === 'set' && date) onChangeValue(toISODate(date));
+          }}
+        />
+      ) : null}
+    </Field>
+  );
+}
+
+/* ------------------------------------------------------------- FormRow */
+/** On phones every field stacks vertically — `cols` from the web config is ignored. */
+export function FormRow({ children }: { children: React.ReactNode; cols?: number }) {
+  return <View style={{ gap: spacing.md }}>{children}</View>;
+}

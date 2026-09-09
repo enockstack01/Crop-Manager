@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "CropManager",
+    "slug": "cropmanager",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "cropmanager",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2E7D32"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cropmanager.app"
+    },
+    "android": {
+      "package": "com.cropmanager.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2E7D32"
+      },
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-splash-screen",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CropManager needs access to your photos to attach field scouting images.",
+          "cameraPermission": "CropManager needs camera access to capture field scouting photos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": { "projectId": "" }
+    }
+  }
+}

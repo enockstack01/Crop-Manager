@@ -6,8 +6,14 @@ Supabase backend has been replaced with an Express API on MongoDB Atlas.
 
 ```
 ├── server/   Express + Mongoose REST API (Clerk-protected)
-└── client/   React (Vite) SPA — reuses the original CSS design system verbatim
+├── client/   React (Vite) SPA — reuses the original CSS design system verbatim
+└── mobile/   Expo / React Native app (Android + iOS) — same API, same Clerk instance
 ```
+
+The **mobile app** is a standalone Expo project (not an npm workspace). It has
+full parity with the web app's user-facing modules — dashboard, all 18 CRUD
+modules, calculators, reports, calendar, settings — driven by the same generic
+config pattern. See [`mobile/README.md`](mobile/README.md) for setup.
 
 ## Prerequisites
 

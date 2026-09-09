@@ -218,3 +218,27 @@
     background: var(--primary);
     color: #fff;
 }
+
+/* ---- Print ---- */
+.print-only { display: none; }
+
+@media print {
+    .sidebar,
+    .sidebar-overlay,
+    .topbar,
+    .no-print { display: none !important; }
+
+    .main-content,
+    .main-content-expanded { margin-left: 0 !important; }
+
+    .main-content-inner { padding: 0 !important; }
+
+    .print-only { display: block !important; }
+
+    .chart-card,
+    .kpi-grid > * { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+
+    .table-responsive { overflow: visible !important; }
+
+    body { background: #fff !important; }
+}
