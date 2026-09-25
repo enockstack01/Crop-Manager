@@ -2,18 +2,15 @@
   "expo": {
     "name": "CropManager",
     "slug": "cropmanager",
+    "owner": "enockstack",
     "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "cropmanager",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#2E7D32"
-    },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cropmanager.app"
@@ -22,23 +19,48 @@
       "package": "com.cropmanager.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-bg.png",
+        "monochromeImage": "./assets/adaptive-icon-mono.png",
         "backgroundColor": "#2E7D32"
       },
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "plugins": [
       "expo-secure-store",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#2E7D32",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#0F1A10"
+          }
+        }
+      ],
       [
         "expo-image-picker",
         {
           "photosPermission": "CropManager needs access to your photos to attach field scouting images.",
           "cameraPermission": "CropManager needs camera access to capture field scouting photos."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "extra": {
-      "eas": { "projectId": "" }
+      "eas": {
+        "projectId": "ca149f1a-4fba-4ec2-8924-f9d9c6fe7ca0"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }

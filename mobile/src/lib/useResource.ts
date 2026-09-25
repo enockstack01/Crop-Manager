@@ -80,6 +80,15 @@ export function useProfile() {
     queryKey: ['profile'],
     queryFn: () => api.get('/profile').then((r) => r.data),
     staleTime: 60_000,
+    // the startup gate shows its own Retry, so fail fast instead of stacking timeouts
+    retry: false,
   });
-  return { profile: query.data ?? null, isLoading: query.isLoading, refetch: query.refetch };
+  return {
+    profile: query.data ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError,
+    error: query.error as any,
+    refetch: query.refetch,
+  };
 }

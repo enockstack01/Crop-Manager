@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_c2F2ZWQtc2x1Zy0xNDMyLmNsZXJrLmFjY291bnRzLmRldiQ",
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.140:5000/api",
+        "EXPO_PUBLIC_API_ORIGIN": "http://192.168.1.140:5000"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "extends": "base",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

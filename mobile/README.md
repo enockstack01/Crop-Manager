@@ -1,6 +1,6 @@
 # CropManager Mobile (Expo / React Native)
 
-Native Android + iOS client for the CropManager MERN backend. It talks to the
+Native Android + iOS client for the CropManager MERN backend (Expo SDK 57). It talks to the
 **same Express API** and **same Clerk instance** as the web app — no backend
 changes required.
 
@@ -22,18 +22,17 @@ mobile/
 
 ## Prerequisites
 
-- Node.js 20 or 22 LTS (Node 26 works for Metro but is unsupported by Expo — a
-  LTS is strongly recommended, especially for native Android builds)
+- Node.js 22 or 24 LTS
 - The CropManager API running and reachable from the device/emulator
-- Android Studio (for the Android emulator / `eas build`) — **not required** to
-  run in Expo Go
+- Android Studio for the Android emulator — **not required** for Expo Go or
+  EAS cloud builds
 - A Clerk publishable key (same instance as `client/.env`)
 
 ## Setup
 
 ```bash
 cd mobile
-npm install --legacy-peer-deps          # clerk-expo v2 needs the flag
+npm install                              # .npmrc sets legacy-peer-deps (clerk-expo's optional peers)
 cp .env.example .env                     # fill in the two required vars
 npx expo start                           # scan the QR with Expo Go, or press "a"
 ```
@@ -77,14 +76,30 @@ the **network address** is. Make sure the phone/emulator can reach the API host.
 - Push notifications
 - CSV export / print from Reports (mobile has no filesystem-download equivalent yet)
 
-## Android build (later)
+## Android build (EAS)
+
+Cloud builds run on expo.dev from `eas.json`:
+
+| Profile | Output | Use |
+|---|---|---|
+| `preview` | installable `.apk` | share with testers (internal distribution) |
+| `development` | `.apk` with the dev client | live-reload development against `expo start` |
+| `production` | `.aab` | Google Play submission |
 
 ```bash
-npm i -g eas-cli
-eas login
-eas build:configure
-eas build -p android --profile preview   # cloud build → installable .apk
+npx eas-cli login                                  # once per machine
+npx eas-cli init                                   # once: links the project on expo.dev
+npx eas-cli build -p android --profile preview     # → download link + QR for the .apk
 ```
+
+`mobile/.env` is git-ignored and **not uploaded** to EAS, so build-time
+`EXPO_PUBLIC_*` values live in `eas.json` (`build.base.env`) — update the API
+address there when it changes. While that address is plain `http://`,
+`app.config.js` allows cleartext traffic (Android blocks it in release builds by
+default); it switches off automatically for an `https://` API.
+
+The phone must be able to reach the API: same Wi-Fi as the API host, with port
+5000 allowed through the host's firewall.
 
 `android/` and `ios/` are git-ignored — run `npx expo prebuild` to generate them
 when you need a bare/local build.

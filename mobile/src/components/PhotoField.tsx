@@ -52,8 +52,8 @@ export function PhotoField({
       return;
     }
     const res = fromCamera
-      ? await ImagePicker.launchCameraAsync({ quality: 0.6, mediaTypes: ImagePicker.MediaTypeOptions.Images })
-      : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, mediaTypes: ImagePicker.MediaTypeOptions.Images });
+      ? await ImagePicker.launchCameraAsync({ quality: 0.6, mediaTypes: ['images'] })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, mediaTypes: ['images'] });
     if (res.canceled || !res.assets?.[0]) return;
     const a = res.assets[0];
     const name = a.fileName || `photo-${Date.now()}.jpg`;

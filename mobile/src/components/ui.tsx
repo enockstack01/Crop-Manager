@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
+  RefreshControlProps,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
-import { font, radius, spacing } from '../theme/theme';
+import { font, radius, shadow, spacing } from '../theme/theme';
+import { haptics } from '../lib/haptics';
+import { PressableScale } from './PressableScale';
 
 /* ---------------------------------------------------------------- Screen */
 export function Screen({
@@ -25,7 +29,7 @@ export function Screen({
   children: React.ReactNode;
   scroll?: boolean;
   padded?: boolean;
-  refreshControl?: React.ReactElement;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
   contentStyle?: any;
 }) {
   const { colors } = useTheme();
@@ -95,10 +99,11 @@ export function Card({ style, children, ...rest }: ViewProps) {
       style={[
         {
           backgroundColor: colors.card,
-          borderRadius: radius.md,
+          borderRadius: radius.lg,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
           padding: spacing.lg,
+          ...shadow(1),
         },
         style,
       ]}
@@ -176,6 +181,52 @@ export function Loading({ label }: { label?: string }) {
   );
 }
 
+/* -------------------------------------------------------------- Skeleton */
+/** Pulsing placeholder block shown while content loads (instead of a bare spinner). */
+export function Skeleton({ width = '100%', height = 14, radius: r = radius.sm, style }: {
+  width?: number | `${number}%`; height?: number; radius?: number; style?: any;
+}) {
+  const { colors, isDark } = useTheme();
+  const pulse = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.45, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  return (
+    <Animated.View
+      style={[{ width, height, borderRadius: r, opacity: pulse, backgroundColor: isDark ? '#2C2C2C' : colors.border }, style]}
+    />
+  );
+}
+
+/** A column of card-shaped skeleton rows for list screens. */
+export function SkeletonList({ rows = 6 }: { rows?: number }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ paddingHorizontal: spacing.lg, gap: spacing.sm }} accessibilityLabel="Loading" accessibilityRole="progressbar">
+      {Array.from({ length: rows }, (_, i) => (
+        <View
+          key={i}
+          style={{
+            backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm,
+            borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
+          }}
+        >
+          <Skeleton width="55%" height={15} />
+          <Skeleton width="85%" height={11} />
+          <Skeleton width={72} height={18} radius={radius.pill} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /* ------------------------------------------------------------- EmptyState */
 export function EmptyState({
   icon = 'inbox-outline',
@@ -195,23 +246,27 @@ export function EmptyState({
     <View style={{ alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.sm }}>
       <View
         style={{
-          width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center',
+          width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center',
           backgroundColor: colors.primaryLight, marginBottom: spacing.sm,
         }}
       >
-        <MaterialCommunityIcons name={icon as any} size={30} color={colors.primary} />
+        <MaterialCommunityIcons name={icon as any} size={34} color={colors.primary} />
       </View>
       <AppText variant="heading" style={{ textAlign: 'center' }}>{title}</AppText>
       {description ? (
         <AppText variant="subtitle" style={{ textAlign: 'center', maxWidth: 320 }}>{description}</AppText>
       ) : null}
       {actionLabel && onAction ? (
-        <Pressable
+        <PressableScale
           onPress={onAction}
-          style={{ marginTop: spacing.md, backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.md }}
+          accessibilityRole="button"
+          style={{
+            marginTop: spacing.md, backgroundColor: colors.primary, paddingHorizontal: spacing.xl,
+            minHeight: 46, justifyContent: 'center', borderRadius: radius.md, ...shadow(2),
+          }}
         >
-          <Text style={{ color: '#fff', fontWeight: '700' }}>{actionLabel}</Text>
-        </Pressable>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>{actionLabel}</Text>
+        </PressableScale>
       ) : null}
     </View>
   );
@@ -234,12 +289,17 @@ export function IconButton({
   const { colors } = useTheme();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptics.select();
+        onPress();
+      }}
       disabled={disabled}
       hitSlop={8}
+      accessibilityRole="button"
+      android_ripple={{ color: colors.primaryLight, borderless: true, radius: 22 }}
       style={({ pressed }) => ({
-        width: 38, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center',
-        opacity: disabled ? 0.4 : pressed ? 0.6 : 1, backgroundColor: pressed ? colors.bg : 'transparent',
+        width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+        opacity: disabled ? 0.35 : 1, backgroundColor: pressed ? colors.primaryLight : 'transparent',
       })}
     >
       <MaterialCommunityIcons name={name as any} size={size} color={color ?? colors.textLight} />

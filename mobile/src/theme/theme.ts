@@ -75,11 +75,24 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 24,
   pill: 999,
 };
+
+/** Soft, layered elevation — used for cards, sheets, the FAB and toasts. */
+export function shadow(level: 1 | 2 | 3 = 1) {
+  const y = [0, 1, 4, 8][level];
+  return {
+    shadowColor: '#0B2A10',
+    shadowOpacity: [0, 0.06, 0.1, 0.16][level],
+    shadowRadius: [0, 4, 10, 18][level],
+    shadowOffset: { width: 0, height: y },
+    elevation: [0, 1, 4, 8][level],
+  };
+}
 
 export const font = {
   xs: 11,

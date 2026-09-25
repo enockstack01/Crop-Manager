@@ -1,8 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, Text, ViewStyle } from 'react-native';
+import { ActivityIndicator, Text, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, spacing } from '../theme/theme';
+import { radius, shadow, spacing } from '../theme/theme';
+import { PressableScale } from './PressableScale';
 
 type Kind = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -40,12 +41,18 @@ export function Button({
     danger: '#fff',
     ghost: colors.primary,
   };
-  const pad = size === 'sm' ? { paddingVertical: spacing.sm, paddingHorizontal: spacing.md } : { paddingVertical: spacing.md, paddingHorizontal: spacing.lg };
+  const pad =
+    size === 'sm'
+      ? { minHeight: 38, paddingHorizontal: spacing.md }
+      : { minHeight: 50, paddingHorizontal: spacing.lg };
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={isDisabled}
+      feedback={kind === 'ghost' ? 'select' : 'tap'}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       style={({ pressed }) => [
         {
           flexDirection: 'row',
@@ -56,8 +63,9 @@ export function Button({
           borderWidth: kind === 'secondary' ? 1 : 0,
           borderColor: colors.border,
           backgroundColor: bg[kind],
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          opacity: isDisabled ? 0.55 : pressed && kind === 'ghost' ? 0.6 : 1,
         },
+        kind === 'primary' || kind === 'danger' ? shadow(isDisabled ? 1 : 2) : null,
         pad,
         style,
       ]}
@@ -65,9 +73,11 @@ export function Button({
       {loading ? (
         <ActivityIndicator size="small" color={fg[kind]} />
       ) : icon ? (
-        <MaterialCommunityIcons name={icon as any} size={size === 'sm' ? 15 : 18} color={fg[kind]} />
+        <MaterialCommunityIcons name={icon as any} size={size === 'sm' ? 16 : 19} color={fg[kind]} />
       ) : null}
-      <Text style={{ color: fg[kind], fontWeight: '700', fontSize: size === 'sm' ? 13 : 14 }}>{title}</Text>
-    </Pressable>
+      <Text style={{ color: fg[kind], fontWeight: '700', fontSize: size === 'sm' ? 13 : 15, letterSpacing: 0.2 }}>
+        {title}
+      </Text>
+    </PressableScale>
   );
 }

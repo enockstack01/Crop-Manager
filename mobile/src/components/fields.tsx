@@ -76,27 +76,74 @@ const inputStyle = (colors: any) => ({
 /* ------------------------------------------------------------- TextField */
 export function TextField({
   label, required, hint, value, onChangeValue, placeholder, keyboardType, multiline, autoCapitalize, secureTextEntry, editable = true,
+  icon, autoComplete, textContentType, returnKeyType, onSubmitEditing,
 }: {
   label?: string; required?: boolean; hint?: string;
   value: any; onChangeValue: (v: string) => void;
   placeholder?: string; keyboardType?: any; multiline?: boolean;
   autoCapitalize?: any; secureTextEntry?: boolean; editable?: boolean;
+  /** MaterialCommunityIcons name shown inside the field on the left */
+  icon?: string;
+  autoComplete?: any; textContentType?: any; returnKeyType?: any; onSubmitEditing?: () => void;
 }) {
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
+  const [hidden, setHidden] = useState(true);
+  const isSecret = !!secureTextEntry;
+
   return (
     <Field label={label} required={required} hint={hint}>
-      <TextInput
-        value={value == null ? '' : String(value)}
-        onChangeText={onChangeValue}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textLight}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        secureTextEntry={secureTextEntry}
-        editable={editable}
-        multiline={multiline}
-        style={[inputStyle(colors), multiline ? { minHeight: 84, textAlignVertical: 'top' } : null, !editable ? { opacity: 0.6 } : null]}
-      />
+      <View
+        style={[
+          inputStyle(colors),
+          {
+            flexDirection: 'row', alignItems: multiline ? 'flex-start' : 'center', gap: spacing.sm,
+            paddingVertical: 0, borderColor: focused ? colors.primary : colors.border,
+            borderWidth: focused ? 1.5 : 1,
+          },
+          !editable ? { opacity: 0.6 } : null,
+        ]}
+      >
+        {icon ? (
+          <MaterialCommunityIcons
+            name={icon as any}
+            size={19}
+            color={focused ? colors.primary : colors.textLight}
+            style={multiline ? { marginTop: spacing.md } : null}
+          />
+        ) : null}
+        <TextInput
+          value={value == null ? '' : String(value)}
+          onChangeText={onChangeValue}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textLight}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
+          secureTextEntry={isSecret && hidden}
+          editable={editable}
+          multiline={multiline}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={[
+            { flex: 1, fontSize: 15, color: colors.text, paddingVertical: Platform.OS === 'ios' ? spacing.md : 11 },
+            multiline ? { minHeight: 84, textAlignVertical: 'top' } : null,
+          ]}
+        />
+        {isSecret ? (
+          <Pressable
+            onPress={() => setHidden((h) => !h)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+          >
+            <MaterialCommunityIcons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.textLight} />
+          </Pressable>
+        ) : null}
+      </View>
     </Field>
   );
 }

@@ -2,7 +2,6 @@ import React from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -39,7 +38,7 @@ export function Sheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView behavior="padding">
           <View
             style={{
               backgroundColor: colors.bg,

@@ -1,19 +1,20 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDashboard, useProfile } from '../lib/useResource';
 import { computeDashboard, DashFilters } from '../features/dashboard/aggregate';
 import { formatCurrency, formatDate, formatNumber, getGreeting } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, spacing } from '../theme/theme';
-import { AppText, Card, EmptyState, Loading, ScreenScrollHost, SectionTitle } from '../components/ui';
+import { radius, shadow, spacing } from '../theme/theme';
+import { AppText, Card, EmptyState, ScreenScrollHost, SectionTitle, Skeleton } from '../components/ui';
+import { PressableScale } from '../components/PressableScale';
 import { Screen } from '../components/ui';
 import { Bars, Donut, LineChart } from '../components/charts';
 import { SelectField } from '../components/fields';
 import { Sheet } from '../components/Sheet';
 
 export function DashboardScreen({ navigation }: any) {
-  const { data, isLoading, isError, refetch, isFetching } = useDashboard();
+  const { data, isLoading, isError, error, refetch, isFetching } = useDashboard();
   const { profile } = useProfile();
   const { colors } = useTheme();
   const [filters, setFilters] = useState<DashFilters>({ farm: '', season: '', from: '', to: '' });
@@ -22,9 +23,17 @@ export function DashboardScreen({ navigation }: any) {
   const d = data || {};
   const agg = useMemo(() => computeDashboard(d, filters), [d, filters]);
 
-  if (isLoading) return <Loading label="Loading dashboard…" />;
+  if (isLoading) return <DashboardSkeleton />;
   if (isError) {
-    return <EmptyState icon="alert" title="Dashboard error" description="Could not load dashboard data." actionLabel="Retry" onAction={refetch} />;
+    return (
+      <EmptyState
+        icon={(error as any)?.network ? 'cloud-off-outline' : 'alert-circle-outline'}
+        title="Couldn't load your dashboard"
+        description={(error as any)?.message || 'Please try again.'}
+        actionLabel="Try again"
+        onAction={refetch}
+      />
+    );
   }
 
   const activeFilters = [filters.farm, filters.season, filters.from, filters.to].filter(Boolean).length;
@@ -52,20 +61,28 @@ export function DashboardScreen({ navigation }: any) {
       {/* KPI grid */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg }}>
         {agg.kpis.map((k) => (
-          <Pressable
+          <PressableScale
             key={k.label}
             onPress={() => k.link && navigation.navigate(k.link)}
+            accessibilityRole="button"
+            accessibilityLabel={`${k.label}: ${k.value}`}
             style={{
-              width: '48%', backgroundColor: colors.card, borderRadius: radius.md,
-              borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: 4,
+              width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: radius.lg,
+              borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: spacing.md, gap: 6,
+              ...shadow(1),
             }}
           >
-            <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-              <MaterialCommunityIcons name={k.icon as any} size={18} color={colors.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name={k.icon as any} size={19} color={colors.primary} />
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textLight} />
             </View>
-            <AppText variant="caption">{k.label}</AppText>
-            <AppText weight="800" style={{ fontSize: 17 }}>{k.value}</AppText>
-          </Pressable>
+            <AppText variant="caption" numberOfLines={1}>{k.label}</AppText>
+            <AppText weight="800" style={{ fontSize: 19 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+              {k.value}
+            </AppText>
+          </PressableScale>
         ))}
       </View>
 
@@ -233,9 +250,41 @@ export function DashboardScreen({ navigation }: any) {
 function Tile({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
-    <View style={{ width: '48%', backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md }}>
-      <AppText variant="caption" style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</AppText>
-      <AppText weight="800" style={{ fontSize: 18, marginTop: 4 }}>{value}</AppText>
+    <View
+      style={{
+        width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: radius.lg,
+        borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: spacing.md, ...shadow(1),
+      }}
+    >
+      <AppText variant="caption" numberOfLines={1} style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</AppText>
+      <AppText weight="800" style={{ fontSize: 18, marginTop: 4 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+        {value}
+      </AppText>
     </View>
+  );
+}
+
+/** Layout-shaped placeholder shown while the dashboard loads. */
+function DashboardSkeleton() {
+  const { colors } = useTheme();
+  const box = { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border };
+  return (
+    <Screen>
+      <Skeleton width="70%" height={24} />
+      <Skeleton width="50%" height={13} style={{ marginTop: spacing.sm }} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg }}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <View key={i} style={[box, { width: '48%', flexGrow: 1 }]}>
+            <Skeleton width={36} height={36} radius={11} />
+            <Skeleton width="60%" height={11} />
+            <Skeleton width="80%" height={18} />
+          </View>
+        ))}
+      </View>
+      <View style={[box, { marginTop: spacing.lg, height: 180 }]}>
+        <Skeleton width="40%" height={13} />
+        <Skeleton height={120} radius={radius.md} />
+      </View>
+    </Screen>
   );
 }

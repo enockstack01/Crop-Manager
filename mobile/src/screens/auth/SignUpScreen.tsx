@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
+import { useTheme } from '../../theme/ThemeProvider';
 import { spacing } from '../../theme/theme';
-import { AppText, Screen } from '../../components/ui';
+import { AppText } from '../../components/ui';
 import { Button } from '../../components/Button';
 import { TextField } from '../../components/fields';
+import { GoogleButton } from '../../components/GoogleButton';
+import { useToast } from '../../components/Toast';
+import { haptics } from '../../lib/haptics';
+import { AuthError, AuthLayout, OrDivider } from './AuthLayout';
+
+const clerkMessage = (e: any, fallback: string) =>
+  e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e?.message || fallback;
 
 export function SignUpScreen({ navigation }: any) {
   const { signUp, setActive, isLoaded } = useSignUp();
+  const { colors } = useTheme();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -17,14 +27,21 @@ export function SignUpScreen({ navigation }: any) {
 
   const start = async () => {
     if (!isLoaded) return;
+    if (!email.trim() || !password) {
+      haptics.warning();
+      setError('Enter an email and a password.');
+      return;
+    }
     setError('');
     setBusy(true);
     try {
       await signUp.create({ emailAddress: email.trim(), password });
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      haptics.success();
       setPending(true);
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message || e?.message || 'Sign up failed');
+      haptics.error();
+      setError(clerkMessage(e, 'Sign up failed'));
     } finally {
       setBusy(false);
     }
@@ -37,54 +54,98 @@ export function SignUpScreen({ navigation }: any) {
     try {
       const attempt = await signUp.attemptEmailAddressVerification({ code: code.trim() });
       if (attempt.status === 'complete') {
+        haptics.success();
         await setActive({ session: attempt.createdSessionId });
       } else {
-        setError('Verification incomplete.');
+        setError('Verification incomplete — check the code and try again.');
       }
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message || e?.message || 'Verification failed');
+      haptics.error();
+      setError(clerkMessage(e, 'Verification failed'));
     } finally {
       setBusy(false);
     }
   };
 
-  return (
-    <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'center' }}>
+  const resend = async () => {
+    try {
+      await signUp?.prepareEmailAddressVerification({ strategy: 'email_code' });
+      toast('A new code is on its way', 'info');
+    } catch (e: any) {
+      setError(clerkMessage(e, 'Could not resend the code'));
+    }
+  };
+
+  if (pendingVerification) {
+    return (
+      <AuthLayout title="Check your email" subtitle={`Enter the 6-digit code we sent to ${email.trim()}`}>
         <View style={{ gap: spacing.md }}>
-          <AppText variant="title" style={{ textAlign: 'center' }}>Create account</AppText>
-
-          {error ? (
-            <View style={{ backgroundColor: '#FFEBEE', borderRadius: 8, padding: 10 }}>
-              <AppText style={{ color: '#C62828' }}>{error}</AppText>
-            </View>
-          ) : null}
-
-          {pendingVerification ? (
-            <>
-              <AppText variant="subtitle" style={{ textAlign: 'center' }}>
-                Enter the verification code sent to {email}
-              </AppText>
-              <TextField label="Verification code" value={code} onChangeValue={setCode} keyboardType="number-pad" />
-              <Button title="Verify & continue" loading={busy} onPress={verify} />
-            </>
-          ) : (
-            <>
-              <TextField
-                label="Email"
-                value={email}
-                onChangeValue={setEmail}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextField label="Password" value={password} onChangeValue={setPassword} secureTextEntry autoCapitalize="none" />
-              <Button title="Continue" loading={busy} onPress={start} />
-              <Button title="I already have an account" kind="ghost" onPress={() => navigation.navigate('sign-in')} />
-            </>
-          )}
+          <AuthError message={error} />
+          <TextField
+            label="Verification code"
+            icon="shield-key-outline"
+            value={code}
+            onChangeValue={setCode}
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            returnKeyType="done"
+            onSubmitEditing={verify}
+          />
+          <Button title="Verify & continue" icon="check" loading={busy} disabled={code.trim().length < 6} onPress={verify} />
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
+            <Pressable onPress={resend} hitSlop={8} accessibilityRole="button">
+              <AppText weight="700" color={colors.primary}>Resend code</AppText>
+            </Pressable>
+            <Pressable onPress={() => { setPending(false); setCode(''); setError(''); }} hitSlop={8} accessibilityRole="button">
+              <AppText weight="600" color={colors.textLight}>Change email</AppText>
+            </Pressable>
+          </View>
         </View>
-      </KeyboardAvoidingView>
-    </Screen>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout title="Create your account" subtitle="Start managing your crop production today">
+      <View style={{ gap: spacing.md }}>
+        <GoogleButton onError={setError} label="Sign up with Google" />
+        <OrDivider />
+        <AuthError message={error} />
+        <TextField
+          label="Email"
+          icon="email-outline"
+          value={email}
+          onChangeValue={setEmail}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="next"
+        />
+        <TextField
+          label="Password"
+          icon="lock-outline"
+          hint="At least 8 characters"
+          value={password}
+          onChangeValue={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
+          returnKeyType="go"
+          onSubmitEditing={start}
+        />
+        <Button title="Create account" icon="account-plus-outline" loading={busy} onPress={start} style={{ marginTop: spacing.xs }} />
+
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, marginTop: spacing.sm }}>
+          <AppText variant="subtitle">Already have an account?</AppText>
+          <Pressable onPress={() => { haptics.select(); navigation.navigate('sign-in'); }} hitSlop={8} accessibilityRole="link">
+            <AppText weight="700" color={colors.primary}>Sign in</AppText>
+          </Pressable>
+        </View>
+      </View>
+    </AuthLayout>
   );
 }

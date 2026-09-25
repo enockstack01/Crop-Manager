@@ -1,34 +1,48 @@
-import React from 'react';
-import { Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
+import { shadow } from '../theme/theme';
+import { PressableScale } from './PressableScale';
 
-export function FAB({ onPress, icon = 'plus' }: { onPress: () => void; icon?: string }) {
+export function FAB({ onPress, icon = 'plus', label = 'Add' }: { onPress: () => void; icon?: string; label?: string }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const enter = useRef(new Animated.Value(0)).current;
+
+  // pop in when the screen mounts
+  useEffect(() => {
+    Animated.spring(enter, { toValue: 1, useNativeDriver: true, delay: 150, bounciness: 10 }).start();
+  }, [enter]);
+
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <Animated.View
+      style={{
         position: 'absolute',
         right: 20,
         bottom: 20 + insets.bottom,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: pressed ? 0.85 : 1,
-        elevation: 6,
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
-      })}
+        transform: [{ scale: enter }],
+      }}
     >
-      <MaterialCommunityIcons name={icon as any} size={26} color="#fff" />
-    </Pressable>
+      <PressableScale
+        onPress={onPress}
+        feedback="press"
+        scaleTo={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={{
+          width: 58,
+          height: 58,
+          borderRadius: 20,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...shadow(3),
+        }}
+      >
+        <MaterialCommunityIcons name={icon as any} size={28} color="#fff" />
+      </PressableScale>
+    </Animated.View>
   );
 }

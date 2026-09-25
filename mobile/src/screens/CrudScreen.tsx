@@ -5,8 +5,10 @@ import { useList, useResourceMutations } from '../lib/useResource';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, spacing } from '../theme/theme';
-import { AppText, Badge, EmptyState, IconButton, Loading } from '../components/ui';
+import { radius, shadow, spacing } from '../theme/theme';
+import { AppText, Badge, EmptyState, IconButton, SkeletonList } from '../components/ui';
+import { PressableScale } from '../components/PressableScale';
+import { haptics } from '../lib/haptics';
 import { FAB } from '../components/FAB';
 import { Sheet } from '../components/Sheet';
 import { SelectField } from '../components/fields';
@@ -27,6 +29,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
 
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
+  const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [form, setForm] = useState<{ editing: any | null } | null>(null);
@@ -50,6 +53,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const totalPages = data?.totalPages ?? 1;
 
   const onSearch = useCallback((text: string) => {
+    setSearch(text);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setQ(text.trim());
@@ -73,16 +77,21 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const renderItem = ({ item }: { item: any }) => {
     const view = config.row(item);
     return (
-      <Pressable
+      <PressableScale
         onPress={() => setViewRow(item)}
-        style={({ pressed }) => ({
-          backgroundColor: pressed ? colors.bg : colors.card,
-          borderRadius: radius.md,
+        scaleTo={0.98}
+        accessibilityRole="button"
+        accessibilityLabel={String(view.title)}
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.lg,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
           padding: spacing.md,
-          marginBottom: spacing.sm,
-        })}
+          paddingLeft: spacing.lg,
+          marginBottom: spacing.sm + 2,
+          ...shadow(1),
+        }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
           <View style={{ flex: 1, gap: 3 }}>
@@ -106,7 +115,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
             <IconButton name="trash-can-outline" color={colors.red} onPress={() => onDelete(item)} />
           </View>
         </View>
-      </Pressable>
+      </PressableScale>
     );
   };
 
@@ -122,23 +131,33 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
                 flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
                 backgroundColor: colors.card, borderRadius: radius.md,
                 borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-                paddingHorizontal: spacing.md,
+                paddingHorizontal: spacing.md, ...shadow(1),
               }}
             >
               <MaterialCommunityIcons name="magnify" size={18} color={colors.textLight} />
               <TextInput
+                value={search}
                 placeholder={config.searchPlaceholder ?? 'Search…'}
                 placeholderTextColor={colors.textLight}
                 onChangeText={onSearch}
-                style={{ flex: 1, paddingVertical: spacing.sm, color: colors.text }}
+                returnKeyType="search"
+                style={{ flex: 1, paddingVertical: 11, color: colors.text, fontSize: 15 }}
               />
+              {search ? (
+                <Pressable onPress={() => { haptics.select(); onSearch(''); }} hitSlop={10} accessibilityLabel="Clear search">
+                  <MaterialCommunityIcons name="close-circle" size={18} color={colors.textLight} />
+                </Pressable>
+              ) : null}
             </View>
           ) : (
             <View style={{ flex: 1 }} />
           )}
           {filters.length > 0 ? (
-            <Pressable
+            <PressableScale
               onPress={() => setFilterOpen(true)}
+              feedback="select"
+              accessibilityRole="button"
+              accessibilityLabel={activeFilterCount ? `Filters (${activeFilterCount} active)` : 'Filters'}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 4,
                 backgroundColor: activeFilterCount ? colors.primary : colors.card,
@@ -149,15 +168,21 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
             >
               <MaterialCommunityIcons name="filter-variant" size={18} color={activeFilterCount ? '#fff' : colors.textLight} />
               {activeFilterCount ? <AppText color="#fff" weight="700">{activeFilterCount}</AppText> : null}
-            </Pressable>
+            </PressableScale>
           ) : null}
         </View>
       </View>
 
       {isError ? (
-        <EmptyState icon="alert" title="Could not load data" description={(error as any)?.message} actionLabel="Retry" onAction={refetch} />
+        <EmptyState
+          icon={(error as any)?.network ? 'cloud-off-outline' : 'alert-circle-outline'}
+          title="Couldn't load this list"
+          description={(error as any)?.message}
+          actionLabel="Try again"
+          onAction={refetch}
+        />
       ) : isLoading ? (
-        <Loading />
+        <SkeletonList />
       ) : (
         <FlatList
           data={rows}

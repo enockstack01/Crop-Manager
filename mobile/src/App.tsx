@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ClerkLoaded, ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
 
 import { CLERK_PUBLISHABLE_KEY } from './env';
 import { tokenCache } from './lib/tokenCache';
@@ -14,9 +14,11 @@ import { ThemeProvider, useTheme } from './theme/ThemeProvider';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
 import { Loading } from './components/ui';
+import { SplashHost, SplashReadyOnMount, useSplashReady } from './components/AppSplash';
 import { AppNavigator } from './navigation/AppNavigator';
 import { AuthNavigator } from './navigation/AuthNavigator';
 import { OnboardingScreen } from './screens/OnboardingScreen';
+import { ConnectionErrorScreen } from './screens/ConnectionErrorScreen';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 } },
@@ -30,10 +32,24 @@ function ApiTokenBridge() {
   return null;
 }
 
+/**
+ * Signed-in entry: loads the profile, then routes to onboarding or the app. The
+ * splash stays up while this resolves; a server that can't be reached now ends in
+ * a Retry screen instead of an endless spinner.
+ */
 function RootGate() {
-  const { profile, isLoading } = useProfile();
-  if (isLoading) return <Loading label="Loading your account…" />;
-  if (profile && !profile.onboarded) return <OnboardingScreen profile={profile} />;
+  const { profile, isLoading, isFetching, isError, error, refetch } = useProfile();
+  const splashReady = useSplashReady();
+
+  useEffect(() => {
+    if (!isLoading) splashReady();
+  }, [isLoading, splashReady]);
+
+  if (isLoading) return null; // the splash is still covering the screen
+  if (isError || !profile) {
+    return <ConnectionErrorScreen error={error} retrying={isFetching} onRetry={() => refetch()} />;
+  }
+  if (!profile.onboarded) return <OnboardingScreen profile={profile} />;
   return <AppNavigator />;
 }
 
@@ -50,9 +66,27 @@ function NavRoot() {
         <RootGate />
       </SignedIn>
       <SignedOut>
+        <SplashReadyOnMount />
         <AuthNavigator />
       </SignedOut>
     </NavigationContainer>
+  );
+}
+
+/** Mounts the app once Clerk has restored the session (the splash covers the wait). */
+function AppShell() {
+  const { isLoaded } = useAuth();
+  // only visible if the splash times out first (e.g. no internet to reach Clerk)
+  if (!isLoaded) return <Loading label="Connecting to CropManager…" />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <ConfirmProvider>
+          <ApiTokenBridge />
+          <NavRoot />
+        </ConfirmProvider>
+      </ToastProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -60,20 +94,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
-          <ClerkLoaded>
-            <QueryClientProvider client={queryClient}>
-              <ThemeProvider>
-                <ToastProvider>
-                  <ConfirmProvider>
-                    <ApiTokenBridge />
-                    <NavRoot />
-                  </ConfirmProvider>
-                </ToastProvider>
-              </ThemeProvider>
-            </QueryClientProvider>
-          </ClerkLoaded>
-        </ClerkProvider>
+        <ThemeProvider>
+          <SplashHost>
+            <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+              <AppShell />
+            </ClerkProvider>
+          </SplashHost>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
