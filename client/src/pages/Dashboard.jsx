@@ -4,7 +4,7 @@ import { Doughnut, Bar, Line } from 'react-chartjs-2';
 import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
-import { Loading, EmptyState } from '../components/ui.jsx';
+import { Loading, EmptyState, FitValue, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate, getGreeting } from '../lib/format.js';
 
 const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
@@ -25,18 +25,6 @@ function Card({ title, icon, iconColor = 'var(--primary)', children, className =
       <div className="chart-card-body" style={bodyStyle}>
         {children}
       </div>
-    </div>
-  );
-}
-
-function Tile({ label, value, sub, color = 'var(--text)' }) {
-  return (
-    <div style={{ textAlign: 'center', padding: 16, background: 'var(--bg)', borderRadius: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color, marginTop: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{sub}</div>}
     </div>
   );
 }
@@ -114,7 +102,7 @@ export default function Dashboard() {
             </div>
             <div className="kpi-info">
               <div className="kpi-label">{k.label}</div>
-              <div className="kpi-value">{k.value}</div>
+              <FitValue className="kpi-value" value={k.value} />
             </div>
           </div>
         ))}
@@ -123,19 +111,19 @@ export default function Dashboard() {
       {/* Land utilization + crop distribution */}
       <div className="chart-grid">
         <Card title="Land Utilization" icon="fa-map-marked-alt" bodyStyle={{ minHeight: 180 }}>
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 34, fontWeight: 800 }}>{agg.land.pct}%</div>
+          <div className="stat-tile" style={{ background: 'none', padding: 0, marginBottom: 20 }}>
+            <FitValue value={`${agg.land.pct}%`} style={{ '--fit-max': '34px' }} />
             <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>Land Utilization Rate</div>
           </div>
           <div className="progress-bar" style={{ height: 12, borderRadius: 6, marginBottom: 16 }}>
             <div className="progress-bar-fill" style={{ width: `${agg.land.pct}%`, borderRadius: 6 }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+          <div className="wrap-row spread" style={{ fontSize: 12 }}>
             <span><b style={{ color: 'var(--primary)' }}>{agg.land.planted.toFixed(1)} ha</b> <span style={{ color: 'var(--text-light)' }}>planted</span></span>
             <span><b style={{ color: 'var(--orange)' }}>{agg.land.fallow.toFixed(1)} ha</b> <span style={{ color: 'var(--text-light)' }}>fallow</span></span>
             <span><b>{agg.land.total.toFixed(1)} ha</b> <span style={{ color: 'var(--text-light)' }}>total</span></span>
           </div>
-          <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-light)' }}>
+          <div className="wrap-row" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-light)' }}>
             <div><b style={{ color: 'var(--text)' }}>{(d.farms || []).length}</b> Farms</div>
             <div><b style={{ color: 'var(--text)' }}>{(d.fields || []).length}</b> Fields</div>
             <div><b style={{ color: 'var(--text)' }}>{(d.fields || []).filter((f) => f.status === 'Active').length}</b> Active</div>
@@ -238,11 +226,11 @@ export default function Dashboard() {
           )}
         </Card>
         <Card title="Harvest Analytics" icon="fa-wheat-awn" iconColor="var(--orange)">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Tile label="Total Harvested" value={formatNumber(Math.round(agg.harvest.totalQty))} sub="kg" />
-            <Tile label="Avg Yield" value={agg.harvest.avgYield.toFixed(0)} sub="kg/ha" color="var(--primary)" />
-            <Tile label="Harvest Records" value={agg.harvest.count} sub="records" color="var(--blue)" />
-            <Tile label="Harvest Costs" value={formatCurrency(agg.harvest.totalCost)} sub="total" color="var(--red)" />
+          <div className="stat-grid">
+            <StatTile label="Total Harvested" value={formatNumber(Math.round(agg.harvest.totalQty))} sub="kg" />
+            <StatTile label="Avg Yield" value={agg.harvest.avgYield.toFixed(0)} sub="kg/ha" color="var(--primary)" />
+            <StatTile label="Harvest Records" value={agg.harvest.count} sub="records" color="var(--blue)" />
+            <StatTile label="Harvest Costs" value={formatCurrency(agg.harvest.totalCost)} sub="total" color="var(--red)" />
           </div>
         </Card>
       </div>
@@ -251,7 +239,7 @@ export default function Dashboard() {
       <div className="chart-card full-width" style={{ marginBottom: 20 }}>
         <div className="chart-card-header">
           <h3><i className="fas fa-chart-area" style={{ color: 'var(--primary)', marginRight: 8 }} />Revenue vs Expenses</h3>
-          <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+          <div className="wrap-row" style={{ fontSize: 12 }}>
             <span style={{ color: 'var(--green)', fontWeight: 600 }}>
               <i className="fas fa-arrow-up" /> {formatCurrency(agg.finance.totalSales)} Revenue
             </span>
@@ -300,24 +288,13 @@ export default function Dashboard() {
           )}
         </Card>
         <Card title="Sales Analytics" icon="fa-hand-holding-usd" iconColor="var(--green)">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <div style={{ textAlign: 'center', padding: '14px 8px', background: '#E8F5E9', borderRadius: 8 }}>
-              <div style={{ fontSize: 10, color: '#2E7D32', fontWeight: 700 }}>PAID</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#2E7D32' }}>{formatCurrency(agg.salesByStatus.Paid)}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: '14px 8px', background: '#FFF8E1', borderRadius: 8 }}>
-              <div style={{ fontSize: 10, color: '#F57F17', fontWeight: 700 }}>PENDING</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#F57F17' }}>{formatCurrency(agg.salesByStatus.Pending)}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: '14px 8px', background: '#E3F2FD', borderRadius: 8 }}>
-              <div style={{ fontSize: 10, color: '#1565C0', fontWeight: 700 }}>PARTIAL</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#1565C0' }}>{formatCurrency(agg.salesByStatus['Partially Paid'])}</div>
-            </div>
+          <div className="stat-grid" style={{ '--stat-min': '140px' }}>
+            <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid)} color="#2E7D32" max={16} />
+            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending)} color="#F57F17" max={16} />
+            <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'])} color="#1565C0" max={16} />
           </div>
-          <div style={{ marginTop: 16, textAlign: 'center', padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-light)' }}>Total Sales</div>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>{formatCurrency(agg.finance.totalSales)}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{agg.filteredSales.length} records</div>
+          <div className="stat-grid" style={{ marginTop: 16 }}>
+            <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales)} sub={`${agg.filteredSales.length} records`} max={20} />
           </div>
         </Card>
       </div>
@@ -328,11 +305,11 @@ export default function Dashboard() {
           {(d.inventory || []).length === 0 ? (
             <NoData label="No inventory items yet" />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <Tile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
-              <Tile label="Low Stock" value={agg.inv.low} color="#F57F17" />
-              <Tile label="Out of Stock" value={agg.inv.out} color="#D32F2F" />
-              <Tile label="Expiring Soon" value={agg.inv.expiring} color="#1565C0" />
+            <div className="stat-grid">
+              <StatTile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
+              <StatTile label="Low Stock" value={agg.inv.low} color="#F57F17" />
+              <StatTile label="Out of Stock" value={agg.inv.out} color="#D32F2F" />
+              <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1565C0" />
             </div>
           )}
         </Card>
@@ -340,10 +317,10 @@ export default function Dashboard() {
           {(d.scouting || []).length === 0 ? (
             <NoData label="No scouting data" />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-              <Tile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
-              <Tile label="Observed" value={agg.health.observed} color="#F57F17" />
-              <Tile label="At Risk" value={agg.health.atRisk} color="#D32F2F" />
+            <div className="stat-grid" style={{ '--stat-min': '90px' }}>
+              <StatTile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
+              <StatTile label="Observed" value={agg.health.observed} color="#F57F17" />
+              <StatTile label="At Risk" value={agg.health.atRisk} color="#D32F2F" />
             </div>
           )}
         </Card>

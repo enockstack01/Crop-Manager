@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 
 import { AppLayout } from './components/AppLayout.jsx';
+import { AuthScreen } from './components/AuthScreen.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Farms from './pages/Farms.jsx';
 import Fields from './pages/Fields.jsx';
@@ -33,29 +34,11 @@ import AdminUserDetail from './pages/admin/AdminUserDetail.jsx';
 import AdminData from './pages/admin/AdminData.jsx';
 import AdminSettings from './pages/admin/AdminSettings.jsx';
 
-function AuthScreen({ children }) {
-  return <div className="clerk-auth-wrap">{children}</div>;
-}
-
 export function App() {
   return (
     <Routes>
-      <Route
-        path="/sign-in/*"
-        element={
-          <AuthScreen>
-            <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
-          </AuthScreen>
-        }
-      />
-      <Route
-        path="/sign-up/*"
-        element={
-          <AuthScreen>
-            <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
-          </AuthScreen>
-        }
-      />
+      <Route path="/sign-in/*" element={<AuthScreen mode="sign-in" />} />
+      <Route path="/sign-up/*" element={<AuthScreen mode="sign-up" />} />
 
       <Route
         element={

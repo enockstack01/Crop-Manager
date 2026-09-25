@@ -138,7 +138,7 @@ export default function AdminSettings() {
             <h3><i className="fas fa-layer-group" style={{ color: 'var(--primary)', marginRight: 8 }} />Collection counts</h3>
           </div>
           <div className="card-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px' }}>
+            <div className="detail-grid">
               {Object.entries(counts)
                 .sort((a, b) => b[1] - a[1])
                 .map(([k, n]) => (

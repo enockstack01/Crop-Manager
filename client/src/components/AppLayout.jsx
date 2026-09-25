@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
 import { ProfileProvider, useProfile } from './profile.jsx';
 import { OnboardingModal } from './OnboardingModal.jsx';
-import { Loading } from './ui.jsx';
+import { EmptyState, Loading } from './ui.jsx';
 
 function readDark() {
   try {
@@ -15,7 +15,7 @@ function readDark() {
 }
 
 function Shell() {
-  const { profile, isLoading } = useProfile();
+  const { profile, isLoading, isError, error, refetch } = useProfile();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(readDark);
@@ -51,7 +51,23 @@ function Shell() {
           onMobileMenu={() => setMobileOpen(true)}
         />
         <div className="main-content-inner">
-          {isLoading ? <Loading /> : <Outlet />}
+          {isLoading ? (
+            <Loading label="Loading your account..." />
+          ) : isError ? (
+            <EmptyState
+              icon={error?.network ? 'fa-plug-circle-xmark' : 'fa-exclamation-triangle'}
+              title={error?.network ? "Can't reach the CropManager server" : 'Could not load your account'}
+              description={
+                error?.network
+                  ? 'You are signed in, but the API did not respond. Make sure the server is running, then try again.'
+                  : error?.message
+              }
+              actionLabel="Try again"
+              onAction={() => refetch()}
+            />
+          ) : (
+            <Outlet />
+          )}
         </div>
       </main>
 

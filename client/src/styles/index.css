@@ -17,11 +17,319 @@
 #root {
   min-height: 100vh;
 }
-.clerk-auth-wrap {
+/* split-screen sign-in / sign-up landing (components/AuthScreen.jsx) */
+.auth-split {
+  display: flex;
   min-height: 100vh;
+}
+.auth-split-brand {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.auth-split-brand::before,
+.auth-split-brand::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+.auth-split-brand::before {
+  width: 500px;
+  height: 500px;
+  background: rgba(255, 255, 255, 0.05);
+  top: -100px;
+  right: -100px;
+}
+.auth-split-brand::after {
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.04);
+  bottom: -50px;
+  left: -50px;
+}
+.auth-split-brand-icon,
+.auth-split-brand h1,
+.auth-split-brand p {
+  position: relative;
+  z-index: 1;
+}
+.auth-split-brand-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+.auth-split-brand h1 {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+.auth-split-brand p {
+  font-size: 16px;
+  opacity: 0.85;
+  max-width: 360px;
+  text-align: center;
+}
+.auth-split-form {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 40px;
+  background: var(--card-bg);
+}
+.auth-split-form-wrapper {
+  width: 100%;
+  max-width: 420px;
+}
+.auth-split-form-wrapper h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.auth-split-form-wrapper .subtitle {
+  color: var(--text-light);
+  margin-bottom: 30px;
+}
+.auth-split-form-wrapper .auth-split-switch {
+  margin: 16px 0 0;
+  text-align: center;
+}
+.auth-split-switch a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.auth-split-mobile-brand {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+.auth-split-mobile-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #43A047 0%, #1B5E20 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+}
+.auth-split-brand-icon svg {
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.18));
+}
+
+@media (max-width: 768px) {
+  .auth-split-brand {
+    display: none;
+  }
+  .auth-split-mobile-brand {
+    display: flex;
+  }
+  .auth-split-form {
+    padding: 30px 20px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE LAYER — keeps every card, number and chart inside its bounds
+   at any screen width. Loaded last so it refines the original design files.
+   ============================================================ */
+
+/* grid / flex children may shrink below their content width (the root cause of overflow) */
+.main-content,
+.main-content-inner,
+.chart-card,
+.card,
+.kpi-card,
+.calc-card {
+  min-width: 0;
+}
+.main-content-inner {
+  overflow-x: clip; /* last-resort guard: nothing widens the page */
+}
+.page-title,
+.page-subtitle,
+.chart-card-header h3,
+.card-header h3,
+.kpi-label {
+  overflow-wrap: anywhere;
+}
+.chart-card-header,
+.card-header {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.chart-card-header h3,
+.card-header h3 {
+  min-width: 0;
+}
+
+/* grids: columns collapse automatically instead of squeezing their content */
+.chart-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.kpi-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+}
+.stat-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--stat-min, 130px)), 1fr));
+}
+.detail-grid {
+  display: grid;
+  gap: 4px 24px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+/* fluid numbers: font size = container width / text length, clamped (see FitValue) */
+.kpi-info,
+.stat-tile {
+  container-type: inline-size;
+}
+.fit-value {
+  font-size: var(--fit-max, 22px); /* fallback for browsers without container units */
+  font-size: clamp(var(--fit-min, 12px), calc(100cqi / (var(--chars, 8) * 0.62)), var(--fit-max, 22px));
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.kpi-value.fit-value {
+  --fit-max: 24px;
+  font-weight: 700;
+}
+
+/* stat tile (StatTile) */
+.stat-tile {
+  min-width: 0;
+  text-align: center;
+  padding: 14px 10px;
   background: var(--bg);
+  border-radius: 10px;
+}
+.stat-tile-label {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+.stat-tile-sub {
+  font-size: 11px;
+  color: var(--text-light);
+}
+.stat-tile.tone-green { background: #E8F5E9; }
+.stat-tile.tone-orange { background: #FFF8E1; }
+.stat-tile.tone-blue { background: #E3F2FD; }
+.dark-mode .stat-tile.tone-green { background: #1A3D1E; }
+.dark-mode .stat-tile.tone-orange { background: #3D3420; }
+.dark-mode .stat-tile.tone-blue { background: #1A3A5C; }
+.stat-tile.tone-green .stat-tile-label { color: #2E7D32; }
+.stat-tile.tone-orange .stat-tile-label { color: #F57F17; }
+.stat-tile.tone-blue .stat-tile-label { color: #1565C0; }
+
+/* label / value rows: long values wrap under the label instead of colliding */
+.calc-result-item {
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+.calc-result-item .value {
+  margin-left: auto;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.upcoming-info,
+.activity-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* inline summary rows that must wrap rather than overflow */
+.wrap-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.wrap-row.spread {
+  justify-content: space-between;
+}
+
+@media (max-width: 1024px) {
+  .chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* single column: no neighbour to match heights with, so drop the filler space
+     (charts set their own explicit heights) */
+  .chart-card-body {
+    min-height: 0;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+    gap: 12px;
+  }
+  .kpi-card {
+    padding: 14px;
+    gap: 10px;
+  }
+  .kpi-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 15px;
+  }
+  .chart-card-header,
+  .card-header {
+    padding: 12px 14px;
+  }
+  .chart-card-body,
+  .card-body {
+    padding: 14px;
+  }
+  .chart-grid {
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .dashboard-filters > * {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+  .modal-body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .notif-dropdown {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 8px;
+    right: 8px;
+    min-width: 0;
+  }
+  .toast {
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+  }
 }

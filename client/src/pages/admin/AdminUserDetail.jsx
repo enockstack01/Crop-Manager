@@ -164,7 +164,7 @@ export default function AdminUserDetail() {
             {totalRecords === 0 ? (
               <div style={{ color: 'var(--text-light)', fontSize: 13 }}>No records</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px' }}>
+              <div className="detail-grid">
                 {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
                     <span style={{ color: 'var(--text-light)' }}>{RECORD_LABELS[k] || k}</span>

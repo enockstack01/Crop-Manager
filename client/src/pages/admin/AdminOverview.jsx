@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAdminOverview } from '../../lib/useAdmin.js';
-import { PageHeader, Loading, EmptyState } from '../../components/ui.jsx';
+import { PageHeader, Loading, EmptyState, FitValue } from '../../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate } from '../../lib/format.js';
 
 const RECORD_LABELS = {
@@ -21,7 +21,7 @@ function Kpi({ icon, color, label, value }) {
       </div>
       <div className="kpi-info">
         <div className="kpi-label">{label}</div>
-        <div className="kpi-value">{value}</div>
+        <FitValue className="kpi-value" value={value} />
       </div>
     </div>
   );
@@ -57,7 +57,7 @@ export default function AdminOverview() {
             <h3><i className="fas fa-layer-group" style={{ color: 'var(--primary)', marginRight: 8 }} />Records by module</h3>
           </div>
           <div className="chart-card-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px' }}>
+            <div className="detail-grid">
               {Object.entries(records)
                 .sort((a, b) => b[1] - a[1])
                 .map(([k, n]) => (

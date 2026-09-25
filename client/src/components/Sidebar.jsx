@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
+import { LeafMark } from './LeafMark.jsx';
 
 const SECTIONS = [
   { items: [{ to: '/', icon: 'fa-th-large', label: 'Dashboard', end: true }] },
@@ -72,7 +73,7 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
     >
       <div className="sidebar-header">
         <div className="sidebar-logo-icon">
-          <i className="fas fa-seedling" />
+          <LeafMark size={24} color="#fff" />
         </div>
         <div className="sidebar-logo-text">
           Crop<span>Manager</span>

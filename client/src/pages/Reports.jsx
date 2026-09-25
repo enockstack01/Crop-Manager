@@ -4,7 +4,7 @@ import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
-import { Loading, EmptyState } from '../components/ui.jsx';
+import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate } from '../lib/format.js';
 
 const REPORTS = [
@@ -43,18 +43,6 @@ function downloadCSV(filename, headers, rows) {
 }
 
 /* ---- small presentational bits ---------------------------------------- */
-function Tile({ label, value, sub, color = 'var(--text)' }) {
-  return (
-    <div style={{ textAlign: 'center', padding: 16, background: 'var(--bg)', borderRadius: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color, marginTop: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{sub}</div>}
-    </div>
-  );
-}
-
 function ReportCard({ title, icon, iconColor = 'var(--primary)', right, children, bodyStyle }) {
   return (
     <div className="chart-card full-width" style={{ marginBottom: 20 }}>
@@ -538,9 +526,9 @@ export default function Reports() {
         <EmptyState icon={meta.icon} title={`No ${meta.label.toLowerCase()} data`} description="Try widening the date range or clearing the farm and season filters. Records are added from the module pages." />
       ) : (
         <>
-          <div className="kpi-grid" style={{ marginBottom: 20 }}>
+          <div className="stat-grid" style={{ '--stat-min': '150px', marginBottom: 20 }}>
             {report.tiles.map((t) => (
-              <Tile key={t.label} label={t.label} value={t.value} sub={t.sub} color={t.color} />
+              <StatTile key={t.label} label={t.label} value={t.value} sub={t.sub} color={t.color} />
             ))}
           </div>
 

@@ -20,6 +20,32 @@ export function PageHeader({ title, subtitle, action }) {
   );
 }
 
+/**
+ * A number that scales its font to the width of its container and the length of the
+ * text, so long values (e.g. "ZMW 12,345,678.00") never overflow a card. The nearest
+ * `container-type: inline-size` ancestor (.stat-tile, .kpi-info) is the measure.
+ */
+export function FitValue({ value, className = '', style }) {
+  const text = value === null || value === undefined || value === '' ? '—' : value;
+  const chars = typeof text === 'string' || typeof text === 'number' ? String(text).length : 8;
+  return (
+    <div className={`fit-value ${className}`} style={{ '--chars': Math.max(chars, 4), ...style }}>
+      {text}
+    </div>
+  );
+}
+
+/** Centered label / value / unit tile; lay several out in a `.stat-grid`. */
+export function StatTile({ label, value, sub, color = 'var(--text)', tone, max }) {
+  return (
+    <div className={`stat-tile${tone ? ` tone-${tone}` : ''}`}>
+      <div className="stat-tile-label">{label}</div>
+      <FitValue value={value} style={{ color, ...(max ? { '--fit-max': `${max}px` } : null) }} />
+      {sub && <div className="stat-tile-sub">{sub}</div>}
+    </div>
+  );
+}
+
 export function StatusBadge({ status }) {
   if (!status) return <span>—</span>;
   return <span className={`badge ${badgeClass(status)}`}>{status}</span>;
