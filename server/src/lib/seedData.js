@@ -217,13 +217,23 @@ export async function seedUser(userId, opts = {}) {
     ['Wheat', 'KRF-RF', 4], ['Onion', 'KRF-HF', 3], ['Maize', 'GVE-SB', 3], ['Soybean', 'GVE-SB', 2],
     ['Tomato', 'KRF-HF', 2], ['Maize', 'GVE-NB', 1], ['Groundnut', 'KRF-RF', 1],
   ];
+  // link a harvest to the same-crop, same-field cycle whose harvest date is closest, so
+  // season-filtered reports can attribute it (null when the field never grew that crop)
+  const dayDiff = (a, b) => Math.abs(new Date(a) - new Date(b));
+  const cycleFor = (field, crop, date) =>
+    cycles
+      .filter((c) => String(c.field_id) === String(field._id) && String(c.crop_id) === String(crop._id) && c.status !== 'Cancelled')
+      .sort((a, b) =>
+        dayDiff(a.actual_harvest_date || a.expected_harvest_date, date) - dayDiff(b.actual_harvest_date || b.expected_harvest_date, date))[0]?._id || null;
   await many(M.HarvestRecord, harvestSpec.map(([cn, fc, mAgo], i) => {
     const field = F[fc];
     const area = rand(8, 45);
     const perHa = cn === 'Tomato' ? rand(18000, 32000) : cn === 'Onion' ? rand(15000, 25000) : rand(1600, 4200);
+    const harvest_date = monthStart(mAgo);
     return {
       farm_id: field.farm_id, field_id: field._id, crop_id: C[cn]._id,
-      harvest_date: monthStart(mAgo), harvested_area: area, area_unit: 'hectares',
+      crop_cycle_id: cycleFor(field, C[cn], harvest_date),
+      harvest_date, harvested_area: area, area_unit: 'hectares',
       quantity: area * perHa, unit: 'kg',
       grade: pick(['A', 'B', 'A', 'Premium'], i), quality: pick(['Excellent', 'Good', 'Average', 'Good'], i),
       storage_location: pick(['Main shed', 'Silo 1', 'Cold room', 'Grain bags'], i),
