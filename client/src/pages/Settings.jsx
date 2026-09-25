@@ -5,8 +5,7 @@ import { api } from '../lib/api.js';
 import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { PageHeader, Loading } from '../components/ui.jsx';
-import { FormRow, TextField, SelectField } from '../components/form.jsx';
-import { USER_ROLES } from '../lib/options.js';
+import { FormRow, TextField } from '../components/form.jsx';
 
 export default function Settings() {
   const { profile, isLoading } = useProfile();
@@ -30,7 +29,6 @@ export default function Settings() {
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
     location: profile?.location || '',
-    role: profile?.role || 'Farmer',
   };
   const set = (k) => (e) => setValues({ ...current, [k]: e.target.value });
   const save = () => mutate.mutate(current);
@@ -88,7 +86,10 @@ export default function Settings() {
             <TextField label="Phone" value={current.phone} onChange={set('phone')} placeholder="+260 xxx xxx xxx" />
             <TextField label="Location" value={current.location} onChange={set('location')} placeholder="City, Country" />
           </FormRow>
-          <SelectField label="Role" value={current.role} onChange={set('role')} options={USER_ROLES} />
+          <TextField label="Role" value={profile?.role || 'Farmer'} disabled style={{ opacity: 0.6 }} />
+          <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: -8, marginBottom: 12 }}>
+            Your role is managed by an administrator.
+          </p>
 
           <div style={{ marginTop: 8 }}>
             <button className="btn btn-primary" disabled={mutate.isPending} onClick={save}>

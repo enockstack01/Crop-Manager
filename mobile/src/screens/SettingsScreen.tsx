@@ -10,7 +10,6 @@ import { spacing } from '../theme/theme';
 import { AppText, Card, Loading, Screen, SectionTitle } from '../components/ui';
 import { Button } from '../components/Button';
 import { SelectField, TextField } from '../components/fields';
-import { USER_ROLES } from '../lib/options';
 
 export function SettingsScreen() {
   const { profile, isLoading } = useProfile();
@@ -36,7 +35,6 @@ export function SettingsScreen() {
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
     location: profile?.location || '',
-    role: profile?.role || 'Farmer',
   };
   const set = (k: string) => (v: string) => setValues({ ...current, [k]: v });
 
@@ -48,7 +46,7 @@ export function SettingsScreen() {
         <TextField label="Email" value={profile?.email || user?.primaryEmailAddress?.emailAddress || ''} onChangeValue={() => {}} editable={false} />
         <TextField label="Phone" value={current.phone} onChangeValue={set('phone')} placeholder="+260 …" />
         <TextField label="Location" value={current.location} onChangeValue={set('location')} placeholder="City, Country" />
-        <SelectField label="Role" value={current.role} onChangeValue={set('role')} options={USER_ROLES} placeholder="" />
+        <TextField label="Role" hint="Your role is managed by an administrator." value={profile?.role || 'Farmer'} onChangeValue={() => {}} editable={false} />
         <Button title="Save Changes" icon="content-save" loading={mutate.isPending} onPress={() => mutate.mutate(current)} />
       </Card>
 

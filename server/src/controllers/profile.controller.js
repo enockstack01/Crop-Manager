@@ -4,7 +4,9 @@ import { serialize } from '../lib/serialize.js';
 import { isAllowlistedAdmin } from '../lib/adminAllowlist.js';
 import { Profile } from '../models/index.js';
 
-const EDITABLE = ['full_name', 'phone', 'location', 'role', 'onboarded'];
+// role is deliberately absent: new users are Farmers and only an admin can change it
+// (PATCH /api/admin/users/:id)
+const EDITABLE = ['full_name', 'phone', 'location', 'onboarded'];
 
 /** Upsert the local Profile from the Clerk user record, then return it. */
 export const getMe = asyncHandler(async (req, res) => {
