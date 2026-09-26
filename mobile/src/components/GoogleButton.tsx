@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { useSSO } from '@clerk/clerk-expo';
+import { useClerk, useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
@@ -23,14 +23,33 @@ function GoogleG({ size = 20 }: { size?: number }) {
   );
 }
 
+const REDIRECT_URL = AuthSession.makeRedirectUri({ scheme: 'cropmanager', path: 'sso-callback' });
+
+/** Turn Clerk / network failures into a message that says what to do. */
+function describe(e: any): string {
+  const code = e?.errors?.[0]?.code || e?.code;
+  if (code === 'requires_captcha' || code === 'captcha_invalid' || code === 'captcha_client_attempts_exceeded') {
+    return 'Google sign-up was blocked by bot protection. An administrator must allow native apps in the Clerk dashboard (Native applications / Bot sign-up protection).';
+  }
+  if (code === 'network_error') {
+    return `Could not reach the sign-in service (${e?.message || 'network error'}). Check your internet connection and try again.`;
+  }
+  return e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e?.message || 'Google sign-in failed';
+}
+
 /**
  * "Continue with Google" — Clerk OAuth in the system browser. Works for both sign-in
  * and sign-up: Clerk signs an existing user in or creates the account on first use.
- * The redirect (cropmanager://sso-callback) is on the Clerk instance's allowlist.
+ *
+ * Implements the same steps as clerk-expo's useSSO, but reads the Google URL from the
+ * sign-in the request returned (with a fallback to the live client) and reports every
+ * failure explicitly, instead of the opaque "Missing external verification redirect URL".
  */
 export function GoogleButton({ onError, label = 'Continue with Google' }: { onError: (msg: string) => void; label?: string }) {
   const { colors } = useTheme();
-  const { startSSOFlow } = useSSO();
+  const clerk = useClerk();
+  const { signIn, setActive, isLoaded: signInLoaded } = useSignIn();
+  const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const [busy, setBusy] = useState(false);
 
   // pre-launch the Custom Tab on Android so the sign-in sheet opens instantly
@@ -43,21 +62,49 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
   }, []);
 
   const onPress = async () => {
+    if (!signInLoaded || !signUpLoaded || !signIn || !signUp) {
+      onError('Sign-in is still starting up — please try again in a moment.');
+      return;
+    }
     setBusy(true);
     try {
-      const { createdSessionId, setActive, signUp } = await startSSOFlow({
-        strategy: 'oauth_google',
-        redirectUrl: AuthSession.makeRedirectUri({ scheme: 'cropmanager', path: 'sso-callback' }),
-      });
-      if (createdSessionId && setActive) {
-        haptics.success();
-        await setActive({ session: createdSessionId });
-      } else if (signUp?.status === 'missing_requirements') {
-        onError('Google did not share everything needed to create your account. Please sign up with email instead.');
+      // 1. ask Clerk for a Google sign-in attempt and the Google consent URL
+      const attempt = await signIn.create({ strategy: 'oauth_google', redirectUrl: REDIRECT_URL });
+      const live = clerk.client?.signIn;
+      const googleUrl =
+        attempt?.firstFactorVerification?.externalVerificationRedirectURL ||
+        live?.firstFactorVerification?.externalVerificationRedirectURL;
+      if (!googleUrl) {
+        throw new Error(
+          `Google sign-in could not start (status: ${attempt?.status ?? live?.status ?? 'none'}). Check your internet connection and try again.`,
+        );
       }
-      // otherwise the user closed the browser — nothing to do
+
+      // 2. Google consent in the system browser; it redirects back to the app
+      const result = await WebBrowser.openAuthSessionAsync(googleUrl.toString(), REDIRECT_URL);
+      if (result.type !== 'success' || !result.url) return; // user closed the browser
+
+      // 3. finish the attempt on the same sign-in that started it
+      const nonce = new URL(result.url).searchParams.get('rotating_token_nonce') ?? '';
+      const current = attempt?.id ? attempt : live ?? signIn;
+      await current.reload({ rotatingTokenNonce: nonce });
+
+      let sessionId = current.createdSessionId;
+      // first time with this Google account: turn the sign-in into a new account
+      if (current.firstFactorVerification.status === 'transferable') {
+        const created = await signUp.create({ transfer: true });
+        sessionId = created.createdSessionId;
+        if (!sessionId && created.status === 'missing_requirements') {
+          throw new Error('Google did not share everything needed to create your account. Please sign up with email instead.');
+        }
+      }
+      if (!sessionId) throw new Error('Google sign-in did not complete. Please try again.');
+
+      haptics.success();
+      await setActive({ session: sessionId });
     } catch (e: any) {
-      onError(e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e?.message || 'Google sign-in failed');
+      haptics.error();
+      onError(describe(e));
     } finally {
       setBusy(false);
     }

@@ -96,7 +96,13 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <SplashHost>
-            <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+            {/* rethrow: clerk-js otherwise treats every failed request on native as "offline" and
+                returns null, hiding the real error (e.g. the Google sign-in start) */}
+            <ClerkProvider
+              publishableKey={CLERK_PUBLISHABLE_KEY}
+              tokenCache={tokenCache}
+              experimental={{ rethrowOfflineNetworkErrors: true }}
+            >
               <AppShell />
             </ClerkProvider>
           </SplashHost>
