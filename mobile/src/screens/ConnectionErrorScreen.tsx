@@ -3,9 +3,8 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
-import { API_URL } from '../env';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, spacing } from '../theme/theme';
+import { spacing } from '../theme/theme';
 import { AppText } from '../components/ui';
 import { Button } from '../components/Button';
 
@@ -39,20 +38,9 @@ export function ConnectionErrorScreen({ error, retrying, onRetry }: { error: any
       </AppText>
       <AppText variant="subtitle" style={{ textAlign: 'center', marginTop: spacing.sm, maxWidth: 340 }}>
         {network
-          ? 'Your account is signed in, but the CropManager server did not respond. Check that your phone is online (on the same Wi-Fi as the server) and that the server is running.'
+          ? "You're signed in, but we couldn't connect to CropManager. Check that your phone has an internet connection, then try again."
           : error?.message || 'Your account could not be loaded.'}
       </AppText>
-
-      {network ? (
-        <View
-          style={{
-            marginTop: spacing.lg, paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
-            borderRadius: radius.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
-          }}
-        >
-          <AppText variant="caption" style={{ fontFamily: 'monospace' }}>{API_URL}</AppText>
-        </View>
-      ) : null}
 
       <View style={{ alignSelf: 'stretch', gap: spacing.sm, marginTop: spacing.xl, maxWidth: 420, width: '100%' }}>
         <Button title="Try again" icon="refresh" loading={retrying} onPress={onRetry} />
