@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { API_URL } from '../env';
 
-export const api = axios.create({ baseURL: API_URL, timeout: 12000 });
+// generous timeout: a sleeping free-tier host can take 30–60s to wake on the first request
+export const api = axios.create({ baseURL: API_URL, timeout: 60000 });
 
 type TokenGetter = () => Promise<string | null>;
 let tokenGetter: TokenGetter | null = null;

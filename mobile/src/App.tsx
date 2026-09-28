@@ -45,7 +45,9 @@ function RootGate() {
     if (!isLoading) splashReady();
   }, [isLoading, splashReady]);
 
-  if (isLoading) return null; // the splash is still covering the screen
+  // the splash covers the first seconds; if the server is still waking up after it
+  // fades, say so instead of showing a blank screen
+  if (isLoading) return <Loading label="Connecting to CropManager…" />;
   if (isError || !profile) {
     return <ConnectionErrorScreen error={error} retrying={isFetching} onRetry={() => refetch()} />;
   }
