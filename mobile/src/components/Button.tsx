@@ -1,12 +1,17 @@
 import React from 'react';
 import { ActivityIndicator, Text, ViewStyle } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, shadow, spacing } from '../theme/theme';
+import { ff, radius } from '../theme/theme';
 import { PressableScale } from './PressableScale';
 
 type Kind = 'primary' | 'secondary' | 'danger' | 'ghost';
 
+/**
+ * web .btn / .btn-primary / .btn-secondary / .btn-danger / .btn-sm:
+ * 8px radius, Inter 600 13px, icon before the label. Touch height is kept at 44px
+ * (web buttons are ~40px) so they stay comfortable to tap.
+ */
 export function Button({
   title,
   onPress,
@@ -41,16 +46,20 @@ export function Button({
     danger: '#fff',
     ghost: colors.primary,
   };
-  const pad =
-    size === 'sm'
-      ? { minHeight: 38, paddingHorizontal: spacing.md }
-      : { minHeight: 50, paddingHorizontal: spacing.lg };
+  const border: Record<Kind, string> = {
+    primary: colors.primary,
+    secondary: colors.border,
+    danger: colors.red,
+    ghost: 'transparent',
+  };
+  const sm = size === 'sm';
 
   return (
     <PressableScale
       onPress={onPress}
       disabled={isDisabled}
       feedback={kind === 'ghost' ? 'select' : 'tap'}
+      scaleTo={0.97}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       style={({ pressed }) => [
@@ -58,26 +67,24 @@ export function Button({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: spacing.sm,
+          gap: 8,
           borderRadius: radius.md,
-          borderWidth: kind === 'secondary' ? 1 : 0,
-          borderColor: colors.border,
+          borderWidth: 1,
+          borderColor: border[kind],
           backgroundColor: bg[kind],
-          opacity: isDisabled ? 0.55 : pressed && kind === 'ghost' ? 0.6 : 1,
+          minHeight: sm ? 36 : 44,
+          paddingHorizontal: sm ? 14 : 18,
+          opacity: isDisabled ? 0.6 : pressed ? 0.9 : 1,
         },
-        kind === 'primary' || kind === 'danger' ? shadow(isDisabled ? 1 : 2) : null,
-        pad,
         style,
       ]}
     >
       {loading ? (
         <ActivityIndicator size="small" color={fg[kind]} />
       ) : icon ? (
-        <MaterialCommunityIcons name={icon as any} size={size === 'sm' ? 16 : 19} color={fg[kind]} />
+        <Icon name={icon} size={sm ? 12 : 13} color={fg[kind]} />
       ) : null}
-      <Text style={{ color: fg[kind], fontWeight: '700', fontSize: size === 'sm' ? 13 : 15, letterSpacing: 0.2 }}>
-        {title}
-      </Text>
+      <Text style={{ color: fg[kind], fontFamily: ff('600'), fontSize: sm ? 12 : 13 }}>{title}</Text>
     </PressableScale>
   );
 }

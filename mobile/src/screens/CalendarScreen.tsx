@@ -3,9 +3,10 @@ import { RefreshControl, View } from 'react-native';
 import { useDashboard } from '../lib/useResource';
 import { formatDate } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
-import { spacing } from '../theme/theme';
-import { AppText, Card, EmptyState, Loading, Screen } from '../components/ui';
+import { radius, shadow } from '../theme/theme';
+import { AppText, EmptyState, Loading, PageHeader, Screen } from '../components/ui';
 
+/** web Calendar page: page header + upcoming expected harvests in a card list. */
 export function CalendarScreen() {
   const { data, isLoading, refetch, isFetching } = useDashboard();
   const { colors } = useTheme();
@@ -25,28 +26,31 @@ export function CalendarScreen() {
   if (isLoading) return <Loading />;
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} />}>
-      <AppText variant="subtitle">Upcoming farm events.</AppText>
+    <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
+      <PageHeader title="Calendar" subtitle="Upcoming farm events." />
       {events.length === 0 ? (
         <EmptyState icon="calendar-check" title="No upcoming events" description="Expected harvest dates from your active crop cycles will appear here." />
       ) : (
-        <Card style={{ padding: 0, marginTop: spacing.md }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadow(1) }}>
           {events.map((e, i) => (
             <View
               key={i}
-              style={{ flexDirection: 'row', gap: spacing.md, padding: spacing.md, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.border }}
+              style={{
+                flexDirection: 'row', gap: 14, paddingVertical: 14, paddingHorizontal: 18,
+                borderBottomWidth: i === events.length - 1 ? 0 : 1, borderBottomColor: colors.border,
+              }}
             >
-              <View style={{ alignItems: 'center', minWidth: 44 }}>
-                <AppText weight="800" style={{ fontSize: 18 }}>{new Date(e.date).getDate()}</AppText>
-                <AppText variant="caption">{new Date(e.date).toLocaleString('en', { month: 'short' })}</AppText>
+              <View style={{ minWidth: 54, alignItems: 'center' }}>
+                <AppText weight="800" style={{ fontSize: 18, lineHeight: 22 }}>{new Date(e.date).getDate()}</AppText>
+                <AppText style={{ fontSize: 11, color: colors.textLight }}>{new Date(e.date).toLocaleString('en', { month: 'short' })}</AppText>
               </View>
               <View style={{ flex: 1 }}>
-                <AppText weight="600">{e.title}</AppText>
-                <AppText variant="caption">{e.meta} · {formatDate(e.date)}</AppText>
+                <AppText weight="600" style={{ fontSize: 14 }}>{e.title}</AppText>
+                <AppText style={{ fontSize: 12, color: colors.textLight, marginTop: 2 }}>{e.meta} · {formatDate(e.date)}</AppText>
               </View>
             </View>
           ))}
-        </Card>
+        </View>
       )}
     </Screen>
   );

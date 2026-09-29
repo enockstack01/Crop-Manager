@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, spacing } from '../theme/theme';
+import { ff, radius, spacing } from '../theme/theme';
 import { formatDate, parseISODate, toISODate } from '../lib/format';
 import { AppText } from './ui';
 import { Sheet } from './Sheet';
@@ -49,15 +49,15 @@ function Field({
 }) {
   const { colors } = useTheme();
   return (
-    <View style={{ gap: 5 }}>
+    <View style={{ gap: 6 }}>
       {label ? (
         <AppText variant="label">
           {label}
-          {required ? <AppText style={{ color: colors.red }}> *</AppText> : null}
+          {required ? <AppText variant="label" style={{ color: colors.red }}> *</AppText> : null}
         </AppText>
       ) : null}
       {children}
-      {hint ? <AppText variant="caption">{hint}</AppText> : null}
+      {hint ? <AppText variant="caption" style={{ color: colors.textLight }}>{hint}</AppText> : null}
     </View>
   );
 }
@@ -67,11 +67,15 @@ const inputStyle = (colors: any) => ({
   borderColor: colors.border,
   backgroundColor: colors.input,
   borderRadius: radius.md,
-  paddingHorizontal: spacing.md,
-  paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
-  fontSize: 14,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+  minHeight: 42,
+  fontSize: 13,
+  fontFamily: ff('400'),
   color: colors.text,
 });
+/** web .form-control:focus — primary border + 3px soft green ring */
+const focusRing = (colors: any) => ({ borderColor: colors.primary, boxShadow: '0 0 0 3px rgba(46,125,50,0.12)' as any });
 
 /* ------------------------------------------------------------- TextField */
 export function TextField({
@@ -82,7 +86,7 @@ export function TextField({
   value: any; onChangeValue: (v: string) => void;
   placeholder?: string; keyboardType?: any; multiline?: boolean;
   autoCapitalize?: any; secureTextEntry?: boolean; editable?: boolean;
-  /** MaterialCommunityIcons name shown inside the field on the left */
+  /** Icon name shown inside the field on the left */
   icon?: string;
   autoComplete?: any; textContentType?: any; returnKeyType?: any; onSubmitEditing?: () => void;
 }) {
@@ -98,16 +102,16 @@ export function TextField({
           inputStyle(colors),
           {
             flexDirection: 'row', alignItems: multiline ? 'flex-start' : 'center', gap: spacing.sm,
-            paddingVertical: 0, borderColor: focused ? colors.primary : colors.border,
-            borderWidth: focused ? 1.5 : 1,
+            paddingVertical: 0,
           },
+          focused ? focusRing(colors) : null,
           !editable ? { opacity: 0.6 } : null,
         ]}
       >
         {icon ? (
-          <MaterialCommunityIcons
+          <Icon
             name={icon as any}
-            size={19}
+            size={14}
             color={focused ? colors.primary : colors.textLight}
             style={multiline ? { marginTop: spacing.md } : null}
           />
@@ -116,7 +120,7 @@ export function TextField({
           value={value == null ? '' : String(value)}
           onChangeText={onChangeValue}
           placeholder={placeholder}
-          placeholderTextColor={colors.textLight}
+          placeholderTextColor={colors.placeholder}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
@@ -129,7 +133,7 @@ export function TextField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={[
-            { flex: 1, fontSize: 15, color: colors.text, paddingVertical: Platform.OS === 'ios' ? spacing.md : 11 },
+            { flex: 1, fontSize: 13, fontFamily: ff('400'), color: colors.text, paddingVertical: Platform.OS === 'ios' ? 11 : 9 },
             multiline ? { minHeight: 84, textAlignVertical: 'top' } : null,
           ]}
         />
@@ -140,7 +144,7 @@ export function TextField({
             accessibilityRole="button"
             accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
           >
-            <MaterialCommunityIcons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.textLight} />
+            <Icon name={hidden ? 'eye-outline' : 'eye-off-outline'} size={14} color={colors.textLight} />
           </Pressable>
         ) : null}
       </View>
@@ -175,8 +179,8 @@ export function SelectField({
         onPress={() => setOpen(true)}
         style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
       >
-        <AppText style={{ color: display ? colors.text : colors.textLight }}>{display || placeholder}</AppText>
-        <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textLight} />
+        <AppText style={{ fontSize: 13, color: display ? colors.text : colors.placeholder, flex: 1 }} numberOfLines={1}>{display || placeholder}</AppText>
+        <Icon name="chevron-down" size={11} color={colors.textLight} />
       </Pressable>
 
       <Sheet visible={open} onClose={() => setOpen(false)} title={label || 'Select'}>
@@ -208,10 +212,10 @@ function SelectRow({ label, selected, onPress }: { label: string; selected: bool
         borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
       })}
     >
-      <AppText style={{ color: selected ? colors.primary : colors.text, fontWeight: selected ? '700' : '400' }}>
+      <AppText weight={selected ? '600' : '400'} style={{ fontSize: 14, color: selected ? colors.primary : colors.text }}>
         {label}
       </AppText>
-      {selected ? <MaterialCommunityIcons name="check" size={18} color={colors.primary} /> : null}
+      {selected ? <Icon name="check" size={13} color={colors.primary} /> : null}
     </Pressable>
   );
 }
@@ -232,10 +236,10 @@ export function DateField({
         onPress={() => setShow(true)}
         style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
       >
-        <AppText style={{ color: value ? colors.text : colors.textLight }}>
-          {value ? formatDate(value) : 'Select date'}
+        <AppText style={{ fontSize: 13, color: value ? colors.text : colors.placeholder }}>
+          {value ? formatDate(value) : 'mm/dd/yyyy'}
         </AppText>
-        <MaterialCommunityIcons name="calendar" size={18} color={colors.textLight} />
+        <Icon name="calendar" size={13} color={colors.textLight} />
       </Pressable>
       {value ? (
         <Pressable onPress={() => onChangeValue('')} hitSlop={6}>

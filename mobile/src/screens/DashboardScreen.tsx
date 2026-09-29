@@ -1,24 +1,37 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { RefreshControl, View } from 'react-native';
 import { useDashboard, useProfile } from '../lib/useResource';
 import { computeDashboard, DashFilters } from '../features/dashboard/aggregate';
 import { formatCurrency, formatDate, formatNumber, getGreeting } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, shadow, spacing } from '../theme/theme';
-import { AppText, Card, EmptyState, ScreenScrollHost, SectionTitle, Skeleton } from '../components/ui';
-import { PressableScale } from '../components/PressableScale';
-import { Screen } from '../components/ui';
+import { radius, spacing } from '../theme/theme';
+import {
+  AppText,
+  ChartCard,
+  EmptyState,
+  Grid,
+  KpiCard,
+  PageHeader,
+  Screen,
+  Skeleton,
+  StatTile,
+  useLayout,
+} from '../components/ui';
+import { Icon } from '../components/Icon';
 import { Bars, Donut, LineChart } from '../components/charts';
-import { SelectField } from '../components/fields';
-import { Sheet } from '../components/Sheet';
+import { DateField, SelectField } from '../components/fields';
 
+/*
+ * Mirrors the web dashboard (client/src/pages/Dashboard.jsx): same greeting,
+ * filters, KPI cards, chart cards, analytics tiles, activity/events/alerts — in the
+ * same order and with the same figures (computeDashboard is a port of the web's).
+ */
 export function DashboardScreen({ navigation }: any) {
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboard();
   const { profile } = useProfile();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { columns, isWide } = useLayout();
   const [filters, setFilters] = useState<DashFilters>({ farm: '', season: '', from: '', to: '' });
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const d = data || {};
   const agg = useMemo(() => computeDashboard(d, filters), [d, filters]);
@@ -27,263 +40,284 @@ export function DashboardScreen({ navigation }: any) {
   if (isError) {
     return (
       <EmptyState
-        icon={(error as any)?.network ? 'cloud-off-outline' : 'alert-circle-outline'}
-        title="Couldn't load your dashboard"
-        description={(error as any)?.message || 'Please try again.'}
-        actionLabel="Try again"
+        icon={(error as any)?.network ? 'cloud-off-outline' : 'triangle-exclamation'}
+        title="Dashboard Error"
+        description={(error as any)?.message || 'Could not load dashboard data.'}
+        actionLabel="Retry"
         onAction={refetch}
       />
     );
   }
 
-  const activeFilters = [filters.farm, filters.season, filters.from, filters.to].filter(Boolean).length;
+  const set = (k: keyof DashFilters) => (v: string) => setFilters((f) => ({ ...f, [k]: v }));
+  const pairCols = isWide ? 2 : 1; // web .chart-grid: 2 columns, 1 below 1024px
+  const tint = (light: string, dark: string) => (isDark ? dark : light);
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} />}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <View style={{ flex: 1 }}>
-          <AppText variant="title">{getGreeting()}, {profile?.full_name || 'Farmer'}</AppText>
-          <AppText variant="subtitle">Here's what's happening across your farm.</AppText>
-        </View>
-        <Pressable
-          onPress={() => setFilterOpen(true)}
-          style={{
-            flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8,
-            borderRadius: radius.md, backgroundColor: activeFilters ? colors.primary : colors.card,
-            borderWidth: 1, borderColor: activeFilters ? colors.primary : colors.border,
-          }}
-        >
-          <MaterialCommunityIcons name="filter-variant" size={16} color={activeFilters ? '#fff' : colors.textLight} />
-          {activeFilters ? <AppText color="#fff" weight="700">{activeFilters}</AppText> : null}
-        </Pressable>
-      </View>
+    <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
+      <PageHeader title={`${getGreeting()}, ${profile?.full_name || 'Farmer'}`} subtitle="Here's what's happening across your farm today." />
 
-      {/* KPI grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg }}>
+      {/* .dashboard-filters */}
+      <Grid columns={2} gap={10} style={{ marginBottom: 20 }}>
+        <SelectField value={filters.farm} onChangeValue={set('farm')} placeholder="All Farms" options={(d.farms || []).map((f: any) => ({ value: f.id, label: f.name }))} />
+        <SelectField value={filters.season} onChangeValue={set('season')} placeholder="All Seasons" options={(d.seasons || []).map((s: any) => ({ value: s.id, label: s.name }))} />
+        <DateField value={filters.from} onChangeValue={set('from')} />
+        <DateField value={filters.to} onChangeValue={set('to')} />
+      </Grid>
+
+      {/* .kpi-grid */}
+      <Grid columns={columns} gap={spacing.lg} style={{ marginBottom: 24 }}>
         {agg.kpis.map((k) => (
-          <PressableScale
-            key={k.label}
-            onPress={() => k.link && navigation.navigate(k.link)}
-            accessibilityRole="button"
-            accessibilityLabel={`${k.label}: ${k.value}`}
-            style={{
-              width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: radius.lg,
-              borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: spacing.md, gap: 6,
-              ...shadow(1),
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-                <MaterialCommunityIcons name={k.icon as any} size={19} color={colors.primary} />
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textLight} />
-            </View>
-            <AppText variant="caption" numberOfLines={1}>{k.label}</AppText>
-            <AppText weight="800" style={{ fontSize: 19 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-              {k.value}
-            </AppText>
-          </PressableScale>
+          <KpiCard key={k.label} icon={k.icon} tone={k.tone} label={k.label} value={k.value} onPress={() => navigation.navigate(k.link)} />
         ))}
-      </View>
+      </Grid>
 
-      {/* Land utilization */}
-      <SectionTitle>Land Utilization</SectionTitle>
-      <Card>
-        <AppText weight="800" style={{ fontSize: 28, textAlign: 'center' }}>{agg.land.pct}%</AppText>
-        <AppText variant="caption" style={{ textAlign: 'center', marginBottom: spacing.md }}>Utilization rate</AppText>
-        <View style={{ height: 10, borderRadius: 5, backgroundColor: colors.bg, overflow: 'hidden' }}>
-          <View style={{ width: `${agg.land.pct}%`, height: '100%', backgroundColor: colors.primary }} />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm }}>
-          <AppText variant="caption">{agg.land.planted.toFixed(1)} ha planted</AppText>
-          <AppText variant="caption">{agg.land.total.toFixed(1)} ha total</AppText>
-        </View>
-      </Card>
-
-      {agg.cycleStatus.length ? (
-        <>
-          <SectionTitle>Cycle Status</SectionTitle>
-          <Card><Donut data={agg.cycleStatus} /></Card>
-        </>
-      ) : null}
-
-      {agg.harvestByCrop.labels.length ? (
-        <>
-          <SectionTitle>Harvest by Crop</SectionTitle>
-          <Card>
-            <ScreenScrollHost>
-              <Bars labels={agg.harvestByCrop.labels} datasets={[{ label: 'kg', data: agg.harvestByCrop.values, color: colors.primary }]} />
-            </ScreenScrollHost>
-          </Card>
-        </>
-      ) : null}
-
-      {agg.trend.labels.length ? (
-        <>
-          <SectionTitle>Production Trend</SectionTitle>
-          <Card>
-            <ScreenScrollHost>
-              <LineChart labels={agg.trend.labels} data={agg.trend.values} />
-            </ScreenScrollHost>
-          </Card>
-        </>
-      ) : null}
-
-      {/* Finance */}
-      <SectionTitle>Revenue vs Expenses</SectionTitle>
-      <Card>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.md }}>
-          <AppText variant="caption" color={colors.green}>▲ {formatCurrency(agg.finance.totalSales)} revenue</AppText>
-          <AppText variant="caption" color={colors.red}>▼ {formatCurrency(agg.finance.totalExpenses)} expenses</AppText>
-          <AppText variant="caption" color={colors.blue}>
-            Net {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses)}
-          </AppText>
-        </View>
-        {agg.finance.labels.length ? (
-          <ScreenScrollHost>
-            <Bars
-              labels={agg.finance.labels}
-              datasets={[
-                { label: 'Revenue', data: agg.finance.sales, color: '#2E7D32' },
-                { label: 'Expenses', data: agg.finance.expenses, color: '#D32F2F' },
-              ]}
-            />
-          </ScreenScrollHost>
-        ) : (
-          <AppText variant="caption">No financial data yet</AppText>
-        )}
-      </Card>
-
-      {agg.expenseBreakdown.length ? (
-        <>
-          <SectionTitle>Expense Breakdown</SectionTitle>
-          <Card><Donut data={agg.expenseBreakdown} /></Card>
-        </>
-      ) : null}
-
-      {/* Harvest analytics */}
-      <SectionTitle>Harvest Analytics</SectionTitle>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        <Tile label="Total Harvested" value={`${formatNumber(Math.round(agg.harvest.totalQty))} kg`} />
-        <Tile label="Avg Yield" value={`${agg.harvest.avgYield.toFixed(0)} kg/ha`} />
-        <Tile label="Records" value={String(agg.harvest.count)} />
-        <Tile label="Out of Stock" value={String(agg.invHealth.out)} />
-      </View>
-
-      {/* Alerts */}
-      <SectionTitle>Alerts</SectionTitle>
-      {agg.alerts.length === 0 ? (
-        <Card><AppText variant="caption" style={{ textAlign: 'center' }}>All clear — no alerts</AppText></Card>
-      ) : (
-        agg.alerts.map((a, i) => (
-          <View
-            key={i}
-            style={{
-              flexDirection: 'row', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md,
-              backgroundColor: colors.card, borderLeftWidth: 3, marginBottom: spacing.sm,
-              borderLeftColor: a.tone === 'danger' ? colors.red : a.tone === 'warning' ? colors.orange : colors.blue,
-              borderWidth: 1, borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons
-              name={a.icon as any}
-              size={18}
-              color={a.tone === 'danger' ? colors.red : a.tone === 'warning' ? colors.orange : colors.blue}
-            />
-            <View style={{ flex: 1 }}>
-              <AppText variant="caption" weight="700">{a.title}</AppText>
-              <AppText variant="caption">{a.msg}</AppText>
+      <View style={{ gap: 20 }}>
+        <Grid columns={pairCols} gap={20}>
+          <ChartCard title="Land Utilization" icon="map-location-dot">
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <AppText weight="800" style={{ fontSize: 34, lineHeight: 42 }}>{agg.land.pct}%</AppText>
+              <AppText variant="subtitle" style={{ fontSize: 13, marginTop: 4 }}>Land Utilization Rate</AppText>
             </View>
-          </View>
-        ))
-      )}
+            <View style={{ height: 12, borderRadius: 6, backgroundColor: colors.bg, overflow: 'hidden', marginBottom: 16 }}>
+              <View style={{ width: `${Math.min(100, agg.land.pct)}%`, height: '100%', borderRadius: 6, backgroundColor: colors.primary }} />
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 6 }}>
+              <AppText style={{ fontSize: 12 }}><AppText weight="700" style={{ fontSize: 12, color: colors.primary }}>{agg.land.planted.toFixed(1)} ha</AppText> <AppText style={{ fontSize: 12, color: colors.textLight }}>planted</AppText></AppText>
+              <AppText style={{ fontSize: 12 }}><AppText weight="700" style={{ fontSize: 12, color: colors.orange }}>{agg.land.fallow.toFixed(1)} ha</AppText> <AppText style={{ fontSize: 12, color: colors.textLight }}>fallow</AppText></AppText>
+              <AppText style={{ fontSize: 12 }}><AppText weight="700" style={{ fontSize: 12 }}>{agg.land.total.toFixed(1)} ha</AppText> <AppText style={{ fontSize: 12, color: colors.textLight }}>total</AppText></AppText>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 16, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+              {[
+                [(d.farms || []).length, 'Farms'],
+                [(d.fields || []).length, 'Fields'],
+                [(d.fields || []).filter((f: any) => f.status === 'Active').length, 'Active'],
+              ].map(([n, l]) => (
+                <AppText key={l as string} style={{ fontSize: 12, color: colors.textLight }}>
+                  <AppText weight="700" style={{ fontSize: 12 }}>{n}</AppText> {l}
+                </AppText>
+              ))}
+            </View>
+          </ChartCard>
 
-      {/* Upcoming */}
-      {agg.upcoming.length ? (
-        <>
-          <SectionTitle>Upcoming Harvests</SectionTitle>
-          <Card style={{ padding: 0 }}>
-            {agg.upcoming.map((c: any, i: number) => (
-              <View
-                key={c.id}
-                style={{
-                  flexDirection: 'row', gap: spacing.md, padding: spacing.md,
-                  borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.border,
-                }}
-              >
-                <View style={{ alignItems: 'center', minWidth: 42 }}>
-                  <AppText weight="800">{new Date(c.expected_harvest_date).getDate()}</AppText>
-                  <AppText variant="caption">{new Date(c.expected_harvest_date).toLocaleString('en', { month: 'short' })}</AppText>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <AppText weight="600">{c.crops?.name || 'Crop'}</AppText>
-                  <AppText variant="caption">{c.farms?.name || ''} / {c.fields?.name || ''}</AppText>
-                </View>
+          <ChartCard title="Crop Distribution" icon="chart-pie">
+            <Donut data={agg.cropDist} emptyLabel="No planted crops to display" />
+          </ChartCard>
+        </Grid>
+
+        <Grid columns={pairCols} gap={20}>
+          <ChartCard title="Cycle Status" icon="rotate">
+            <Donut data={agg.cycleStatus} />
+          </ChartCard>
+          <ChartCard title="Harvest by Crop" icon="chart-column" iconColor={colors.blue}>
+            <Bars labels={agg.harvestByCrop.labels} datasets={[{ label: 'Quantity (kg)', data: agg.harvestByCrop.values }]} colorEach emptyLabel="No harvest data" />
+          </ChartCard>
+        </Grid>
+
+        <ChartCard title="Production Trend" icon="chart-line">
+          <LineChart labels={agg.trend.labels} data={agg.trend.values} label="Harvest (kg)" emptyLabel="No harvest data for trend" />
+        </ChartCard>
+
+        <Grid columns={pairCols} gap={20}>
+          <ChartCard title="Crop Performance" icon="seedling">
+            <Bars labels={agg.cropPerf.labels} datasets={[{ label: 'Area (ha)', data: agg.cropPerf.values }]} colorEach />
+          </ChartCard>
+          <ChartCard title="Harvest Analytics" icon="wheat-awn" iconColor={colors.orange}>
+            <Grid columns={2} gap={spacing.lg}>
+              <StatTile label="Total Harvested" value={formatNumber(Math.round(agg.harvest.totalQty))} sub="kg" />
+              <StatTile label="Avg Yield" value={agg.harvest.avgYield.toFixed(0)} sub="kg/ha" color={colors.primary} />
+              <StatTile label="Harvest Records" value={agg.harvest.count} sub="records" color={colors.blue} />
+              <StatTile label="Harvest Costs" value={formatCurrency(agg.harvest.totalCost)} sub="total" color={colors.red} />
+            </Grid>
+          </ChartCard>
+        </Grid>
+
+        <ChartCard
+          title="Revenue vs Expenses"
+          icon="chart-area"
+          right={
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, width: '100%', marginTop: 4 }}>
+              <AppText weight="600" style={{ fontSize: 12, color: colors.green }}>
+                <Icon name="arrow-up" size={10} color={colors.green} /> {formatCurrency(agg.finance.totalSales)} Revenue
+              </AppText>
+              <AppText weight="600" style={{ fontSize: 12, color: colors.red }}>
+                <Icon name="arrow-down" size={10} color={colors.red} /> {formatCurrency(agg.finance.totalExpenses)} Expenses
+              </AppText>
+              <AppText weight="600" style={{ fontSize: 12, color: colors.blue }}>
+                Net: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses)}
+              </AppText>
+            </View>
+          }
+        >
+          <Bars
+            labels={agg.finance.labels}
+            datasets={[
+              { label: 'Revenue', data: agg.finance.sales, color: 'rgba(46,125,50,0.75)' },
+              { label: 'Expenses', data: agg.finance.expenses, color: 'rgba(211,47,47,0.75)' },
+            ]}
+            emptyLabel="No financial data yet"
+          />
+        </ChartCard>
+
+        <Grid columns={pairCols} gap={20}>
+          <ChartCard title="Expense Breakdown" icon="receipt" iconColor={colors.red}>
+            <Donut data={agg.expenseBreakdown} emptyLabel="No expense data" />
+          </ChartCard>
+          <ChartCard title="Sales Analytics" icon="hand-holding-dollar" iconColor={colors.green}>
+            <Grid columns={isWide ? 3 : 1} gap={12}>
+              <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid)} color="#2E7D32" />
+              <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending)} color="#F57F17" />
+              <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'])} color="#1565C0" />
+            </Grid>
+            <View style={{ marginTop: 16 }}>
+              <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales)} sub={`${agg.filteredSales.length} records`} />
+            </View>
+          </ChartCard>
+        </Grid>
+
+        <Grid columns={pairCols} gap={20}>
+          <ChartCard title="Inventory Health" icon="boxes-stacked" iconColor={colors.blue}>
+            {(d.inventory || []).length === 0 ? (
+              <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: 24 }}>No inventory items yet</AppText>
+            ) : (
+              <Grid columns={2} gap={12}>
+                <StatTile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
+                <StatTile label="Low Stock" value={agg.inv.low} color="#F57F17" />
+                <StatTile label="Out of Stock" value={agg.inv.out} color="#D32F2F" />
+                <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1565C0" />
+              </Grid>
+            )}
+          </ChartCard>
+          <ChartCard title="Crop Health" icon="heart-pulse" iconColor={colors.red}>
+            {(d.scouting || []).length === 0 ? (
+              <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: 24 }}>No scouting data</AppText>
+            ) : (
+              <Grid columns={3} gap={10}>
+                <StatTile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
+                <StatTile label="Observed" value={agg.health.observed} color="#F57F17" />
+                <StatTile label="At Risk" value={agg.health.atRisk} color="#D32F2F" />
+              </Grid>
+            )}
+          </ChartCard>
+        </Grid>
+
+        <Grid columns={pairCols} gap={20}>
+          <ChartCard title="Recent Activities" icon="clock" iconColor={colors.purple}>
+            {(d.activities || []).length === 0 ? (
+              <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: 24 }}>No recent activities</AppText>
+            ) : (
+              <View style={{ paddingLeft: 24 }}>
+                <View style={{ position: 'absolute', left: 8, top: 4, bottom: 4, width: 2, backgroundColor: colors.border }} />
+                {(d.activities || []).slice(0, 8).map((a: any, i: number, arr: any[]) => (
+                  <View key={a.id} style={{ paddingBottom: i === arr.length - 1 ? 0 : 20 }}>
+                    <View
+                      style={{
+                        position: 'absolute', left: -20, top: 4, width: 14, height: 14, borderRadius: 7,
+                        backgroundColor: colors.primaryLight, borderWidth: 2, borderColor: colors.primary,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
+                    </View>
+                    <AppText style={{ fontSize: 13, lineHeight: 19 }}>
+                      <AppText weight="600" style={{ fontSize: 13 }}>{a.activity_type}</AppText> — {a.description || 'No description'}
+                    </AppText>
+                    <AppText variant="caption" style={{ marginTop: 3 }}>
+                      {a.farms?.name || ''} {a.fields?.name ? `/ ${a.fields.name}` : ''} · {formatDate(a.activity_date)}
+                    </AppText>
+                  </View>
+                ))}
               </View>
-            ))}
-          </Card>
-        </>
-      ) : null}
+            )}
+          </ChartCard>
 
-      <View style={{ height: spacing.xxl }} />
+          <ChartCard title="Upcoming Events" icon="calendar-check" iconColor={colors.blue}>
+            {agg.upcoming.length === 0 ? (
+              <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: 24 }}>No upcoming events</AppText>
+            ) : (
+              agg.upcoming.map((c: any, i: number) => (
+                <View
+                  key={c.id}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10,
+                    borderBottomWidth: i === agg.upcoming.length - 1 ? 0 : 1, borderBottomColor: colors.border,
+                  }}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                    <AppText weight="700" style={{ fontSize: 16, lineHeight: 18, color: colors.primary }}>{new Date(c.expected_harvest_date).getDate()}</AppText>
+                    <AppText weight="600" style={{ fontSize: 9, lineHeight: 11, color: colors.primary, textTransform: 'uppercase', opacity: 0.7 }}>
+                      {new Date(c.expected_harvest_date).toLocaleString('en', { month: 'short' })}
+                    </AppText>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <AppText weight="600" style={{ fontSize: 13 }}>{c.crops?.name || 'Crop'} harvest</AppText>
+                    <AppText variant="caption" style={{ marginTop: 2 }}>{c.farms?.name || ''}{c.fields?.name ? ` / ${c.fields.name}` : ''}</AppText>
+                  </View>
+                </View>
+              ))
+            )}
+          </ChartCard>
+        </Grid>
 
-      <Sheet visible={filterOpen} onClose={() => setFilterOpen(false)} title="Dashboard Filters">
-        <SelectField
-          label="Farm"
-          value={filters.farm}
-          onChangeValue={(v) => setFilters((f) => ({ ...f, farm: v }))}
-          options={(d.farms || []).map((f: any) => ({ value: f.id, label: f.name }))}
-          placeholder="All Farms"
-        />
-        <SelectField
-          label="Season"
-          value={filters.season}
-          onChangeValue={(v) => setFilters((f) => ({ ...f, season: v }))}
-          options={(d.seasons || []).map((s: any) => ({ value: s.id, label: s.name }))}
-          placeholder="All Seasons"
-        />
-      </Sheet>
+        <ChartCard title="Alerts" icon="bell" iconColor={colors.orange}>
+          {agg.alerts.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+              <Icon name="circle-check" size={24} color={colors.primary} />
+              <AppText variant="subtitle" style={{ fontSize: 13, marginTop: 8 }}>All clear — no alerts</AppText>
+            </View>
+          ) : (
+            agg.alerts.map((a, i) => {
+              const c = a.tone === 'danger'
+                ? { bg: tint('#FFEBEE', '#3D1A1A'), bar: '#D32F2F', txt: '#D32F2F' }
+                : a.tone === 'warning'
+                  ? { bg: tint('#FFF8E1', '#3D3420'), bar: '#F9A825', txt: '#F57F17' }
+                  : { bg: tint('#E3F2FD', '#1A3A5C'), bar: '#1976D2', txt: '#1565C0' };
+              return (
+                <View
+                  key={i}
+                  style={{
+                    flexDirection: 'row', gap: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: radius.md,
+                    backgroundColor: c.bg, borderLeftWidth: 3, borderLeftColor: c.bar, marginBottom: i === agg.alerts.length - 1 ? 0 : 8,
+                  }}
+                >
+                  <Icon name={a.icon} size={14} color={c.bar} style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <AppText weight="600" style={{ fontSize: 10, letterSpacing: 0.5, color: c.txt, marginBottom: 2 }}>{a.title}</AppText>
+                    <AppText style={{ fontSize: 13 }}>{a.msg}</AppText>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </ChartCard>
+      </View>
     </Screen>
-  );
-}
-
-function Tile({ label, value }: { label: string; value: string }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={{
-        width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: radius.lg,
-        borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: spacing.md, ...shadow(1),
-      }}
-    >
-      <AppText variant="caption" numberOfLines={1} style={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</AppText>
-      <AppText weight="800" style={{ fontSize: 18, marginTop: 4 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-        {value}
-      </AppText>
-    </View>
   );
 }
 
 /** Layout-shaped placeholder shown while the dashboard loads. */
 function DashboardSkeleton() {
   const { colors } = useTheme();
-  const box = { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border };
+  const { columns } = useLayout();
+  const box = { backgroundColor: colors.card, borderRadius: radius.lg, padding: 18, borderWidth: 1, borderColor: colors.border };
   return (
     <Screen>
-      <Skeleton width="70%" height={24} />
-      <Skeleton width="50%" height={13} style={{ marginTop: spacing.sm }} />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg }}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <View key={i} style={[box, { width: '48%', flexGrow: 1 }]}>
-            <Skeleton width={36} height={36} radius={11} />
-            <Skeleton width="60%" height={11} />
-            <Skeleton width="80%" height={18} />
+      <Skeleton width="75%" height={24} />
+      <Skeleton width="60%" height={13} style={{ marginTop: 10, marginBottom: 20 }} />
+      <Grid columns={columns} gap={spacing.lg}>
+        {Array.from({ length: 4 }, (_, i) => (
+          <View key={i} style={[box, { flexDirection: 'row', gap: 14 }]}>
+            <Skeleton width={44} height={44} radius={10} />
+            <View style={{ flex: 1, gap: 8 }}>
+              <Skeleton width="50%" height={11} />
+              <Skeleton width="70%" height={20} />
+            </View>
           </View>
         ))}
-      </View>
-      <View style={[box, { marginTop: spacing.lg, height: 180 }]}>
-        <Skeleton width="40%" height={13} />
-        <Skeleton height={120} radius={radius.md} />
+      </Grid>
+      <View style={[box, { marginTop: 24, height: 220, gap: 12 }]}>
+        <Skeleton width="45%" height={14} />
+        <Skeleton height={150} radius={radius.md} />
       </View>
     </Screen>
   );

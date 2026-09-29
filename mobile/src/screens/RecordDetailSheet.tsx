@@ -20,7 +20,12 @@ export function RecordDetailSheet({
       visible
       onClose={onClose}
       title={`${config.formTitle} details`}
-      footer={<Button title="Edit" icon="pencil" onPress={onEdit} style={{ flex: 1 }} />}
+      footer={
+        <>
+          <Button title="Close" kind="secondary" onPress={onClose} />
+          <Button title="Edit" icon="pencil" onPress={onEdit} />
+        </>
+      }
     >
       {config.detail(row)
         .filter(([, value]) => value !== undefined && value !== null && value !== '')

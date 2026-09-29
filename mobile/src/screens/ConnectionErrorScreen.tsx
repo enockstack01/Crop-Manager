@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useAuth } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeProvider';
 import { spacing } from '../theme/theme';
@@ -31,7 +31,7 @@ export function ConnectionErrorScreen({ error, retrying, onRetry }: { error: any
           alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg,
         }}
       >
-        <MaterialCommunityIcons name={network ? 'cloud-off-outline' : 'alert-circle-outline'} size={46} color={colors.primary} />
+        <Icon name={network ? 'cloud-off-outline' : 'alert-circle-outline'} size={46} color={colors.primary} />
       </View>
       <AppText variant="title" style={{ fontSize: 22, textAlign: 'center' }}>
         {network ? "Can't reach CropManager" : 'Something went wrong'}

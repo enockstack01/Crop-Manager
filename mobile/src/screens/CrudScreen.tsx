@@ -1,16 +1,14 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { FlatList, Pressable, RefreshControl, TextInput, View } from 'react-native';
+import { Icon } from '../components/Icon';
 import { useList, useResourceMutations } from '../lib/useResource';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, shadow, spacing } from '../theme/theme';
-import { AppText, Badge, EmptyState, IconButton, SkeletonList } from '../components/ui';
-import { PressableScale } from '../components/PressableScale';
+import { ff, radius, shadow } from '../theme/theme';
+import { AppText, Badge, EmptyState, Grid, IconButton, PageHeader, SkeletonList, useLayout } from '../components/ui';
+import { Button } from '../components/Button';
 import { haptics } from '../lib/haptics';
-import { FAB } from '../components/FAB';
-import { Sheet } from '../components/Sheet';
 import { SelectField } from '../components/fields';
 import { ResourceFormSheet } from './ResourceFormSheet';
 import { RecordDetailSheet } from './RecordDetailSheet';
@@ -19,8 +17,15 @@ import type { FilterDef, ModuleConfig } from '../navigation/modules';
 
 const PER_PAGE = 15;
 
+/*
+ * A module page laid out like the web's (client/src/pages/*.jsx + tables.css):
+ * page title/subtitle, "Add …" button, search + filter selects, then the records in
+ * a bordered table panel (row = record, with view/edit/delete actions), and
+ * Previous/Next pagination. Filters sit side by side on tablets.
+ */
 export function CrudScreen({ config }: { config: ModuleConfig }) {
   const { colors } = useTheme();
+  const { gutter, isTablet } = useLayout();
   const toast = useToast();
   const confirm = useConfirm();
   const { remove } = useResourceMutations(config.resource);
@@ -30,8 +35,8 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
-  const [filterOpen, setFilterOpen] = useState(false);
   const [form, setForm] = useState<{ editing: any | null } | null>(null);
   const [viewRow, setViewRow] = useState<any | null>(null);
   const [stock, setStock] = useState<{ item: any; type: 'in' | 'out' } | null>(null);
@@ -51,6 +56,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const { data, isLoading, isFetching, isError, error, refetch } = useList(config.resource, params);
   const rows = data?.data ?? [];
   const totalPages = data?.totalPages ?? 1;
+  const total = data?.total ?? rows.length;
 
   const onSearch = useCallback((text: string) => {
     setSearch(text);
@@ -72,160 +78,161 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
     }
   };
 
-  const activeFilterCount = Object.values(filterValues).filter(Boolean).length;
+  const addLabel = config.addLabel || `Add ${config.formTitle}`;
 
-  const renderItem = ({ item }: { item: any }) => {
+  /* ---------- header: title, add button, search, filters (web .table-toolbar) ---------- */
+  const header = (
+    <View style={{ paddingTop: 20 }}>
+      <PageHeader
+        title={config.title}
+        subtitle={config.subtitle}
+        action={<Button title={addLabel} icon="plus" onPress={() => setForm({ editing: null })} />}
+      />
+      <View style={{ gap: 10, marginBottom: 16 }}>
+        {config.searchable !== false ? (
+          <View
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 10,
+              backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
+              borderColor: searchFocused ? colors.primary : colors.border, paddingHorizontal: 13, minHeight: 42,
+              ...(searchFocused ? { boxShadow: '0 0 0 3px rgba(46,125,50,0.12)' as any } : null),
+            }}
+          >
+            <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
+            <TextInput
+              value={search}
+              placeholder={config.searchPlaceholder ?? `Search ${config.title.toLowerCase()}...`}
+              placeholderTextColor={colors.placeholder}
+              onChangeText={onSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              returnKeyType="search"
+              style={{ flex: 1, paddingVertical: 10, color: colors.text, fontSize: 13, fontFamily: ff('400') }}
+            />
+            {search ? (
+              <Pressable onPress={() => { haptics.select(); onSearch(''); }} hitSlop={10} accessibilityLabel="Clear search">
+                <Icon name="circle-xmark" size={14} color={colors.placeholder} />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+        {filters.length ? (
+          <Grid columns={isTablet ? Math.min(filters.length, 4) : 1} gap={10}>
+            {filters.map((flt) => (
+              <SelectField
+                key={flt.key}
+                value={filterValues[flt.key] ?? ''}
+                onChangeValue={(v) => { setFilterValues((prev) => ({ ...prev, [flt.key]: v })); setPage(1); }}
+                options={flt.options}
+                placeholder={flt.placeholder}
+              />
+            ))}
+          </Grid>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  /* ---------- one table row ---------- */
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
     const view = config.row(item);
+    const first = index === 0;
+    const last = index === rows.length - 1;
     return (
-      <PressableScale
-        onPress={() => setViewRow(item)}
-        scaleTo={0.98}
+      <Pressable
+        onPress={() => { haptics.tap(); setViewRow(item); }}
         accessibilityRole="button"
         accessibilityLabel={String(view.title)}
-        style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.lg,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.border,
-          padding: spacing.md,
-          paddingLeft: spacing.lg,
-          marginBottom: spacing.sm + 2,
-          ...shadow(1),
-        }}
+        style={({ pressed }) => ({
+          flexDirection: 'row', alignItems: 'center', gap: 8,
+          paddingVertical: 12, paddingLeft: 16, paddingRight: 8,
+          backgroundColor: pressed ? colors.tableHover : colors.card,
+          borderLeftWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderColor: colors.border,
+          borderTopWidth: first ? 1 : 0,
+          borderTopLeftRadius: first ? radius.lg : 0, borderTopRightRadius: first ? radius.lg : 0,
+          borderBottomLeftRadius: last ? radius.lg : 0, borderBottomRightRadius: last ? radius.lg : 0,
+        })}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
-          <View style={{ flex: 1, gap: 3 }}>
-            <AppText weight="700" numberOfLines={1}>{view.title}</AppText>
-            {view.subtitle ? (
-              <AppText variant="caption" numberOfLines={2}>{view.subtitle}</AppText>
-            ) : null}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 }}>
+        <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
+          <AppText weight="600" style={{ fontSize: 13 }} numberOfLines={2}>{view.title}</AppText>
+          {view.subtitle ? <AppText style={{ fontSize: 12, color: colors.textLight }} numberOfLines={2}>{view.subtitle}</AppText> : null}
+          {view.badge || view.right ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
               {view.badge ? <Badge label={view.badge.label} tone={view.badge.tone} /> : null}
-              {view.right ? <AppText variant="caption" color={colors.textLight}>{view.right}</AppText> : null}
+              {view.right ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{view.right}</AppText> : null}
             </View>
-          </View>
-          <View style={{ flexDirection: 'row' }}>
-            {config.rowActions === 'inventory-stock' ? (
-              <>
-                <IconButton name="arrow-up-bold" color={colors.green} onPress={() => setStock({ item, type: 'in' })} />
-                <IconButton name="arrow-down-bold" color={colors.red} onPress={() => setStock({ item, type: 'out' })} />
-              </>
-            ) : null}
-            <IconButton name="pencil" onPress={() => setForm({ editing: item })} />
-            <IconButton name="trash-can-outline" color={colors.red} onPress={() => onDelete(item)} />
-          </View>
+          ) : null}
         </View>
-      </PressableScale>
+        <View style={{ flexDirection: 'row' }}>
+          {config.rowActions === 'inventory-stock' ? (
+            <>
+              <IconButton name="arrow-up" color={colors.green} onPress={() => setStock({ item, type: 'in' })} label="Stock in" />
+              <IconButton name="arrow-down" color={colors.red} onPress={() => setStock({ item, type: 'out' })} label="Stock out" />
+            </>
+          ) : null}
+          <IconButton name="pen" color={colors.blue} onPress={() => setForm({ editing: item })} label="Edit" />
+          <IconButton name="trash-can" color={colors.red} onPress={() => onDelete(item)} label="Delete" />
+        </View>
+      </Pressable>
     );
   };
 
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* toolbar */}
-      <View style={{ padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm }}>
-        <AppText variant="subtitle">{config.subtitle}</AppText>
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          {config.searchable !== false ? (
-            <View
-              style={{
-                flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
-                backgroundColor: colors.card, borderRadius: radius.md,
-                borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-                paddingHorizontal: spacing.md, ...shadow(1),
-              }}
-            >
-              <MaterialCommunityIcons name="magnify" size={18} color={colors.textLight} />
-              <TextInput
-                value={search}
-                placeholder={config.searchPlaceholder ?? 'Search…'}
-                placeholderTextColor={colors.textLight}
-                onChangeText={onSearch}
-                returnKeyType="search"
-                style={{ flex: 1, paddingVertical: 11, color: colors.text, fontSize: 15 }}
-              />
-              {search ? (
-                <Pressable onPress={() => { haptics.select(); onSearch(''); }} hitSlop={10} accessibilityLabel="Clear search">
-                  <MaterialCommunityIcons name="close-circle" size={18} color={colors.textLight} />
-                </Pressable>
-              ) : null}
-            </View>
-          ) : (
-            <View style={{ flex: 1 }} />
-          )}
-          {filters.length > 0 ? (
-            <PressableScale
-              onPress={() => setFilterOpen(true)}
-              feedback="select"
-              accessibilityRole="button"
-              accessibilityLabel={activeFilterCount ? `Filters (${activeFilterCount} active)` : 'Filters'}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: activeFilterCount ? colors.primary : colors.card,
-                borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth,
-                borderColor: activeFilterCount ? colors.primary : colors.border,
-                paddingHorizontal: spacing.md,
-              }}
-            >
-              <MaterialCommunityIcons name="filter-variant" size={18} color={activeFilterCount ? '#fff' : colors.textLight} />
-              {activeFilterCount ? <AppText color="#fff" weight="700">{activeFilterCount}</AppText> : null}
-            </PressableScale>
-          ) : null}
+  const footer =
+    totalPages > 1 ? (
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, gap: 8 }}>
+        <AppText style={{ fontSize: 12, color: colors.textLight }}>
+          Page {page} of {totalPages} · {total} records
+        </AppText>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Button title="Prev" kind="secondary" size="sm" icon="chevron-left" disabled={page <= 1} onPress={() => setPage((p) => Math.max(1, p - 1))} />
+          <Button title="Next" kind="secondary" size="sm" disabled={page >= totalPages} onPress={() => setPage((p) => Math.min(totalPages, p + 1))} />
         </View>
       </View>
+    ) : (
+      <View style={{ height: 24 }} />
+    );
 
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {isError ? (
-        <EmptyState
-          icon={(error as any)?.network ? 'cloud-off-outline' : 'alert-circle-outline'}
-          title="Couldn't load this list"
-          description={(error as any)?.message}
-          actionLabel="Try again"
-          onAction={refetch}
-        />
+        <View style={{ paddingHorizontal: gutter }}>
+          {header}
+          <EmptyState
+            icon={(error as any)?.network ? 'cloud-off-outline' : 'triangle-exclamation'}
+            title="Couldn't load this list"
+            description={(error as any)?.message}
+            actionLabel="Try again"
+            onAction={refetch}
+          />
+        </View>
       ) : isLoading ? (
-        <SkeletonList />
+        <View style={{ paddingHorizontal: gutter }}>
+          {header}
+          <SkeletonList />
+        </View>
       ) : (
         <FlatList
           data={rows}
           keyExtractor={(r) => r.id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 96, flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.primary} />}
+          ListHeaderComponent={header}
+          ListFooterComponent={rows.length ? footer : null}
+          contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: 24, flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
           ListEmptyComponent={
-            <EmptyState
-              icon={config.emptyIcon}
-              title={config.emptyTitle}
-              description={config.emptyDescription}
-              actionLabel={config.addLabel}
-              onAction={() => setForm({ editing: null })}
-            />
-          }
-          ListFooterComponent={
-            totalPages > 1 ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.lg, paddingVertical: spacing.lg }}>
-                <IconButton name="chevron-left" onPress={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} />
-                <AppText variant="caption">Page {page} of {totalPages}</AppText>
-                <IconButton name="chevron-right" onPress={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} />
-              </View>
-            ) : null
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, ...shadow(1) }}>
+              <EmptyState
+                icon={config.emptyIcon}
+                title={q || Object.values(filterValues).some(Boolean) ? 'No matching records' : config.emptyTitle}
+                description={q || Object.values(filterValues).some(Boolean) ? 'Try a different search or clear the filters.' : config.emptyDescription}
+                actionLabel={q ? undefined : addLabel}
+                onAction={() => setForm({ editing: null })}
+              />
+            </View>
           }
         />
       )}
-
-      <FAB onPress={() => setForm({ editing: null })} />
-
-      {/* filter sheet */}
-      <Sheet visible={filterOpen} onClose={() => setFilterOpen(false)} title="Filters">
-        {filters.map((flt) => (
-          <SelectField
-            key={flt.key}
-            label={flt.placeholder}
-            value={filterValues[flt.key] ?? ''}
-            onChangeValue={(v) => { setFilterValues((prev) => ({ ...prev, [flt.key]: v })); setPage(1); }}
-            options={flt.options}
-            placeholder={flt.placeholder}
-          />
-        ))}
-      </Sheet>
 
       {form ? (
         <ResourceFormSheet

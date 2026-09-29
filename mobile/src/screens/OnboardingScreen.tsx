@@ -29,7 +29,12 @@ export function OnboardingScreen({ profile }: { profile: any }) {
   const set = (k: string) => (v: string) => setValues((prev) => ({ ...prev, [k]: v }));
 
   return (
-    <AuthLayout title="Welcome to CropManager" subtitle="Confirm your name to get started. You'll join as a Farmer — an administrator can change your role later.">
+    <AuthLayout
+      heading="Welcome to CropManager"
+      intro="Tell us a little about yourself to finish setting up your account."
+      title="Confirm your name"
+      subtitle="You'll join as a Farmer — an administrator can change your role later."
+    >
       <View style={{ gap: spacing.md }}>
         <AuthError message={save.isError ? (save.error as any)?.message || 'Could not save your profile' : ''} />
         <TextField label="Full Name" icon="account-outline" required value={values.full_name} onChangeValue={set('full_name')} autoComplete="name" />

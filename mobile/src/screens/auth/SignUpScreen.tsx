@@ -9,7 +9,7 @@ import { TextField } from '../../components/fields';
 import { GoogleButton } from '../../components/GoogleButton';
 import { useToast } from '../../components/Toast';
 import { haptics } from '../../lib/haptics';
-import { AuthError, AuthLayout, OrDivider } from './AuthLayout';
+import { AuthError, AuthLayout, AuthSwitch, OrDivider, TextLink } from './AuthLayout';
 import { clerkMessage, usePasswordRules } from './clerkHelpers';
 
 export function SignUpScreen({ navigation }: any) {
@@ -90,7 +90,12 @@ export function SignUpScreen({ navigation }: any) {
 
   if (pendingVerification) {
     return (
-      <AuthLayout title="Check your email" subtitle={`Enter the 6-digit code we sent to ${email.trim()}`}>
+      <AuthLayout
+        heading="Create your account"
+        intro="Start managing your crop production today"
+        title="Verify your email"
+        subtitle={`Enter the verification code sent to ${email.trim()}`}
+      >
         <View style={{ gap: spacing.md }}>
           <AuthError message={error} />
           <TextField
@@ -106,12 +111,8 @@ export function SignUpScreen({ navigation }: any) {
           />
           <Button title="Verify & continue" icon="check" loading={busy} disabled={code.trim().length < 6} onPress={verify} />
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
-            <Pressable onPress={resend} hitSlop={8} accessibilityRole="button">
-              <AppText weight="700" color={colors.primary}>Resend code</AppText>
-            </Pressable>
-            <Pressable onPress={() => { setPending(false); setCode(''); setError(''); }} hitSlop={8} accessibilityRole="button">
-              <AppText weight="600" color={colors.textLight}>Change email</AppText>
-            </Pressable>
+            <TextLink title="Resend code" onPress={resend} />
+            <TextLink title="Change email" muted onPress={() => { setPending(false); setCode(''); setError(''); }} />
           </View>
         </View>
       </AuthLayout>
@@ -119,9 +120,15 @@ export function SignUpScreen({ navigation }: any) {
   }
 
   return (
-    <AuthLayout title="Create your account" subtitle="Start managing your crop production today">
+    <AuthLayout
+      heading="Create your account"
+      intro="Start managing your crop production today"
+      title="Create your account"
+      subtitle="Welcome! Please fill in the details to get started."
+      footer={<AuthSwitch prompt="Already have an account?" action="Sign in" onPress={() => navigation.navigate('sign-in')} />}
+    >
       <View style={{ gap: spacing.md }}>
-        <GoogleButton onError={setError} label="Sign up with Google" />
+        <GoogleButton onError={setError} />
         <OrDivider />
         <AuthError message={error} />
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -133,11 +140,10 @@ export function SignUpScreen({ navigation }: any) {
           </View>
         </View>
         <TextField
-          label="Email"
-          icon="email-outline"
+          label="Email address"
           value={email}
           onChangeValue={setEmail}
-          placeholder="you@example.com"
+          placeholder="Enter your email address"
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
@@ -146,7 +152,6 @@ export function SignUpScreen({ navigation }: any) {
         />
         <TextField
           label="Password"
-          icon="lock-outline"
           hint={rules.hint}
           value={password}
           onChangeValue={setPassword}
@@ -157,14 +162,7 @@ export function SignUpScreen({ navigation }: any) {
           returnKeyType="go"
           onSubmitEditing={start}
         />
-        <Button title="Create account" icon="account-plus-outline" loading={busy} onPress={start} style={{ marginTop: spacing.xs }} />
-
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, marginTop: spacing.sm }}>
-          <AppText variant="subtitle">Already have an account?</AppText>
-          <Pressable onPress={() => { haptics.select(); navigation.navigate('sign-in'); }} hitSlop={8} accessibilityRole="link">
-            <AppText weight="700" color={colors.primary}>Sign in</AppText>
-          </Pressable>
-        </View>
+        <Button title="Continue" icon="arrow-right" loading={busy} onPress={start} style={{ marginTop: spacing.xs }} />
       </View>
     </AuthLayout>
   );

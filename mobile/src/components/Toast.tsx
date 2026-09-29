@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
@@ -76,7 +76,7 @@ function ToastItem({ item, onDone }: { item: Item; onDone: (id: number) => void 
           ...shadow(3),
         }}
       >
-        <MaterialCommunityIcons name={ICONS[item.type] as any} size={20} color={COLORS[item.type]} />
+        <Icon name={ICONS[item.type] as any} size={20} color={COLORS[item.type]} />
         <AppText weight="600" style={{ flexShrink: 1 }}>{item.message}</AppText>
       </Pressable>
     </Animated.View>

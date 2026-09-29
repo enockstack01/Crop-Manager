@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { shadow } from '../theme/theme';
 import { PressableScale } from './PressableScale';
@@ -41,7 +41,7 @@ export function FAB({ onPress, icon = 'plus', label = 'Add' }: { onPress: () => 
           ...shadow(3),
         }}
       >
-        <MaterialCommunityIcons name={icon as any} size={28} color="#fff" />
+        <Icon name={icon as any} size={28} color="#fff" />
       </PressableScale>
     </Animated.View>
   );

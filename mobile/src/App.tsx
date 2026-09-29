@@ -5,6 +5,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 
 import { CLERK_PUBLISHABLE_KEY } from './env';
 import { tokenCache } from './lib/tokenCache';
@@ -63,7 +71,7 @@ function NavRoot() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <SignedIn>
         <RootGate />
       </SignedIn>
@@ -93,6 +101,10 @@ function AppShell() {
 }
 
 export default function App() {
+  // Inter, the web app's typeface; the splash covers the moment it takes to load
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
+  const ready = fontsLoaded || !!fontError;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -100,13 +112,15 @@ export default function App() {
           <SplashHost>
             {/* rethrow: clerk-js otherwise treats every failed request on native as "offline" and
                 returns null, hiding the real error (e.g. the Google sign-in start) */}
-            <ClerkProvider
-              publishableKey={CLERK_PUBLISHABLE_KEY}
-              tokenCache={tokenCache}
-              experimental={{ rethrowOfflineNetworkErrors: true }}
-            >
-              <AppShell />
-            </ClerkProvider>
+            {ready ? (
+              <ClerkProvider
+                publishableKey={CLERK_PUBLISHABLE_KEY}
+                tokenCache={tokenCache}
+                experimental={{ rethrowOfflineNetworkErrors: true }}
+              >
+                <AppShell />
+              </ClerkProvider>
+            ) : null}
           </SplashHost>
         </ThemeProvider>
       </SafeAreaProvider>

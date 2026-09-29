@@ -1,6 +1,6 @@
 /**
- * Design tokens ported from the web app's CSS custom properties
- * (client/src/styles/style.css :root and .dark-mode).
+ * Design tokens ported 1:1 from the web app's CSS custom properties
+ * (client/src/styles/style.css :root and .dark-mode) so both apps look the same.
  */
 export type Palette = {
   primary: string;
@@ -12,6 +12,7 @@ export type Palette = {
   input: string;
   text: string;
   textLight: string;
+  placeholder: string;
   border: string;
   orange: string;
   red: string;
@@ -20,6 +21,7 @@ export type Palette = {
   green: string;
   overlay: string;
   stripe: string;
+  tableHover: string;
   headerText: string;
 };
 
@@ -33,6 +35,7 @@ export const light: Palette = {
   input: '#FFFFFF',
   text: '#263238',
   textLight: '#546E7A',
+  placeholder: '#9E9E9E',
   border: '#E0E0E0',
   orange: '#F9A825',
   red: '#D32F2F',
@@ -41,13 +44,14 @@ export const light: Palette = {
   green: '#2E7D32',
   overlay: 'rgba(0,0,0,0.5)',
   stripe: '#F9FAFB',
+  tableHover: '#F0F4F0',
   headerText: '#FFFFFF',
 };
 
+// the web's .dark-mode only overrides surfaces and text; brand colours stay the same
 export const dark: Palette = {
-  primary: '#4CAF50',
+  ...light,
   primaryLight: '#1B3A1D',
-  primaryDark: '#2E7D32',
   bg: '#121212',
   card: '#1E1E1E',
   surface: '#1E1E1E',
@@ -55,14 +59,9 @@ export const dark: Palette = {
   text: '#E0E0E0',
   textLight: '#9E9E9E',
   border: '#333333',
-  orange: '#F9A825',
-  red: '#EF5350',
-  blue: '#42A5F5',
-  purple: '#AB47BC',
-  green: '#66BB6A',
   overlay: 'rgba(0,0,0,0.7)',
   stripe: '#252525',
-  headerText: '#FFFFFF',
+  tableHover: '#2E3A2E',
 };
 
 export const spacing = {
@@ -74,34 +73,57 @@ export const spacing = {
   xxl: 32,
 };
 
+/** web: --radius 10px (cards), 8px (buttons, inputs), 6px (badges) */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 18,
-  xl: 24,
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 16,
   pill: 999,
 };
 
-/** Soft, layered elevation — used for cards, sheets, the FAB and toasts. */
+/** web: --shadow 0 2px 8px rgba(0,0,0,.08) / --shadow-lg 0 8px 30px rgba(0,0,0,.12) */
 export function shadow(level: 1 | 2 | 3 = 1) {
-  const y = [0, 1, 4, 8][level];
+  const y = [0, 2, 4, 8][level];
   return {
-    shadowColor: '#0B2A10',
-    shadowOpacity: [0, 0.06, 0.1, 0.16][level],
-    shadowRadius: [0, 4, 10, 18][level],
+    shadowColor: '#000000',
+    shadowOpacity: [0, 0.08, 0.1, 0.12][level],
+    shadowRadius: [0, 8, 12, 30][level] / 2,
     shadowOffset: { width: 0, height: y },
-    elevation: [0, 1, 4, 8][level],
+    elevation: [0, 2, 4, 8][level],
   };
 }
 
 export const font = {
   xs: 11,
   sm: 12,
-  md: 14,
-  lg: 16,
-  xl: 20,
-  xxl: 26,
+  md: 13,
+  base: 14,
+  lg: 15,
+  xl: 16,
+  xxl: 24,
   huge: 34,
+};
+
+/** Inter, as on the web (loaded in App.tsx via @expo-google-fonts/inter) */
+export const FONTS = {
+  '400': 'Inter_400Regular',
+  '500': 'Inter_500Medium',
+  '600': 'Inter_600SemiBold',
+  '700': 'Inter_700Bold',
+  '800': 'Inter_800ExtraBold',
+} as const;
+export type Weight = keyof typeof FONTS;
+/** fontFamily for a weight (Android needs a distinct family per weight) */
+export const ff = (weight: Weight | string = '400') => FONTS[(String(weight) in FONTS ? String(weight) : '400') as Weight];
+
+/** web .kpi-icon.{green|blue|orange|red|purple} — [light bg, dark bg, icon colour] */
+export const KPI_TONES: Record<'green' | 'blue' | 'orange' | 'red' | 'purple', [string, string, string]> = {
+  green: ['#E8F5E9', '#1A3D1E', '#2E7D32'],
+  blue: ['#E3F2FD', '#1A3A5C', '#1976D2'],
+  orange: ['#FFF8E1', '#3D3420', '#F9A825'],
+  red: ['#FFEBEE', '#3D1A1A', '#D32F2F'],
+  purple: ['#F3E5F5', '#2D1A3D', '#7B1FA2'],
 };
 
 /** Status → chip colours, mirrors format.js:badgeClass. */

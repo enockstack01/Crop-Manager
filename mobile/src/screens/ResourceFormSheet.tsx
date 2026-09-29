@@ -62,14 +62,14 @@ export function ResourceFormSheet({
       title={`${isEdit ? 'Edit' : 'Add'} ${config.formTitle}`}
       footer={
         <>
-          <Button title="Cancel" kind="secondary" onPress={onClose} style={{ flex: 1 }} />
-          <Button title={`Save`} icon="content-save" loading={saving} onPress={submit} style={{ flex: 1 }} />
+          <Button title="Cancel" kind="secondary" onPress={onClose} />
+          <Button title={`Save ${config.formTitle}`} icon="content-save" loading={saving} onPress={submit} />
         </>
       }
     >
       {err ? (
-        <View style={{ backgroundColor: '#FFEBEE', borderRadius: 8, padding: 10 }}>
-          <AppText style={{ color: '#C62828' }}>{err}</AppText>
+        <View style={{ backgroundColor: '#FFEBEE', borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: '#D32F2F' }}>
+          <AppText style={{ color: '#C62828', fontSize: 13 }}>{err}</AppText>
         </View>
       ) : null}
       {config.Form(form)}

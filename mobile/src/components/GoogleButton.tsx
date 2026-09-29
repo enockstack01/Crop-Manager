@@ -5,7 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { useClerk, useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, shadow, spacing } from '../theme/theme';
+import { ff, radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
 import { PressableScale } from './PressableScale';
 import { clerkMessage } from '../screens/auth/clerkHelpers';
@@ -152,7 +152,7 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
       accessibilityRole="button"
       accessibilityLabel={label}
       style={{
-        minHeight: 50,
+        minHeight: 44,
         borderRadius: radius.md,
         borderWidth: 1,
         borderColor: colors.border,
@@ -166,9 +166,9 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
       }}
     >
       <View style={{ width: 20, alignItems: 'center' }}>
-        {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <GoogleG />}
+        {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <GoogleG size={17} />}
       </View>
-      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }}>{label}</Text>
+      <Text style={{ color: colors.text, fontFamily: ff('600'), fontSize: 13 }}>{label}</Text>
     </PressableScale>
   );
 }

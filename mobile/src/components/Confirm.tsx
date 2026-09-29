@@ -36,19 +36,20 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         onClose={() => finish(false)}
         title="Confirm"
         scroll={false}
+        size="sm"
         footer={
           <>
-            <Button title="Cancel" kind="secondary" onPress={() => finish(false)} style={{ flex: 1 }} />
+            <Button title="Cancel" kind="secondary" onPress={() => finish(false)} />
             <Button
               title={state?.confirmLabel ?? 'Confirm'}
               kind={state?.danger ? 'danger' : 'primary'}
+              icon={state?.danger ? 'trash-can-outline' : 'check'}
               onPress={() => finish(true)}
-              style={{ flex: 1 }}
             />
           </>
         }
       >
-        <AppText variant="subtitle" style={{ lineHeight: 22 }}>{state?.message}</AppText>
+        <AppText style={{ fontSize: 14, lineHeight: 22 }}>{state?.message}</AppText>
       </Sheet>
     </ConfirmCtx.Provider>
   );

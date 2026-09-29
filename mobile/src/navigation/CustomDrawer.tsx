@@ -1,29 +1,59 @@
 import React from 'react';
-import { Image, Pressable, View } from 'react-native';
-import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth, useUser } from '@clerk/clerk-expo';
-import { useTheme } from '../theme/ThemeProvider';
-import { radius, spacing } from '../theme/theme';
-import { AppText } from '../components/ui';
+import { useAuth } from '@clerk/clerk-expo';
+import { ff } from '../theme/theme';
+import { Icon } from '../components/Icon';
 import { LeafLogo } from '../components/LeafLogo';
 import { useConfirm } from '../components/Confirm';
 import { haptics } from '../lib/haptics';
 import { NAV_SECTIONS } from './navConfig';
 
+/*
+ * The web app's sidebar (layout.css .sidebar): dark green gradient, logo row with a
+ * translucent tile and two-tone "CropManager", uppercase section labels, 13px items
+ * with a highlighted background and #66BB6A left accent on the active page.
+ */
+const TEXT = 'rgba(255,255,255,0.7)';
+const TEXT_ACTIVE = '#FFFFFF';
+const ACTIVE_BG = 'rgba(255,255,255,0.12)';
+const PRESSED_BG = 'rgba(255,255,255,0.08)';
+const DIVIDER = 'rgba(255,255,255,0.1)';
+
+function NavItem({ icon, label, active, onPress, danger }: { icon: string; label: string; active?: boolean; onPress: () => void; danger?: boolean }) {
+  const color = danger ? '#FFCDD2' : active ? TEXT_ACTIVE : TEXT;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="menuitem"
+      accessibilityState={{ selected: !!active }}
+      style={({ pressed }) => ({
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        paddingVertical: 11, paddingLeft: 17, paddingRight: 20,
+        borderLeftWidth: 3, borderLeftColor: active ? '#66BB6A' : 'transparent',
+        backgroundColor: active ? ACTIVE_BG : pressed ? PRESSED_BG : 'transparent',
+      })}
+    >
+      <View style={{ width: 20, alignItems: 'center' }}>
+        <Icon name={icon} size={14} color={color} />
+      </View>
+      <Text style={{ color, fontSize: 13, fontFamily: ff('500') }} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function CustomDrawer(props: DrawerContentComponentProps) {
-  const { colors, isDark } = useTheme();
   const { signOut } = useAuth();
-  const { user } = useUser();
   const confirm = useConfirm();
   const insets = useSafeAreaInsets();
   const activeRoute = props.state.routeNames[props.state.index];
 
-  const name = user?.fullName || user?.firstName || 'Your account';
-  const email = user?.primaryEmailAddress?.emailAddress;
-  const initials = (name.match(/\b\w/g) || ['?']).slice(0, 2).join('').toUpperCase();
+  const go = (route: string) => {
+    haptics.select();
+    props.navigation.navigate(route);
+  };
 
   const onSignOut = async () => {
     const ok = await confirm('Sign out of CropManager on this device?', { confirmLabel: 'Sign out', danger: true });
@@ -31,89 +61,48 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.card }}>
-      <LinearGradient
-        colors={isDark ? ['#1B5E20', '#0F2E12'] : ['#43A047', '#1B5E20']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ paddingTop: insets.top + spacing.lg, paddingBottom: spacing.lg, paddingHorizontal: spacing.lg }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
-          <LeafLogo size={34} tile />
-          <AppText weight="800" style={{ color: '#fff', fontSize: 18 }}>CropManager</AppText>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          {user?.hasImage && user.imageUrl ? (
-            <Image source={{ uri: user.imageUrl }} style={{ width: 46, height: 46, borderRadius: 23, borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' }} />
-          ) : (
-            <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-              <AppText weight="800" style={{ color: '#fff', fontSize: 16 }}>{initials}</AppText>
-            </View>
-          )}
-          <View style={{ flex: 1 }}>
-            <AppText weight="700" numberOfLines={1} style={{ color: '#fff' }}>{name}</AppText>
-            {email ? <AppText numberOfLines={1} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>{email}</AppText> : null}
-          </View>
-        </View>
-      </LinearGradient>
-
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: spacing.sm }}>
-        {NAV_SECTIONS.map((section) => (
-          <View key={section.label || 'root'} style={{ marginBottom: spacing.xs }}>
-            {section.label ? (
-              <AppText
-                variant="caption"
-                weight="700"
-                style={{ textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: 4 }}
-              >
-                {section.label}
-              </AppText>
-            ) : null}
-            {section.items.map((item) => {
-              const focused = activeRoute === item.route;
-              return (
-                <Pressable
-                  key={item.route}
-                  onPress={() => {
-                    haptics.select();
-                    props.navigation.navigate(item.route);
-                  }}
-                  accessibilityRole="menuitem"
-                  accessibilityState={{ selected: focused }}
-                  android_ripple={{ color: colors.primaryLight }}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-                    paddingVertical: 11, paddingHorizontal: spacing.md, marginHorizontal: spacing.sm,
-                    borderRadius: radius.md,
-                    backgroundColor: focused ? colors.primaryLight : pressed ? colors.bg : 'transparent',
-                  })}
-                >
-                  {focused ? (
-                    <View style={{ position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 2, backgroundColor: colors.primary }} />
-                  ) : null}
-                  <MaterialCommunityIcons name={item.icon as any} size={21} color={focused ? colors.primary : colors.textLight} />
-                  <AppText color={focused ? colors.primary : colors.text} weight={focused ? '700' : '500'}>
-                    {item.label}
-                  </AppText>
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
-      </DrawerContentScrollView>
-
-      <Pressable
-        onPress={onSignOut}
-        accessibilityRole="button"
-        android_ripple={{ color: colors.primaryLight }}
+    <LinearGradient colors={['#1B5E20', '#0D3B12']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+      {/* .sidebar-header */}
+      <View
         style={{
-          flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-          padding: spacing.lg, paddingBottom: spacing.lg + insets.bottom, borderTopWidth: 1, borderTopColor: colors.border,
+          flexDirection: 'row', alignItems: 'center', gap: 12,
+          paddingTop: insets.top + 14, paddingBottom: 16, paddingHorizontal: 18,
+          borderBottomWidth: 1, borderBottomColor: DIVIDER,
         }}
       >
-        <MaterialCommunityIcons name="logout" size={20} color={colors.red} />
-        <AppText color={colors.red} weight="700">Sign out</AppText>
-      </Pressable>
-    </View>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+          <LeafLogo size={24} scale={1.05} />
+        </View>
+        <Text style={{ fontSize: 17, fontFamily: ff('700'), color: '#FFFFFF' }}>
+          Crop<Text style={{ color: '#81C784' }}>Manager</Text>
+        </Text>
+      </View>
+
+      {/* .sidebar-nav */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 12 }}>
+        {NAV_SECTIONS.map((section) => (
+          <View key={section.label || 'root'}>
+            {section.label ? (
+              <Text
+                style={{
+                  fontSize: 10, fontFamily: ff('700'), textTransform: 'uppercase', letterSpacing: 1.2,
+                  color: 'rgba(255,255,255,0.35)', paddingTop: 16, paddingBottom: 6, paddingHorizontal: 20,
+                }}
+              >
+                {section.label}
+              </Text>
+            ) : null}
+            {section.items.map((item) => (
+              <NavItem key={item.route} icon={item.icon} label={item.label} active={activeRoute === item.route} onPress={() => go(item.route)} />
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* .sidebar-footer */}
+      <View style={{ borderTopWidth: 1, borderTopColor: DIVIDER, paddingTop: 6, paddingBottom: insets.bottom + 8 }}>
+        <NavItem icon="logout" label="Sign out" onPress={onSignOut} danger />
+      </View>
+    </LinearGradient>
   );
 }

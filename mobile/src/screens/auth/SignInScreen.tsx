@@ -8,7 +8,7 @@ import { TextField } from '../../components/fields';
 import { GoogleButton } from '../../components/GoogleButton';
 import { useToast } from '../../components/Toast';
 import { haptics } from '../../lib/haptics';
-import { AuthError, AuthLayout, OrDivider, TextLink } from './AuthLayout';
+import { AuthError, AuthLayout, AuthSwitch, OrDivider, TextLink } from './AuthLayout';
 import { clerkMessage, usePasswordRules } from './clerkHelpers';
 
 /*
@@ -19,8 +19,8 @@ import { clerkMessage, usePasswordRules } from './clerkHelpers';
 type Step = 'email' | 'password' | 'email-code' | 'second-factor' | 'reset' | 'new-password';
 
 const COPY: Record<Step, { title: string; subtitle: (email: string) => string }> = {
-  email: { title: 'Welcome back', subtitle: () => 'Sign in to your farm management dashboard' },
-  password: { title: 'Enter your password', subtitle: (e) => `Signing in as ${e}` },
+  email: { title: 'Sign in to Crop Manager', subtitle: () => 'Welcome back! Please sign in to continue' },
+  password: { title: 'Enter your password', subtitle: (e) => `Enter the password associated with your account ${e}` },
   'email-code': { title: 'Check your email', subtitle: (e) => `Enter the code we sent to ${e}` },
   'second-factor': { title: 'Verify it’s you', subtitle: (e) => `For your security, enter the code we sent to ${e}` },
   reset: { title: 'Reset your password', subtitle: (e) => `Enter the code we sent to ${e} and choose a new password` },
@@ -209,7 +209,15 @@ export function SignInScreen({ navigation }: any) {
   const who = email.trim();
 
   return (
-    <AuthLayout title={copy.title} subtitle={copy.subtitle(who)}>
+    <AuthLayout
+      title={copy.title}
+      subtitle={copy.subtitle(who)}
+      footer={
+        step === 'email' ? (
+          <AuthSwitch prompt="Don't have an account?" action="Sign up" onPress={() => navigation.navigate('sign-up')} />
+        ) : undefined
+      }
+    >
       <View style={{ gap: spacing.md }}>
         {step === 'email' ? (
           <>
@@ -218,10 +226,9 @@ export function SignInScreen({ navigation }: any) {
             <AuthError message={error} />
             <TextField
               label="Email address"
-              icon="email-outline"
               value={email}
               onChangeValue={setEmail}
-              placeholder="you@example.com"
+              placeholder="Enter your email address"
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -230,10 +237,6 @@ export function SignInScreen({ navigation }: any) {
               onSubmitEditing={submitEmail}
             />
             <Button title="Continue" icon="arrow-right" loading={busy} onPress={submitEmail} style={{ marginTop: spacing.xs }} />
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, marginTop: spacing.sm }}>
-              <AppText variant="subtitle">New to CropManager?</AppText>
-              <TextLink title="Create an account" onPress={() => navigation.navigate('sign-up')} />
-            </View>
           </>
         ) : null}
 
