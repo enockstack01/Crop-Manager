@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, KeyboardAvoidingView, ScrollView, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius, shadow, spacing } from '../../theme/theme';
 import { AppText } from '../../components/ui';
 import { LeafLogo } from '../../components/LeafLogo';
+import { haptics } from '../../lib/haptics';
 
 /**
  * Shared frame for the auth screens: brand gradient header with the leaf mark,
@@ -70,6 +71,27 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
+  );
+}
+
+/** Tappable inline text action ("Forgot password?", "Use an email code instead"). */
+export function TextLink({ title, onPress, muted, disabled }: { title: string; onPress: () => void; muted?: boolean; disabled?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        haptics.select();
+        onPress();
+      }}
+      disabled={disabled}
+      hitSlop={10}
+      accessibilityRole="button"
+      style={({ pressed }) => ({ opacity: disabled ? 0.4 : pressed ? 0.6 : 1 })}
+    >
+      <AppText weight={muted ? '600' : '700'} color={muted ? colors.textLight : colors.primary}>
+        {title}
+      </AppText>
+    </Pressable>
   );
 }
 

@@ -8,6 +8,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
 import { PressableScale } from './PressableScale';
+import { clerkMessage } from '../screens/auth/clerkHelpers';
 
 // lets the browser hand the OAuth result back to the app when it redirects
 WebBrowser.maybeCompleteAuthSession();
@@ -24,18 +25,6 @@ function GoogleG({ size = 20 }: { size?: number }) {
 }
 
 const REDIRECT_URL = AuthSession.makeRedirectUri({ scheme: 'cropmanager', path: 'sso-callback' });
-
-/** Turn Clerk / network failures into a message that says what to do. */
-function describe(e: any): string {
-  const code = e?.errors?.[0]?.code || e?.code;
-  if (code === 'requires_captcha' || code === 'captcha_invalid' || code === 'captcha_client_attempts_exceeded') {
-    return 'Google sign-up was blocked by bot protection. An administrator must allow native apps in the Clerk dashboard (Native applications / Bot sign-up protection).';
-  }
-  if (code === 'network_error') {
-    return `Could not reach the sign-in service (${e?.message || 'network error'}). Check your internet connection and try again.`;
-  }
-  return e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e?.message || 'Google sign-in failed';
-}
 
 /**
  * "Continue with Google" — Clerk OAuth in the system browser. Works for both sign-in
@@ -104,7 +93,7 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
       await setActive({ session: sessionId });
     } catch (e: any) {
       haptics.error();
-      onError(describe(e));
+      onError(clerkMessage(e, 'Google sign-in failed'));
     } finally {
       setBusy(false);
     }

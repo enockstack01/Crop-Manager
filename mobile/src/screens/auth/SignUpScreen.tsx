@@ -10,14 +10,15 @@ import { GoogleButton } from '../../components/GoogleButton';
 import { useToast } from '../../components/Toast';
 import { haptics } from '../../lib/haptics';
 import { AuthError, AuthLayout, OrDivider } from './AuthLayout';
-
-const clerkMessage = (e: any, fallback: string) =>
-  e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e?.message || fallback;
+import { clerkMessage, usePasswordRules } from './clerkHelpers';
 
 export function SignUpScreen({ navigation }: any) {
   const { signUp, setActive, isLoaded } = useSignUp();
   const { colors } = useTheme();
   const toast = useToast();
+  const rules = usePasswordRules();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -32,10 +33,21 @@ export function SignUpScreen({ navigation }: any) {
       setError('Enter an email and a password.');
       return;
     }
+    const problem = rules.check(password);
+    if (problem) {
+      haptics.warning();
+      setError(problem);
+      return;
+    }
     setError('');
     setBusy(true);
     try {
-      await signUp.create({ emailAddress: email.trim(), password });
+      await signUp.create({
+        emailAddress: email.trim(),
+        password,
+        ...(firstName.trim() ? { firstName: firstName.trim() } : {}),
+        ...(lastName.trim() ? { lastName: lastName.trim() } : {}),
+      });
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       haptics.success();
       setPending(true);
@@ -112,6 +124,14 @@ export function SignUpScreen({ navigation }: any) {
         <GoogleButton onError={setError} label="Sign up with Google" />
         <OrDivider />
         <AuthError message={error} />
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <View style={{ flex: 1 }}>
+            <TextField label="First name" hint="Optional" value={firstName} onChangeValue={setFirstName} autoComplete="given-name" textContentType="givenName" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <TextField label="Last name" hint="Optional" value={lastName} onChangeValue={setLastName} autoComplete="family-name" textContentType="familyName" />
+          </View>
+        </View>
         <TextField
           label="Email"
           icon="email-outline"
@@ -127,7 +147,7 @@ export function SignUpScreen({ navigation }: any) {
         <TextField
           label="Password"
           icon="lock-outline"
-          hint="At least 8 characters"
+          hint={rules.hint}
           value={password}
           onChangeValue={setPassword}
           secureTextEntry
