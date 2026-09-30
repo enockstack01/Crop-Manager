@@ -60,7 +60,14 @@ export function DashboardScreen({ navigation }: any) {
 
       {/* the homepage opens with the farm profile + land utilization */}
       <View style={{ marginBottom: 20 }}>
-        <FarmProfileCard farms={d.farms || []} fields={d.fields || []} selected={filters.farm} onSelect={set('farm')} />
+        <FarmProfileCard
+          farms={d.farms || []}
+          fields={d.fields || []}
+          selected={filters.farm}
+          onSelect={set('farm')}
+          kpis={agg.kpis}
+          onKpiPress={(link) => navigation.navigate(link)}
+        />
       </View>
 
       {/* .dashboard-filters */}
@@ -71,15 +78,9 @@ export function DashboardScreen({ navigation }: any) {
         <DateField value={filters.to} onChangeValue={set('to')} />
       </Grid>
 
-      {/* .kpi-grid */}
-      <Grid columns={columns} gap={spacing.lg} style={{ marginBottom: 24 }}>
-        {agg.kpis.map((k) => (
-          <KpiCard key={k.label} icon={k.icon} tone={k.tone} label={k.label} value={k.value} onPress={() => navigation.navigate(k.link)} />
-        ))}
-      </Grid>
 
       <View style={{ gap: 20 }}>
-        <Grid columns={pairCols} gap={20}>
+        <Grid columns={1} gap={20}>
           <ChartCard title="Crop Distribution" icon="chart-pie">
             <Donut data={agg.cropDist} emptyLabel="No planted crops to display" />
           </ChartCard>

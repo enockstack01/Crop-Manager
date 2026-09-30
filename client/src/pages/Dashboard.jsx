@@ -6,6 +6,7 @@ import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../fe
 import { useProfile } from '../components/profile.jsx';
 import { Loading, EmptyState, FitValue, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate, getGreeting } from '../lib/format.js';
+import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
 
 const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
 const monthLabel = (key) => {
@@ -93,44 +94,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="kpi-grid">
-        {agg.kpis.map((k) => (
-          <div key={k.label} className="kpi-card" onClick={() => navigate(k.link)}>
-            <div className={`kpi-icon ${k.color}`}>
-              <i className={`fas ${k.icon}`} />
-            </div>
-            <div className="kpi-info">
-              <div className="kpi-label">{k.label}</div>
-              <FitValue className="kpi-value" value={k.value} />
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Farm profile: land utilization + farm at a glance (same design as the mobile app) */}
+      <FarmProfile
+        farms={d.farms || []}
+        fields={d.fields || []}
+        selected={filters.farm}
+        onSelect={(farm) => setFilters((f) => ({ ...f, farm }))}
+        kpis={agg.kpis}
+        onKpiClick={(link) => navigate(link)}
+        dark={dark}
+      />
 
-      {/* Land utilization + crop distribution */}
+      {/* Crop distribution */}
       <div className="chart-grid">
-        <Card title="Land Utilization" icon="fa-map-marked-alt" bodyStyle={{ minHeight: 180 }}>
-          <div className="stat-tile" style={{ background: 'none', padding: 0, marginBottom: 20 }}>
-            <FitValue value={`${agg.land.pct}%`} style={{ '--fit-max': '34px' }} />
-            <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>Land Utilization Rate</div>
-          </div>
-          <div className="progress-bar" style={{ height: 12, borderRadius: 6, marginBottom: 16 }}>
-            <div className="progress-bar-fill" style={{ width: `${agg.land.pct}%`, borderRadius: 6 }} />
-          </div>
-          <div className="wrap-row spread" style={{ fontSize: 12 }}>
-            <span><b style={{ color: 'var(--primary)' }}>{agg.land.planted.toFixed(1)} ha</b> <span style={{ color: 'var(--text-light)' }}>planted</span></span>
-            <span><b style={{ color: 'var(--orange)' }}>{agg.land.fallow.toFixed(1)} ha</b> <span style={{ color: 'var(--text-light)' }}>fallow</span></span>
-            <span><b>{agg.land.total.toFixed(1)} ha</b> <span style={{ color: 'var(--text-light)' }}>total</span></span>
-          </div>
-          <div className="wrap-row" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-light)' }}>
-            <div><b style={{ color: 'var(--text)' }}>{(d.farms || []).length}</b> Farms</div>
-            <div><b style={{ color: 'var(--text)' }}>{(d.fields || []).length}</b> Fields</div>
-            <div><b style={{ color: 'var(--text)' }}>{(d.fields || []).filter((f) => f.status === 'Active').length}</b> Active</div>
-          </div>
-        </Card>
-
-        <Card title="Crop Distribution" icon="fa-chart-pie" bodyStyle={{ height: 260 }}>
+        <Card title="Crop Distribution" icon="fa-chart-pie" className="full-width" bodyStyle={{ height: 260 }}>
           {agg.cropDist.labels.length ? (
             <Doughnut
               key={`cd-${dark}`}

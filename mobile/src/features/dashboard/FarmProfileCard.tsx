@@ -3,10 +3,43 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeProvider';
-import { ff, radius, shadow } from '../../theme/theme';
+import { ff, KPI_TONES, radius, shadow } from '../../theme/theme';
 import { AppText, useLayout } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { haptics } from '../../lib/haptics';
+import { PressableScale } from '../../components/PressableScale';
+
+export type ProfileKpi = { icon: string; tone: keyof typeof KPI_TONES; label: string; value: string; link: string };
+
+/** One headline figure inside the profile (web .kpi-card, compact). */
+function KpiTile({ k, onPress }: { k: ProfileKpi; onPress?: () => void }) {
+  const { colors, isDark } = useTheme();
+  const [bgLight, bgDark, fg] = KPI_TONES[k.tone];
+  return (
+    <PressableScale
+      onPress={onPress}
+      disabled={!onPress}
+      scaleTo={0.97}
+      accessibilityRole="button"
+      accessibilityLabel={`${k.label}: ${k.value}`}
+      style={({ pressed }) => ({
+        flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10,
+        paddingVertical: 12, paddingHorizontal: 12, borderRadius: radius.lg, borderWidth: 1,
+        borderColor: pressed ? fg : colors.border, backgroundColor: colors.card,
+      })}
+    >
+      <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={k.icon} size={14} color={fg} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontFamily: ff('500'), fontSize: 11, color: colors.textLight }} numberOfLines={1}>{k.label}</Text>
+        <Text style={{ fontFamily: ff('700'), fontSize: 16, color: colors.text, marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+          {k.value}
+        </Text>
+      </View>
+    </PressableScale>
+  );
+}
 
 /*
  * Farm Profile — the first thing on the dashboard. A branded header for the farm
@@ -76,15 +109,21 @@ export function FarmProfileCard({
   fields,
   selected,
   onSelect,
+  kpis = [],
+  onKpiPress,
 }: {
   farms: any[];
   fields: any[];
   /** selected farm id ('' = all farms) */
   selected: string;
   onSelect: (farmId: string) => void;
+  /** the dashboard's headline figures, shown as "Farm at a glance" */
+  kpis?: ProfileKpi[];
+  onKpiPress?: (link: string) => void;
 }) {
   const { colors, isDark } = useTheme();
-  const { isTablet } = useLayout();
+  const { isTablet, width } = useLayout();
+  const kpiCols = width >= 1024 ? 4 : width >= 600 ? 3 : 2;
 
   const p = useMemo(() => {
     const scopeFarms = selected ? farms.filter((f) => f.id === selected) : farms;
@@ -117,6 +156,7 @@ export function FarmProfileCard({
   const place = p.farm ? [p.farm.location, p.farm.district, p.farm.province].filter(Boolean).join(', ') : `${p.scopeFarms.length} farm${p.scopeFarms.length === 1 ? '' : 's'} in your portfolio`;
   const ringSize = isTablet ? 190 : 150;
   const shown = p.topFields.slice(0, 6);
+  const hasLand = p.total > 0 || p.scopeFields.length > 0;
 
   return (
     <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadow(2) }}>
@@ -126,7 +166,7 @@ export function FarmProfileCard({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Icon name="map-location-dot" size={13} color="rgba(255,255,255,0.85)" />
           <Text style={{ fontFamily: ff('700'), fontSize: 11, letterSpacing: 1, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>
-            Farm Profile · Land Utilization
+            Farm Profile · Overview
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
@@ -170,13 +210,13 @@ export function FarmProfileCard({
         </ScrollView>
       ) : null}
 
-      {p.total <= 0 && p.scopeFields.length === 0 ? (
-        <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', padding: 28 }}>
-          Add a farm with its total area and fields to see land utilization.
-        </AppText>
-      ) : (
-        <View style={{ padding: 20, gap: 22 }}>
-          {/* ring + legend */}
+      <View style={{ padding: 20, gap: 22 }}>
+          {!hasLand ? (
+            <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: 8 }}>
+              Add a farm with its total area and fields to see land utilization.
+            </AppText>
+          ) : (
+          /* ring + legend */
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
             <LandRing segments={p.segments} total={p.ringTotal} size={ringSize} pct={p.pct} />
             <View style={{ flex: 1, gap: 9 }}>
@@ -189,6 +229,33 @@ export function FarmProfileCard({
               ))}
             </View>
           </View>
+          )}
+
+          {/* farm at a glance — the dashboard's headline figures */}
+          {kpis.length ? (
+            <View>
+              <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                Farm at a glance
+              </AppText>
+              <View style={{ gap: 10 }}>
+                {Array.from({ length: Math.ceil(kpis.length / kpiCols) }, (_, r) => (
+                  <View key={r} style={{ flexDirection: 'row', gap: 10 }}>
+                    {Array.from({ length: kpiCols }, (_, c) => {
+                      const k = kpis[r * kpiCols + c];
+                      return k ? (
+                        // the wrapper takes the column share; PressableScale styles only its inner view
+                        <View key={k.label} style={{ flex: 1, minWidth: 0 }}>
+                          <KpiTile k={k} onPress={onKpiPress ? () => onKpiPress(k.link) : undefined} />
+                        </View>
+                      ) : (
+                        <View key={`pad${c}`} style={{ flex: 1 }} />
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
 
           {/* land by field */}
           {shown.length ? (
@@ -222,23 +289,7 @@ export function FarmProfileCard({
               </View>
             </View>
           ) : null}
-
-          {/* quick stats */}
-          <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
-            {[
-              { k: String(p.scopeFields.length), l: 'Fields' },
-              { k: String(p.scopeFields.filter((f) => f.status === 'Active').length), l: 'Active' },
-              { k: ha(p.planted), l: 'Planted' },
-              { k: p.soils.length ? String(p.soils.length) : '—', l: p.soils.length === 1 ? 'Soil type' : 'Soil types' },
-            ].map((s, i) => (
-              <View key={s.l} style={{ flex: 1, alignItems: 'center', borderLeftWidth: i ? 1 : 0, borderLeftColor: colors.border }}>
-                <AppText weight="800" style={{ fontSize: 15 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{s.k}</AppText>
-                <AppText style={{ fontSize: 11, color: colors.textLight, marginTop: 2 }}>{s.l}</AppText>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
+      </View>
     </View>
   );
 }

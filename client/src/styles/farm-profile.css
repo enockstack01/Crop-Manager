@@ -1,0 +1,338 @@
+/* ============================================================
+   FARM PROFILE — first section of the dashboard; same design as the mobile app's
+   FarmProfileCard (features/dashboard/FarmProfile.jsx)
+   ============================================================ */
+.farm-profile {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin: 20px 0 24px;
+}
+.farm-profile-banner {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  color: #fff;
+  padding: 18px 20px 16px;
+}
+.farm-profile-banner::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  top: -70px;
+  right: -50px;
+}
+.farm-profile-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 10px;
+}
+.farm-profile-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+.farm-profile-title {
+  min-width: 0;
+}
+.farm-profile-title h2 {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.farm-profile-title p {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2px;
+}
+.farm-profile-area {
+  text-align: right;
+  white-space: nowrap;
+}
+.farm-profile-area strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+}
+.farm-profile-area span {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* farm chips */
+.farm-profile-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 14px 20px 0;
+  scrollbar-width: none;
+}
+.farm-profile-chips::-webkit-scrollbar {
+  display: none;
+}
+.farm-profile-chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.farm-profile-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.farm-profile-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* body */
+.farm-profile-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.farm-profile-land {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.farm-profile-ring {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.farm-profile-ring svg {
+  position: absolute;
+  inset: 0;
+}
+.farm-profile-ring-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+.farm-profile-ring-pct {
+  font-weight: 800;
+  color: var(--text);
+}
+.farm-profile-ring-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-light);
+}
+.farm-profile-legend {
+  list-style: none;
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.farm-profile-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.farm-profile-legend li.muted {
+  opacity: 0.45;
+}
+.farm-profile-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.farm-profile-legend .label {
+  flex: 1;
+  color: var(--text-light);
+}
+.farm-profile-empty {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-light);
+  padding: 8px 0;
+}
+.farm-profile-section {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 12px;
+}
+
+/* farm at a glance (KPI tiles) */
+.farm-profile-kpis {
+  display: grid;
+  gap: 10px;
+  /* two columns on phones (as in the mobile app), 3-5 on wider screens */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr));
+}
+.farm-profile-kpi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+.farm-profile-kpi:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.farm-profile-kpi:active {
+  transform: scale(0.98);
+}
+.farm-profile-kpi .kpi-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+.farm-profile-kpi-info {
+  flex: 1;
+  min-width: 0;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+}
+.farm-profile-kpi-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.farm-profile-kpi-value.fit-value {
+  --fit-max: 16px;
+  --fit-min: 10px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 1px;
+  /* one line, like the mobile tiles */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+
+/* land by field */
+.farm-profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.farm-profile-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+.farm-profile-field-row .name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.farm-profile-field-row .farm {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-light);
+}
+.farm-profile-field-row .status {
+  font-size: 11px;
+}
+.farm-profile-field-row b {
+  font-size: 12px;
+  min-width: 64px;
+  text-align: right;
+}
+.farm-profile-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.farm-profile-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.farm-profile-more {
+  font-size: 11px;
+  color: var(--text-light);
+}
+
+/* desktop: ring + legend beside the headline figures, fields below */
+@media (min-width: 1024px) {
+  .farm-profile-body {
+    display: grid;
+    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+    column-gap: 32px;
+    row-gap: 24px;
+    align-items: start;
+  }
+  .farm-profile-land {
+    align-self: center;
+  }
+  .farm-profile-kpis {
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  }
+  .farm-profile-body > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .farm-profile-land {
+    gap: 12px;
+  }
+  .farm-profile-ring {
+    transform: scale(0.88);
+    transform-origin: left center;
+    margin-right: -20px;
+  }
+}
