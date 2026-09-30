@@ -20,6 +20,7 @@ import {
 import { Icon } from '../components/Icon';
 import { Bars, Donut, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';
+import { FarmProfileCard } from '../features/dashboard/FarmProfileCard';
 
 /*
  * Mirrors the web dashboard (client/src/pages/Dashboard.jsx): same greeting,
@@ -57,6 +58,11 @@ export function DashboardScreen({ navigation }: any) {
     <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
       <PageHeader title={`${getGreeting()}, ${profile?.full_name || 'Farmer'}`} subtitle="Here's what's happening across your farm today." />
 
+      {/* the homepage opens with the farm profile + land utilization */}
+      <View style={{ marginBottom: 20 }}>
+        <FarmProfileCard farms={d.farms || []} fields={d.fields || []} selected={filters.farm} onSelect={set('farm')} />
+      </View>
+
       {/* .dashboard-filters */}
       <Grid columns={2} gap={10} style={{ marginBottom: 20 }}>
         <SelectField value={filters.farm} onChangeValue={set('farm')} placeholder="All Farms" options={(d.farms || []).map((f: any) => ({ value: f.id, label: f.name }))} />
@@ -74,32 +80,6 @@ export function DashboardScreen({ navigation }: any) {
 
       <View style={{ gap: 20 }}>
         <Grid columns={pairCols} gap={20}>
-          <ChartCard title="Land Utilization" icon="map-location-dot">
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <AppText weight="800" style={{ fontSize: 34, lineHeight: 42 }}>{agg.land.pct}%</AppText>
-              <AppText variant="subtitle" style={{ fontSize: 13, marginTop: 4 }}>Land Utilization Rate</AppText>
-            </View>
-            <View style={{ height: 12, borderRadius: 6, backgroundColor: colors.bg, overflow: 'hidden', marginBottom: 16 }}>
-              <View style={{ width: `${Math.min(100, agg.land.pct)}%`, height: '100%', borderRadius: 6, backgroundColor: colors.primary }} />
-            </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 6 }}>
-              <AppText style={{ fontSize: 12 }}><AppText weight="700" style={{ fontSize: 12, color: colors.primary }}>{agg.land.planted.toFixed(1)} ha</AppText> <AppText style={{ fontSize: 12, color: colors.textLight }}>planted</AppText></AppText>
-              <AppText style={{ fontSize: 12 }}><AppText weight="700" style={{ fontSize: 12, color: colors.orange }}>{agg.land.fallow.toFixed(1)} ha</AppText> <AppText style={{ fontSize: 12, color: colors.textLight }}>fallow</AppText></AppText>
-              <AppText style={{ fontSize: 12 }}><AppText weight="700" style={{ fontSize: 12 }}>{agg.land.total.toFixed(1)} ha</AppText> <AppText style={{ fontSize: 12, color: colors.textLight }}>total</AppText></AppText>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 16, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
-              {[
-                [(d.farms || []).length, 'Farms'],
-                [(d.fields || []).length, 'Fields'],
-                [(d.fields || []).filter((f: any) => f.status === 'Active').length, 'Active'],
-              ].map(([n, l]) => (
-                <AppText key={l as string} style={{ fontSize: 12, color: colors.textLight }}>
-                  <AppText weight="700" style={{ fontSize: 12 }}>{n}</AppText> {l}
-                </AppText>
-              ))}
-            </View>
-          </ChartCard>
-
           <ChartCard title="Crop Distribution" icon="chart-pie">
             <Donut data={agg.cropDist} emptyLabel="No planted crops to display" />
           </ChartCard>
