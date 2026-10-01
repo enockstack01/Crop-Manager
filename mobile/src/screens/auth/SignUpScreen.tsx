@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
-import { useTheme } from '../../theme/ThemeProvider';
 import { spacing } from '../../theme/theme';
-import { AppText } from '../../components/ui';
 import { Button } from '../../components/Button';
 import { TextField } from '../../components/fields';
 import { GoogleButton } from '../../components/GoogleButton';
@@ -14,7 +12,6 @@ import { clerkMessage, usePasswordRules } from './clerkHelpers';
 
 export function SignUpScreen({ navigation }: any) {
   const { signUp, setActive, isLoaded } = useSignUp();
-  const { colors } = useTheme();
   const toast = useToast();
   const rules = usePasswordRules();
   const [firstName, setFirstName] = useState('');

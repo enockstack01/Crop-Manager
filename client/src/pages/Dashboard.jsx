@@ -4,7 +4,7 @@ import { Doughnut, Bar, Line } from 'react-chartjs-2';
 import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
-import { Loading, EmptyState, FitValue, StatTile } from '../components/ui.jsx';
+import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate, getGreeting } from '../lib/format.js';
 import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
 

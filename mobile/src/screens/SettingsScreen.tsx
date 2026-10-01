@@ -7,7 +7,6 @@ import { useProfile } from '../lib/useResource';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius } from '../theme/theme';
 import { AppText, ChartCard, Grid, Loading, PageHeader, Screen, useLayout } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';

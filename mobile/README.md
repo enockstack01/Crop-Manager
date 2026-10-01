@@ -12,7 +12,7 @@ mobile/
     theme/                  design tokens ported from the web CSS + light/dark provider
     components/             UI kit (Screen, Card, Button, fields, Sheet, Toast, Confirm, charts, FAB)
     navigation/
-      modules.tsx           ⭐ one config object per CRUD module — drives list + form + detail
+      modules.tsx            one config object per CRUD module — drives list + form + detail
       navConfig.ts          drawer layout (mirrors the web Sidebar sections)
       AppNavigator.tsx      drawer + stacks
     features/dashboard/     dashboard aggregation (port of Dashboard.jsx computeAggregates)

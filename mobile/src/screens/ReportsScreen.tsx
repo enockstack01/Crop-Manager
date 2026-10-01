@@ -3,7 +3,6 @@ import { RefreshControl, Share, View } from 'react-native';
 import { useDashboard } from '../lib/useResource';
 import { formatCurrency, formatDate, formatNumber } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius } from '../theme/theme';
 import { AppText, Badge, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen, StatTile, useLayout } from '../components/ui';
 import { Bars, Donut, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';

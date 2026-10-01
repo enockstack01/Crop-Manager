@@ -1,7 +1,7 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
 import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
-import { FarmFieldRow, CycleSelect, useCycleOptions } from '../components/relationFields.jsx';
+import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 import { ACTIVITY_TYPES } from '../lib/options.js';

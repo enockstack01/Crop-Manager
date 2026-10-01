@@ -4,7 +4,7 @@ import { formatCurrency, formatDate, formatNumber } from '../lib/format';
 import { mediaUrl } from '../env';
 import { Image } from 'react-native';
 import { STATUS_TONES } from '../theme/theme';
-import { FormApi, DateField, FormRow, NumberField, SelectField, TextAreaField, TextField } from '../components/fields';
+import { FormApi, DateField, NumberField, SelectField, TextAreaField, TextField } from '../components/fields';
 import { PhotoField } from '../components/PhotoField';
 import { CycleSelect, FarmFieldRow } from '../components/relationFields';
 import {

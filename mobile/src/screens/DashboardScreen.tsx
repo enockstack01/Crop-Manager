@@ -10,7 +10,6 @@ import {
   ChartCard,
   EmptyState,
   Grid,
-  KpiCard,
   PageHeader,
   Screen,
   Skeleton,
@@ -23,15 +22,15 @@ import { DateField, SelectField } from '../components/fields';
 import { FarmProfileCard } from '../features/dashboard/FarmProfileCard';
 
 /*
- * Mirrors the web dashboard (client/src/pages/Dashboard.jsx): same greeting,
- * filters, KPI cards, chart cards, analytics tiles, activity/events/alerts — in the
+ * Mirrors the web dashboard (client/src/pages/Dashboard.jsx): same greeting, farm
+ * profile, filters, chart cards, analytics tiles, activity/events/alerts — in the
  * same order and with the same figures (computeDashboard is a port of the web's).
  */
 export function DashboardScreen({ navigation }: any) {
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboard();
   const { profile } = useProfile();
   const { colors, isDark } = useTheme();
-  const { columns, isWide } = useLayout();
+  const { isWide } = useLayout();
   const [filters, setFilters] = useState<DashFilters>({ farm: '', season: '', from: '', to: '' });
 
   const d = data || {};
