@@ -8,7 +8,7 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
-  margin: 20px 0 24px;
+  margin: 20px 0;
 }
 .farm-profile-banner {
   position: relative;
@@ -304,6 +304,18 @@
 .farm-profile-more {
   font-size: 11px;
   color: var(--text-light);
+}
+
+/* dashboard filters: a 2 x 2 grid below the farm profile, as in the mobile app */
+.dashboard-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.dashboard-filters-grid .dashboard-filter-select {
+  width: 100%;
+  min-width: 0;
 }
 
 /* desktop: ring + legend beside the headline figures, fields below */

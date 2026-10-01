@@ -72,29 +72,9 @@ export default function Dashboard() {
             Here&apos;s what&apos;s happening across your farm today.
           </p>
         </div>
-        <div className="dashboard-filters">
-          <select className="dashboard-filter-select" value={filters.farm} onChange={(e) => setFilters((f) => ({ ...f, farm: e.target.value }))}>
-            <option value="">All Farms</option>
-            {(d.farms || []).map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-          <select className="dashboard-filter-select" value={filters.season} onChange={(e) => setFilters((f) => ({ ...f, season: e.target.value }))}>
-            <option value="">All Seasons</option>
-            {(d.seasons || []).map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.from} onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))} />
-          <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.to} onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} />
-        </div>
       </div>
 
-      {/* Farm profile: land utilization + farm at a glance (same design as the mobile app) */}
+      {/* Farm profile: land utilization + farm at a glance (same design and order as the mobile app) */}
       <FarmProfile
         farms={d.farms || []}
         fields={d.fields || []}
@@ -104,6 +84,28 @@ export default function Dashboard() {
         onKpiClick={(link) => navigate(link)}
         dark={dark}
       />
+
+      {/* filters: 2 x 2 below the farm profile, as in the mobile app */}
+      <div className="dashboard-filters-grid">
+        <select className="dashboard-filter-select" value={filters.farm} onChange={(e) => setFilters((f) => ({ ...f, farm: e.target.value }))}>
+          <option value="">All Farms</option>
+          {(d.farms || []).map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+        <select className="dashboard-filter-select" value={filters.season} onChange={(e) => setFilters((f) => ({ ...f, season: e.target.value }))}>
+          <option value="">All Seasons</option>
+          {(d.seasons || []).map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.from} onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))} />
+        <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.to} onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} />
+      </div>
 
       {/* Crop distribution */}
       <div className="chart-grid">
@@ -335,8 +337,8 @@ export default function Dashboard() {
                   <span className="month">{new Date(c.expected_harvest_date).toLocaleString('en', { month: 'short' })}</span>
                 </div>
                 <div className="upcoming-info">
-                  <div className="title">Expected Harvest — {c.crops?.name || ''}</div>
-                  <div className="meta">{c.farms?.name || ''} / {c.fields?.name || ''}</div>
+                  <div className="title">{c.crops?.name || 'Crop'} harvest</div>
+                  <div className="meta">{c.farms?.name || ''}{c.fields?.name ? ` / ${c.fields.name}` : ''}</div>
                 </div>
               </div>
             ))
@@ -345,7 +347,7 @@ export default function Dashboard() {
       </div>
 
       <div className="chart-grid">
-        <Card title="Alerts" icon="fa-bell" iconColor="var(--orange)" bodyStyle={{ maxHeight: 320, overflowY: 'auto' }}>
+        <Card title="Alerts" icon="fa-bell" iconColor="var(--orange)" className="full-width" bodyStyle={{ maxHeight: 320, overflowY: 'auto' }}>
           {agg.alerts.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-light)', fontSize: 13 }}>
               <i className="fas fa-check-circle" style={{ fontSize: 24, color: 'var(--primary)', display: 'block', marginBottom: 8 }} />
@@ -363,34 +365,10 @@ export default function Dashboard() {
             ))
           )}
         </Card>
-        <Card title="Quick Actions" icon="fa-bolt" iconColor="var(--purple)">
-          <div className="quick-actions-grid">
-            {QUICK_ACTIONS.map((a) => (
-              <button key={a.label} className="quick-action-btn" onClick={() => navigate(a.link)}>
-                <i className={`fas ${a.icon}`} /> {a.label}
-              </button>
-            ))}
-          </div>
-        </Card>
       </div>
     </>
   );
 }
-
-const QUICK_ACTIONS = [
-  { icon: 'fa-tractor', label: 'Add Farm', link: '/farms' },
-  { icon: 'fa-map', label: 'Add Field', link: '/fields' },
-  { icon: 'fa-sync-alt', label: 'Start Cycle', link: '/crop-cycles' },
-  { icon: 'fa-seedling', label: 'Record Planting', link: '/planting' },
-  { icon: 'fa-tasks', label: 'Record Activity', link: '/activities' },
-  { icon: 'fa-tint', label: 'Record Irrigation', link: '/irrigation' },
-  { icon: 'fa-flask', label: 'Record Fertilizer', link: '/fertilizers' },
-  { icon: 'fa-search', label: 'Record Scouting', link: '/scouting' },
-  { icon: 'fa-wheat-awn', label: 'Record Harvest', link: '/harvest' },
-  { icon: 'fa-receipt', label: 'Add Expense', link: '/expenses' },
-  { icon: 'fa-hand-holding-usd', label: 'Record Sale', link: '/sales' },
-  { icon: 'fa-calculator', label: 'Calculators', link: '/calculators' },
-];
 
 function computeAggregates(d, filters) {
   const inRange = (date) => {
