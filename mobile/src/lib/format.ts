@@ -23,7 +23,19 @@ export function formatNumber(num?: number | string | null): string {
   return Number(num).toLocaleString('en-US');
 }
 
-export function formatCurrency(amount?: number | string | null, currency = 'ZMW'): string {
+// The signed-in user's currency (Settings → Currency, default USD). RootGate sets it
+// from the profile before the app renders, so every formatCurrency() call uses it.
+let userCurrency = 'USD';
+export function setCurrency(code?: string | null) {
+  userCurrency = code || 'USD';
+}
+
+/** What the app calls the user: their name, or their account type until they give one. */
+export function displayName(profile?: { full_name?: string | null; role?: string | null } | null): string {
+  return profile?.full_name?.trim() || profile?.role || 'Farmer';
+}
+
+export function formatCurrency(amount?: number | string | null, currency = userCurrency): string {
   if (amount === null || amount === undefined || amount === '') return `${currency} 0.00`;
   return (
     currency +

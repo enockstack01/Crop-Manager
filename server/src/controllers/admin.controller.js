@@ -9,6 +9,7 @@ import { env } from '../config/env.js';
 import { resourceByPath } from '../resources.js';
 import { OWNED_MODELS, clearUser, seedUser } from '../lib/seedData.js';
 import { getDbAdminEmails, addAdminEmail as addEmail, removeAdminEmail as removeEmail } from '../lib/adminAllowlist.js';
+import { STATUS_NOTICES, statusPatch } from '../lib/accountStatus.js';
 import * as M from '../models/index.js';
 
 const COUNT_MODELS = OWNED_MODELS.map((model) => [model.modelName, model]);
@@ -52,12 +53,13 @@ async function clerkMap(userIds) {
 
 // ---- GET /api/admin/overview ----
 export const overview = asyncHandler(async (_req, res) => {
-  const [totalUsers, activeUsers, admins, onboarded, recent, salesAgg, expenseAgg] = await Promise.all([
+  const [totalUsers, statusAgg, admins, onboarded, recent, pendingRequests, salesAgg, expenseAgg] = await Promise.all([
     M.Profile.countDocuments({}),
-    M.Profile.countDocuments({ is_active: { $ne: false } }),
+    M.Profile.aggregate([{ $group: { _id: '$account_status', n: { $sum: 1 } } }]),
     M.Profile.countDocuments({ is_admin: true }),
     M.Profile.countDocuments({ onboarded: true }),
     M.Profile.find({}).sort({ created_at: -1 }).limit(8).lean(),
+    M.Profile.find({ account_status: 'pending' }).sort({ 'access_request.submitted_at': 1 }).limit(10).lean(),
     M.Sale.aggregate([{ $group: { _id: null, total: { $sum: '$total_amount' }, n: { $sum: 1 } } }]),
     M.Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' }, n: { $sum: 1 } } }]),
   ]);
@@ -69,8 +71,22 @@ export const overview = asyncHandler(async (_req, res) => {
     })
   );
 
+  const byStatus = Object.fromEntries(statusAgg.map((r) => [r._id || 'new', r.n]));
+  const active = byStatus.active || 0;
   res.json({
-    users: { total: totalUsers, active: activeUsers, admins, onboarded, inactive: totalUsers - activeUsers },
+    users: {
+      total: totalUsers,
+      active,
+      admins,
+      onboarded,
+      inactive: totalUsers - active,
+      pending: byStatus.pending || 0,
+      on_hold: byStatus.on_hold || 0,
+      rejected: byStatus.rejected || 0,
+      deactivated: byStatus.deactivated || 0,
+      new: byStatus.new || 0,
+    },
+    pending_requests: serialize(pendingRequests),
     records: totals,
     finance: {
       sales_total: salesAgg[0]?.total || 0,
@@ -93,9 +109,10 @@ export const listUsers = asyncHandler(async (req, res) => {
     const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     filter.$or = [{ full_name: rx }, { email: rx }, { role: rx }];
   }
-  if (req.query.status === 'active') filter.is_active = { $ne: false };
-  if (req.query.status === 'inactive') filter.is_active = false;
-  if (req.query.status === 'admins') filter.is_admin = true;
+  const status = req.query.status;
+  if (status === 'admins') filter.is_admin = true;
+  else if (status === 'inactive') filter.account_status = { $ne: 'active' };
+  else if (M.ACCOUNT_STATUSES.includes(status)) filter.account_status = status;
 
   const [rows, total] = await Promise.all([
     M.Profile.find(filter).sort({ created_at: -1 }).skip((page - 1) * perPage).limit(perPage).lean(),
@@ -141,17 +158,42 @@ export const getUser = asyncHandler(async (req, res) => {
 // ---- PATCH /api/admin/users/:userId ----
 export const updateUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
+  const current = await M.Profile.findOne({ user_id: userId }).lean();
+  if (!current) throw createHttpError(404, 'User not found');
+
   const patch = {};
-  for (const key of ['is_admin', 'is_active', 'role']) {
+  for (const key of ['is_admin', 'role']) {
     if (req.body[key] !== undefined) patch[key] = req.body[key];
   }
-
-  if (userId === req.userId && (patch.is_admin === false || patch.is_active === false)) {
-    throw createHttpError(400, 'You cannot revoke your own admin or active status');
+  // legacy toggle from older clients: is_active true/false → active/deactivated
+  let status = req.body.account_status;
+  if (status === undefined && req.body.is_active !== undefined) status = req.body.is_active ? 'active' : 'deactivated';
+  if (status !== undefined && !Object.keys(STATUS_NOTICES).includes(status)) {
+    throw createHttpError(400, `Unknown account status: ${status}`);
   }
 
+  if (userId === req.userId && (patch.is_admin === false || (status && status !== 'active'))) {
+    throw createHttpError(400, 'You cannot revoke your own admin access or change your own account status');
+  }
+
+  const changedStatus = status !== undefined && status !== current.account_status;
+  if (changedStatus) {
+    Object.assign(patch, statusPatch(status, req.userId, String(req.body.reason || '').trim().slice(0, 500)));
+    // the first approval grants the account type the user asked for (unless the admin set one)
+    if (status === 'active' && !current.approved_at) {
+      patch.approved_at = new Date();
+      if (!patch.role && current.access_request?.account_type) patch.role = current.access_request.account_type;
+    }
+  }
+  if (patch.is_admin === true) Object.assign(patch, statusPatch('active', req.userId));
+
   const profile = await M.Profile.findOneAndUpdate({ user_id: userId }, { $set: patch }, { new: true }).lean();
-  if (!profile) throw createHttpError(404, 'User not found');
+
+  if (changedStatus) {
+    const notice = STATUS_NOTICES[status];
+    const reason = profile.status_reason ? ` Reason: ${profile.status_reason}` : '';
+    await M.Notification.create({ user_id: userId, type: notice.type, title: notice.title, message: notice.message + reason });
+  }
   res.json(serialize(profile));
 });
 
@@ -286,7 +328,7 @@ export const addAdminEmail = asyncHandler(async (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw createHttpError(400, 'Enter a valid email address');
   const managed = await addEmail(email, req.userId);
   // if that user already signed up, promote them now
-  await M.Profile.updateOne({ email }, { $set: { is_admin: true, is_active: true } });
+  await M.Profile.updateOne({ email }, { $set: { is_admin: true, ...statusPatch('active', req.userId) } });
   res.json({ managed });
 });
 

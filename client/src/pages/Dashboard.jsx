@@ -5,7 +5,7 @@ import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
-import { formatCurrency, formatNumber, formatDate, getGreeting } from '../lib/format.js';
+import { formatCurrency, formatNumber, formatDate, getGreeting, displayName } from '../lib/format.js';
 import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
 
 const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
@@ -59,7 +59,7 @@ export default function Dashboard() {
     );
   }
 
-  const name = profile?.full_name || 'Farmer';
+  const name = displayName(profile);
 
   return (
     <>

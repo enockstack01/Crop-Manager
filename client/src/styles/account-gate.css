@@ -1,0 +1,130 @@
+/* ============================================================
+   ACCOUNT GATE — access-request form and status pages shown before an
+   account is approved (components/AccountGate.jsx). Uses the sign-in
+   page's split-screen layout.
+   ============================================================ */
+.auth-split-form-wrapper.account-gate-wide {
+  max-width: 560px;
+}
+.account-gate-wide .subtitle {
+  margin-bottom: 22px;
+}
+.account-gate-error {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: rgba(211, 47, 47, 0.08);
+  color: var(--red);
+  font-size: 13px;
+}
+.account-gate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.account-gate-actions .btn {
+  min-height: 44px;
+}
+
+/* status pages */
+.account-gate-notice {
+  text-align: center;
+}
+.account-gate-notice .account-gate-actions {
+  justify-content: center;
+  margin-top: 24px;
+}
+.account-gate-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+.account-gate-icon.tone-success {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.account-gate-icon.tone-warning {
+  background: rgba(245, 127, 23, 0.12);
+  color: #f57f17;
+}
+.account-gate-icon.tone-danger {
+  background: rgba(211, 47, 47, 0.1);
+  color: var(--red);
+}
+.account-gate-notice .subtitle {
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.account-gate-summary {
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 16px;
+}
+.account-gate-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.account-gate-summary > div:last-child {
+  border-bottom: 0;
+}
+.account-gate-summary span {
+  color: var(--text-light);
+}
+.account-gate-summary strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.account-gate-reason {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border-left: 3px solid #f9a825;
+  background: rgba(249, 168, 37, 0.1);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .account-gate-actions .btn {
+    flex: 1;
+  }
+}
+
+/* admin overview: account requests list */
+.account-request-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.account-request-row:last-child {
+  border-bottom: 0;
+}
+.account-request-info {
+  flex: 1 1 260px;
+  min-width: 0;
+  color: inherit;
+}
+.account-request-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

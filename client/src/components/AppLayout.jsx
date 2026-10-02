@@ -4,7 +4,9 @@ import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
 import { ProfileProvider, useProfile } from './profile.jsx';
 import { OnboardingModal } from './OnboardingModal.jsx';
+import { AccountGate } from './AccountGate.jsx';
 import { EmptyState, Loading } from './ui.jsx';
+import { setCurrency } from '../lib/format.js';
 
 function readDark() {
   try {
@@ -15,7 +17,7 @@ function readDark() {
 }
 
 function Shell() {
-  const { profile, isLoading, isError, error, refetch } = useProfile();
+  const { profile, isLoading, isError, error, refetch, isFetching } = useProfile();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(readDark);
@@ -28,6 +30,15 @@ function Shell() {
       /* ignore */
     }
   }, [dark]);
+
+  // accounts that are not approved yet see the request form / status page instead of the app
+  if (profile && !profile.is_admin && profile.account_status !== 'active') {
+    return <AccountGate profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
+  }
+
+  // every money value follows the user's chosen currency; pages remount when it changes
+  const currency = profile?.currency || 'USD';
+  setCurrency(currency);
 
   return (
     <div className="app-layout">
@@ -66,11 +77,12 @@ function Shell() {
               onAction={() => refetch()}
             />
           ) : (
-            <Outlet />
+            <Outlet key={currency} />
           )}
         </div>
       </main>
 
+      {/* administrators skip the access request; they only confirm their name once */}
       {profile && !profile.onboarded && <OnboardingModal profile={profile} />}
     </div>
   );

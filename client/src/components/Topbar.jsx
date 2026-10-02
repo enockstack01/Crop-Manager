@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { UserButton } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useList, useResourceMutations } from '../lib/useResource.js';
-import { formatDateTime } from '../lib/format.js';
+import { displayName, formatDateTime } from '../lib/format.js';
 import { useToast } from './Toast.jsx';
 
 export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
@@ -94,7 +94,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
 
         <div className="topbar-user" style={{ gap: 10 }}>
           <div className="topbar-user-info">
-            <div className="topbar-user-name">{profile?.full_name || 'User'}</div>
+            <div className="topbar-user-name">{displayName(profile)}</div>
             <div className="topbar-user-role">{profile?.role || 'Farmer'}</div>
           </div>
           <UserButton afterSignOutUrl="/" />

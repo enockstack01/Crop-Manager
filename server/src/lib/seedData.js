@@ -45,6 +45,8 @@ export async function seedUser(userId, opts = {}) {
         location: profile.location || 'Lusaka, Zambia',
         phone: profile.phone || '+260 977 000 000',
         onboarded: true,
+        is_active: true,
+        account_status: 'active',
       },
     },
     { upsert: true }

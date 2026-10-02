@@ -26,6 +26,8 @@ import { SplashHost, SplashReadyOnMount, useSplashReady } from './components/App
 import { AppNavigator } from './navigation/AppNavigator';
 import { AuthNavigator } from './navigation/AuthNavigator';
 import { OnboardingScreen } from './screens/OnboardingScreen';
+import { AccountGateScreen } from './screens/AccountGateScreen';
+import { setCurrency } from './lib/format';
 import { ConnectionErrorScreen } from './screens/ConnectionErrorScreen';
 
 const queryClient = new QueryClient({
@@ -41,7 +43,8 @@ function ApiTokenBridge() {
 }
 
 /**
- * Signed-in entry: loads the profile, then routes to onboarding or the app. The
+ * Signed-in entry: loads the profile, then routes to the access request / status
+ * page (accounts not approved yet), onboarding (admins), or the app. The
  * splash stays up while this resolves; a server that can't be reached now ends in
  * a Retry screen instead of an endless spinner.
  */
@@ -59,8 +62,14 @@ function RootGate() {
   if (isError || !profile) {
     return <ConnectionErrorScreen error={error} retrying={isFetching} onRetry={() => refetch()} />;
   }
+  if (!profile.is_admin && profile.account_status !== 'active') {
+    return <AccountGateScreen profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
+  }
   if (!profile.onboarded) return <OnboardingScreen profile={profile} />;
-  return <AppNavigator />;
+  // every money value follows the user's chosen currency; the app remounts when it changes
+  const currency = profile.currency || 'USD';
+  setCurrency(currency);
+  return <AppNavigator key={currency} />;
 }
 
 function NavRoot() {

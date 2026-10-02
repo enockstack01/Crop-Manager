@@ -11,6 +11,8 @@ import { AppText, ChartCard, Grid, Loading, PageHeader, Screen, useLayout } from
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
 import { SelectField, TextField } from '../components/fields';
+import { CURRENCY_OPTIONS } from '../lib/currencies';
+import { displayName } from '../lib/format';
 
 /** web "Profile Settings" page: Personal Information card, plus appearance and account. */
 export function SettingsScreen() {
@@ -39,7 +41,9 @@ export function SettingsScreen() {
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
     location: profile?.location || '',
+    currency: profile?.currency || 'USD',
   };
+  const accountType = profile?.role || 'Farmer';
   const set = (k: string) => (v: string) => setValues({ ...current, [k]: v });
   const avatar = profile?.avatar_url || (user?.hasImage ? user.imageUrl : null);
   const email = profile?.email || user?.primaryEmailAddress?.emailAddress || '';
@@ -63,21 +67,37 @@ export function SettingsScreen() {
               </View>
             )}
             <View style={{ flex: 1 }}>
-              <AppText weight="600" style={{ fontSize: 14 }}>{current.full_name || 'Your profile'}</AppText>
+              <AppText weight="600" style={{ fontSize: 14 }}>{displayName({ full_name: current.full_name, role: accountType })}</AppText>
               <AppText style={{ fontSize: 12, color: colors.textLight, marginTop: 2 }} numberOfLines={1}>{email}</AppText>
             </View>
           </View>
 
           <View style={{ gap: 18 }}>
             <Grid columns={isTablet ? 2 : 1} gap={18}>
-              <TextField label="Full Name" required value={current.full_name} onChangeValue={set('full_name')} />
+              <TextField
+                label="Full Name"
+                value={current.full_name}
+                onChangeValue={set('full_name')}
+                placeholder={accountType}
+                hint={`Leave blank to be shown as “${accountType}”`}
+              />
               <TextField label="Email" value={email} onChangeValue={() => {}} editable={false} />
             </Grid>
             <Grid columns={isTablet ? 2 : 1} gap={18}>
               <TextField label="Phone" value={current.phone} onChangeValue={set('phone')} placeholder="+260 xxx xxx xxx" keyboardType="phone-pad" />
               <TextField label="Location" value={current.location} onChangeValue={set('location')} placeholder="City, Country" />
             </Grid>
-            <TextField label="Role" hint="Your role is managed by an administrator." value={profile?.role || 'Farmer'} onChangeValue={() => {}} editable={false} />
+            <Grid columns={isTablet ? 2 : 1} gap={18}>
+              <SelectField
+                label="Currency"
+                hint="All money values in CropManager are shown in this currency"
+                value={current.currency}
+                onChangeValue={set('currency')}
+                options={CURRENCY_OPTIONS}
+                placeholder=""
+              />
+              <TextField label="Account Type" hint="Managed by an administrator." value={accountType} onChangeValue={() => {}} editable={false} />
+            </Grid>
             <View style={{ alignSelf: 'flex-start' }}>
               <Button title="Save Changes" icon="content-save" loading={mutate.isPending} onPress={() => mutate.mutate(current)} />
             </View>

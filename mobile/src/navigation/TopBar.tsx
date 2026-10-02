@@ -6,7 +6,7 @@ import { useUser } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeProvider';
 import { ff, radius, spacing } from '../theme/theme';
 import { useList, useProfile, useResourceMutations } from '../lib/useResource';
-import { formatDate } from '../lib/format';
+import { displayName, formatDate } from '../lib/format';
 import { haptics } from '../lib/haptics';
 import { Icon } from '../components/Icon';
 import { AppText } from '../components/ui';
@@ -69,7 +69,7 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
     toast('All notifications marked as read', 'info');
   };
 
-  const name = profile?.full_name || user?.fullName || 'User';
+  const name = displayName(profile);
   const initials = (name.match(/\b\w/g) || ['U']).slice(0, 2).join('').toUpperCase();
   const avatar = profile?.avatar_url || (user?.hasImage ? user.imageUrl : null);
 

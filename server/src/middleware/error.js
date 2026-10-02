@@ -23,6 +23,7 @@ export function errorHandler(err, _req, res, _next) {
   if (status >= 500) console.error('[error]', err);
 
   const body = { message };
+  if (err.expose && err.details) body.details = err.details;
   if (!env.isProd && status >= 500) body.stack = err.stack;
   res.status(status).json(body);
 }

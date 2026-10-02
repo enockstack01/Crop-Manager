@@ -5,7 +5,8 @@ import { api } from '../lib/api.js';
 import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { PageHeader, Loading } from '../components/ui.jsx';
-import { FormRow, TextField } from '../components/form.jsx';
+import { FormRow, SelectField, TextField } from '../components/form.jsx';
+import { CURRENCY_OPTIONS } from '../lib/currencies.js';
 
 export default function Settings() {
   const { profile, isLoading } = useProfile();
@@ -29,6 +30,7 @@ export default function Settings() {
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
     location: profile?.location || '',
+    currency: profile?.currency || 'USD',
   };
   const set = (k) => (e) => setValues({ ...current, [k]: e.target.value });
   const save = () => mutate.mutate(current);
@@ -79,17 +81,35 @@ export default function Settings() {
           </div>
 
           <FormRow>
-            <TextField label="Full Name" required value={current.full_name} onChange={set('full_name')} />
+            <TextField
+              label="Full Name"
+              value={current.full_name}
+              onChange={set('full_name')}
+              placeholder={profile?.role || 'Farmer'}
+              hint={`Leave blank to be shown as “${profile?.role || 'Farmer'}”`}
+            />
             <TextField label="Email" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} />
           </FormRow>
           <FormRow>
             <TextField label="Phone" value={current.phone} onChange={set('phone')} placeholder="+260 xxx xxx xxx" />
             <TextField label="Location" value={current.location} onChange={set('location')} placeholder="City, Country" />
           </FormRow>
-          <TextField label="Role" value={profile?.role || 'Farmer'} disabled style={{ opacity: 0.6 }} />
-          <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: -8, marginBottom: 12 }}>
-            Your role is managed by an administrator.
-          </p>
+          <FormRow>
+            <SelectField
+              label="Currency"
+              value={current.currency}
+              onChange={set('currency')}
+              options={CURRENCY_OPTIONS}
+              hint="All money values in CropManager are shown in this currency"
+            />
+            <TextField
+              label="Account Type"
+              value={profile?.role || 'Farmer'}
+              disabled
+              style={{ opacity: 0.6 }}
+              hint="Managed by an administrator"
+            />
+          </FormRow>
 
           <div style={{ marginTop: 8 }}>
             <button className="btn btn-primary" disabled={mutate.isPending} onClick={save}>

@@ -13,6 +13,7 @@
 @import './utilities.css';
 @import './responsive.css';
 @import './farm-profile.css';
+@import './account-gate.css';
 
 /* --- small additions for the React port (no visual change to existing classes) --- */
 #root {

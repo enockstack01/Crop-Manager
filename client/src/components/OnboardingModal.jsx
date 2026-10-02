@@ -33,8 +33,7 @@ export function OnboardingModal({ profile }) {
       }
     >
       <p style={{ color: 'var(--text-light)', marginBottom: 16, lineHeight: 1.5 }}>
-        Confirm your name to get started. You&apos;ll join as a <strong>Farmer</strong> &mdash; an administrator
-        can change your role later.
+        Confirm your name to get started.
       </p>
       <TextField label="Full Name" required value={values.full_name} onChange={set('full_name')} />
     </Modal>

@@ -44,7 +44,7 @@ const run = async () => {
 
   await Profile.findOneAndUpdate(
     { user_id: user.id },
-    { $set: { email, is_admin: true, is_active: true }, $setOnInsert: { user_id: user.id, role: 'Administrator' } },
+    { $set: { email, is_admin: true, is_active: true, account_status: 'active' }, $setOnInsert: { user_id: user.id, role: 'Administrator' } },
     { upsert: true }
   );
   console.log('[grant-admin] profile promoted to admin');

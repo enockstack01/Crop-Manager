@@ -69,7 +69,7 @@ const run = async () => {
     const counts = await seedUser(userId, { profile: spec.profile, farmA: spec.farmA, farmB: spec.farmB });
     await Profile.updateOne(
       { user_id: userId },
-      { $set: { email: spec.email, is_admin: !!spec.admin, is_active: true } }
+      { $set: { email: spec.email, is_admin: !!spec.admin, is_active: true, account_status: 'active' } }
     );
     const total = Object.values(counts).reduce((s, n) => s + n, 0);
     console.log(`    seeded ${total} records${spec.admin ? '  [ADMIN]' : ''}\n`);

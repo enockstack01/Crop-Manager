@@ -5,8 +5,9 @@ import { useToast } from '../../components/Toast.jsx';
 import { useConfirm } from '../../components/Confirm.jsx';
 import { PageHeader, Loading, EmptyState, ViewGrid } from '../../components/ui.jsx';
 import { SelectField } from '../../components/form.jsx';
-import { formatDate, formatDateTime, formatNumber } from '../../lib/format.js';
+import { displayName, formatDate, formatDateTime, formatNumber } from '../../lib/format.js';
 import { USER_ROLES } from '../../lib/options.js';
+import { ACTIONS, StatusPill, actionsFor, useAccountActions } from './accountActions.jsx';
 
 const RECORD_LABELS = {
   Farm: 'Farms', Field: 'Fields', Crop: 'Crops', CropVariety: 'Varieties', Season: 'Seasons',
@@ -25,6 +26,7 @@ export default function AdminUserDetail() {
   const { profile: me } = useProfile();
   const { data: u, isLoading, isError } = useAdminUser(userId);
   const { update, remove, reseed } = useAdminUserMutations();
+  const { start, dialog } = useAccountActions();
 
   if (isLoading) return <Loading />;
   if (isError || !u) return <EmptyState icon="fa-exclamation-triangle" title="User not found" />;
@@ -73,7 +75,7 @@ export default function AdminUserDetail() {
   return (
     <>
       <PageHeader
-        title={u.full_name || u.email || 'User'}
+        title={displayName(u)}
         subtitle={u.email || u.user_id}
         action={
           <button className="btn btn-secondary" onClick={() => navigate('/admin/users')}>
@@ -90,15 +92,15 @@ export default function AdminUserDetail() {
           <div className="card-body">
             <ViewGrid
               items={[
-                ['Full name', u.full_name],
+                ['Full name', u.full_name || '—'],
                 ['Email', u.email],
-                ['Job title', u.role],
+                ['Account type', u.role],
+                ['Currency', u.currency || 'USD'],
                 ['Phone', u.phone],
                 ['Location', u.location],
                 ['Clerk user id', u.user_id],
                 ['Joined', formatDate(u.created_at)],
                 ['Last seen', u.last_seen_at ? formatDateTime(u.last_seen_at) : '—'],
-                ['Onboarded', u.onboarded ? 'Yes' : 'No'],
                 ['Total records', formatNumber(totalRecords)],
               ]}
             />
@@ -124,20 +126,30 @@ export default function AdminUserDetail() {
             </div>
             <div className="form-group">
               <label className="form-label">Account status</label>
-              <div>
-                <button
-                  className={`btn ${u.is_active === false ? 'btn-primary' : 'btn-secondary'}`}
-                  disabled={isSelf}
-                  onClick={() => patch({ is_active: u.is_active === false }, u.is_active === false ? 'Account activated' : 'Account deactivated')}
-                >
-                  {u.is_active === false ? 'Reactivate account' : 'Deactivate account'}
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <StatusPill status={u.account_status} />
+                {u.status_updated_at && (
+                  <span className="text-xs text-light">since {formatDateTime(u.status_updated_at)}</span>
+                )}
               </div>
+              {u.status_reason && (
+                <div className="form-hint" style={{ marginTop: 6 }}>Note to user: {u.status_reason}</div>
+              )}
+              {!isSelf && !u.is_admin && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                  {actionsFor(u.account_status).map((key) => (
+                    <button key={key} className={`btn btn-sm ${ACTIONS[key].btn}`} onClick={() => start(u, key)}>
+                      <i className={`fas ${ACTIONS[key].icon}`} /> {ACTIONS[key].label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {u.is_admin && <div className="form-hint">Administrators always have access.</div>}
             </div>
             <SelectField
-              label="Job title"
+              label="Account type"
               value={u.role || 'Farmer'}
-              onChange={(e) => patch({ role: e.target.value }, 'Job title updated')}
+              onChange={(e) => patch({ role: e.target.value }, 'Account type updated')}
               options={USER_ROLES}
             />
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -154,6 +166,29 @@ export default function AdminUserDetail() {
           </div>
         </div>
       </div>
+
+      {u.access_request && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <h3><i className="fas fa-file-signature" style={{ color: 'var(--orange)', marginRight: 8 }} />Account request</h3>
+          </div>
+          <div className="card-body">
+            <ViewGrid
+              items={[
+                ['Requested account type', u.access_request.account_type],
+                ['Farm / organisation', u.access_request.organization],
+                ['Country', u.access_request.country],
+                ['Location', u.location],
+                ['Farm size', u.access_request.farm_size != null ? `${formatNumber(u.access_request.farm_size)} ${u.access_request.farm_size_unit || ''}` : '—'],
+                ['Main crops', u.access_request.main_crops || '—'],
+                ['Phone', u.phone || '—'],
+                ['Sent', formatDateTime(u.access_request.submitted_at)],
+                ['Message', u.access_request.message || '—', true],
+              ]}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="chart-grid">
         <div className="card">
@@ -199,6 +234,7 @@ export default function AdminUserDetail() {
           </div>
         </div>
       </div>
+      {dialog}
     </>
   );
 }

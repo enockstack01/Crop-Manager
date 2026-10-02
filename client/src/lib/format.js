@@ -23,7 +23,22 @@ export function formatNumber(num) {
   return Number(num).toLocaleString('en-US');
 }
 
-export function formatCurrency(amount, currency = 'ZMW') {
+// The signed-in user's currency (Settings → Currency, default USD). AppLayout sets it
+// from the profile before any page renders, so every formatCurrency() call uses it.
+let userCurrency = 'USD';
+export function setCurrency(code) {
+  userCurrency = code || 'USD';
+}
+export function getCurrency() {
+  return userCurrency;
+}
+
+/** What the app calls the user: their name, or their account type until they give one. */
+export function displayName(profile) {
+  return profile?.full_name?.trim() || profile?.role || 'Farmer';
+}
+
+export function formatCurrency(amount, currency = userCurrency) {
   if (amount === null || amount === undefined || amount === '') return `${currency} 0.00`;
   return (
     currency +

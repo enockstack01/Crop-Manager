@@ -14,7 +14,7 @@ export function OnboardingScreen({ profile }: { profile: any }) {
   const toast = useToast();
   const { signOut } = useAuth();
   const { user } = useUser();
-  // new accounts join as Farmers; an administrator can change the role later.
+  // only administrators see this (everyone else fills in the account request).
   // Google sign-ups arrive with a name on the Clerk user — use it as the default.
   const [values, setValues] = useState({ full_name: profile?.full_name || user?.fullName || '' });
 
@@ -33,7 +33,7 @@ export function OnboardingScreen({ profile }: { profile: any }) {
       heading="Welcome to CropManager"
       intro="Tell us a little about yourself to finish setting up your account."
       title="Confirm your name"
-      subtitle="You'll join as a Farmer — an administrator can change your role later."
+      subtitle="This is how CropManager will greet you."
     >
       <View style={{ gap: spacing.md }}>
         <AuthError message={save.isError ? (save.error as any)?.message || 'Could not save your profile' : ''} />

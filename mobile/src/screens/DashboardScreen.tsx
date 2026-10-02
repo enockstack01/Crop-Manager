@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useDashboard, useProfile } from '../lib/useResource';
 import { computeDashboard, DashFilters } from '../features/dashboard/aggregate';
-import { formatCurrency, formatDate, formatNumber, getGreeting } from '../lib/format';
+import { displayName, formatCurrency, formatDate, formatNumber, getGreeting } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, spacing } from '../theme/theme';
 import {
@@ -55,7 +55,7 @@ export function DashboardScreen({ navigation }: any) {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
-      <PageHeader title={`${getGreeting()}, ${profile?.full_name || 'Farmer'}`} subtitle="Here's what's happening across your farm today." />
+      <PageHeader title={`${getGreeting()}, ${displayName(profile)}`} subtitle="Here's what's happening across your farm today." />
 
       {/* the homepage opens with the farm profile + land utilization */}
       <View style={{ marginBottom: 20 }}>
