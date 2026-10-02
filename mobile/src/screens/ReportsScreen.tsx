@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, Share, View } from 'react-native';
 import { useDashboard } from '../lib/useResource';
-import { formatCurrency, formatDate, formatNumber } from '../lib/format';
+import { currenciesUsed, formatCurrency, formatDate, formatNumber, getCurrency } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText, Badge, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen, StatTile, useLayout } from '../components/ui';
 import { Bars, Donut, LineChart } from '../components/charts';
@@ -46,7 +46,7 @@ export function ReportsScreen() {
   const { colors } = useTheme();
   const toast = useToast();
   const [active, setActive] = useState<ReportId>('production');
-  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '' });
+  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '', currency: '' });
 
   const d = data || {};
 
@@ -66,11 +66,19 @@ export function ReportsScreen() {
       return s === filters.season;
     };
     const farmOk = (r: any) => !filters.farm || r.farm_id === filters.farm;
+    const allExpenses = (d.expenses || []).filter((e: any) => farmOk(e) && seasonOk(e) && inRange(e.expense_date));
+    const allSales = (d.sales || []).filter((s: any) => farmOk(s) && seasonOk(s) && inRange(s.sale_date));
+    // money is never converted: the financial report covers one currency at a time
+    const currencies = currenciesUsed(allSales, allExpenses);
+    const currency = filters.currency && currencies.includes(filters.currency) ? filters.currency : currencies[0] || getCurrency();
+    const inCurrency = (r: any) => (r.currency || getCurrency()) === currency;
     return {
       cycles: (d.cycles || []).filter((c: any) => farmOk(c) && seasonOk(c, c.season_id || null) && (filters.from || filters.to ? inRange(c.planting_date) : true)),
       harvests: (d.harvests || []).filter((h: any) => farmOk(h) && seasonOk(h) && inRange(h.harvest_date)),
-      expenses: (d.expenses || []).filter((e: any) => farmOk(e) && seasonOk(e) && inRange(e.expense_date)),
-      sales: (d.sales || []).filter((s: any) => farmOk(s) && seasonOk(s) && inRange(s.sale_date)),
+      expenses: allExpenses.filter(inCurrency),
+      sales: allSales.filter(inCurrency),
+      currency,
+      currencies,
     };
   }, [d, filters]);
 
@@ -106,6 +114,14 @@ export function ReportsScreen() {
         <SelectField value={filters.season} onChangeValue={set('season')} placeholder="All Seasons" options={(d.seasons || []).map((s: any) => ({ value: s.id, label: s.name }))} />
         <DateField value={filters.from} onChangeValue={set('from')} />
         <DateField value={filters.to} onChangeValue={set('to')} />
+        {filtered.currencies.length > 1 ? (
+          <SelectField
+            value={filtered.currency}
+            onChangeValue={set('currency')}
+            options={filtered.currencies.map((c: string) => ({ value: c, label: `Money in ${c}` }))}
+            placeholder=""
+          />
+        ) : null}
       </Grid>
 
       {/* .report-tabs */}
@@ -321,6 +337,7 @@ function build(id: ReportId, f: any): Built {
     const months = Object.values(byMonth)
       .map((r: any) => ({ ...r, net: r.revenue - r.expenses, margin: r.revenue > 0 ? ((r.revenue - r.expenses) / r.revenue) * 100 : 0 }))
       .sort((a: any, b: any) => a.month.localeCompare(b.month));
+    const money = (v: number) => formatCurrency(v, f.currency);
     const totRev = f.sales.reduce((s: number, x: any) => s + n(x.total_amount), 0);
     const totExp = f.expenses.reduce((s: number, x: any) => s + n(x.amount), 0);
     const net = totRev - totExp;
@@ -331,9 +348,9 @@ function build(id: ReportId, f: any): Built {
     return {
       empty: months.length === 0,
       tiles: [
-        { label: 'Total Revenue', value: formatCurrency(totRev), color: '#2E7D32' },
-        { label: 'Total Expenses', value: formatCurrency(totExp), color: '#D32F2F' },
-        { label: 'Net Profit', value: formatCurrency(net), color: netColor(net) },
+        { label: 'Total Revenue', value: money(totRev), color: '#2E7D32' },
+        { label: 'Total Expenses', value: money(totExp), color: '#D32F2F' },
+        { label: 'Net Profit', value: money(net), color: netColor(net) },
         { label: 'Profit Margin', value: totRev ? `${Math.round((net / totRev) * 100)}%` : '—', color: '#1976D2' },
       ],
       chart: (
@@ -350,9 +367,9 @@ function build(id: ReportId, f: any): Built {
       ),
       columns: [
         { key: 'month', label: 'Month', render: (r) => (r._total ? 'Total' : monthLabel(r.month)) },
-        { key: 'revenue', label: 'Revenue', align: 'right', render: (r) => formatCurrency(r.revenue) },
-        { key: 'expenses', label: 'Expenses', align: 'right', render: (r) => formatCurrency(r.expenses) },
-        { key: 'net', label: 'Net', align: 'right', render: (r) => <AppText style={{ fontSize: 13, color: netColor(r.net) }}>{formatCurrency(r.net)}</AppText> },
+        { key: 'revenue', label: 'Revenue', align: 'right', render: (r) => money(r.revenue) },
+        { key: 'expenses', label: 'Expenses', align: 'right', render: (r) => money(r.expenses) },
+        { key: 'net', label: 'Net', align: 'right', render: (r) => <AppText style={{ fontSize: 13, color: netColor(r.net) }}>{money(r.net)}</AppText> },
         { key: 'margin', label: 'Margin', align: 'right', render: (r) => (r.revenue ? `${Math.round(r.margin)}%` : '—') },
       ],
       rows: [
@@ -361,17 +378,17 @@ function build(id: ReportId, f: any): Built {
       ],
       extra: cats.length
         ? {
-            title: 'Expense Breakdown',
+            title: `Expense Breakdown · ${f.currency}`,
             columns: [
               { key: 'category', label: 'Category' },
-              { key: 'amount', label: 'Amount', align: 'right', render: (r) => formatCurrency(r.amount) },
+              { key: 'amount', label: 'Amount', align: 'right', render: (r) => formatCurrency(r.amount, f.currency) },
               { key: 'share', label: 'Share', align: 'right', render: (r) => `${Math.round((r.amount / totExp) * 100)}%` },
             ],
             rows: cats.map((c) => ({ ...c, _key: c.category })),
           }
         : undefined,
       csv: {
-        headers: ['Month', 'Revenue', 'Expenses', 'Net', 'Margin (%)'],
+        headers: ['Month', `Revenue (${f.currency})`, `Expenses (${f.currency})`, `Net (${f.currency})`, 'Margin (%)'],
         rows: months.map((r: any) => [r.month, round1(r.revenue), round1(r.expenses), round1(r.net), Math.round(r.margin)]),
       },
     };

@@ -11,6 +11,7 @@ import { serialize } from './serialize.js';
 export function crudController(resource) {
   const Model = resource.model;
   const populate = toPopulate(resource.relations || []);
+  const hasCurrency = !!Model.schema.path('currency');
 
   const readOne = async (id, userId) => {
     let query = Model.findOne({ _id: id, user_id: userId });
@@ -44,6 +45,8 @@ export function crudController(resource) {
 
     create: asyncHandler(async (req, res) => {
       const body = stripReadOnly(req.body);
+      // money records default to the owner's default currency (Settings)
+      if (hasCurrency && !body.currency) body.currency = req.profile?.currency || 'USD';
       const doc = new Model({ ...body, user_id: req.userId });
       await doc.save();
       res.status(201).json(await readOne(doc._id, req.userId));
@@ -53,6 +56,7 @@ export function crudController(resource) {
       const doc = await Model.findOne({ _id: req.params.id, user_id: req.userId });
       if (!doc) throw createHttpError(404, `${resource.name} not found`);
       const body = stripReadOnly(req.body);
+      if (hasCurrency && !body.currency) delete body.currency; // keep the record's currency
       doc.set(body);
       await doc.save();
       res.json(await readOne(doc._id, req.userId));

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { ownedSchema, ref } from './_base.js';
+import { currencyField } from '../lib/currencies.js';
 
 const CropCycleSchema = ownedSchema({
   farm_id: { ...ref('Farm'), required: true, index: true },
@@ -23,6 +24,7 @@ const CropCycleSchema = ownedSchema({
 });
 
 const PlantingRecordSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   crop_cycle_id: { ...ref('CropCycle'), required: true, index: true },
   farm_id: { ...ref('Farm'), default: null },
   field_id: { ...ref('Field'), default: null },
@@ -39,6 +41,7 @@ const PlantingRecordSchema = ownedSchema({
 });
 
 const FieldActivitySchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   farm_id: { ...ref('Farm'), default: null, index: true },
   field_id: { ...ref('Field'), default: null },
   crop_cycle_id: { ...ref('CropCycle'), default: null },
@@ -63,6 +66,7 @@ FieldActivitySchema.pre('insertMany', function (next, docs) {
 });
 
 const IrrigationRecordSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   farm_id: { ...ref('Farm'), default: null, index: true },
   field_id: { ...ref('Field'), default: null },
   crop_cycle_id: { ...ref('CropCycle'), default: null },
@@ -79,6 +83,7 @@ const IrrigationRecordSchema = ownedSchema({
 });
 
 const FertilizerApplicationSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   farm_id: { ...ref('Farm'), default: null, index: true },
   field_id: { ...ref('Field'), default: null },
   crop_cycle_id: { ...ref('CropCycle'), default: null },
@@ -95,6 +100,7 @@ const FertilizerApplicationSchema = ownedSchema({
 });
 
 const CropProtectionRecordSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   farm_id: { ...ref('Farm'), default: null, index: true },
   field_id: { ...ref('Field'), default: null },
   crop_cycle_id: { ...ref('CropCycle'), default: null },
@@ -132,6 +138,7 @@ const CropScoutingRecordSchema = ownedSchema({
 });
 
 const HarvestRecordSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   farm_id: { ...ref('Farm'), default: null, index: true },
   field_id: { ...ref('Field'), default: null },
   crop_id: { ...ref('Crop'), required: true, index: true },

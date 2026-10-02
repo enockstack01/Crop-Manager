@@ -1,6 +1,6 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, NumberField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { CycleSelect } from '../components/relationFields.jsx';
 import { StatusBadge } from '../components/ui.jsx';
 import { useAll } from '../lib/useResource.js';
@@ -8,6 +8,7 @@ import { formatCurrency, formatDate, formatNumber } from '../lib/format.js';
 import { PAYMENT_STATUS } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', crop_id: '', crop_cycle_id: '', buyer: '', quantity: 0, unit: 'kg',
   unit_price: 0, sale_date: '', market: '', payment_status: 'Pending', notes: '',
 };
@@ -40,7 +41,7 @@ function Body({ bind }) {
       <FormRow cols={3}>
         <NumberField label="Quantity" {...bind('quantity')} />
         <TextField label="Unit" {...bind('unit')} />
-        <NumberField label="Unit Price" {...bind('unit_price')} />
+        <MoneyField label="Unit Price" bind={bind} name="unit_price" />
       </FormRow>
       <FormRow>
         <DateField label="Sale Date" required {...bind('sale_date')} />
@@ -98,8 +99,8 @@ export default function Sales() {
         { key: 'crop', label: 'Crop', render: (r) => <span className="badge badge-primary">{r.crops?.name || '—'}</span> },
         { key: 'buyer', label: 'Buyer', render: (r) => r.buyer || '—' },
         { key: 'quantity', label: 'Qty', render: (r) => `${formatNumber(r.quantity)} ${r.unit || 'kg'}` },
-        { key: 'unit_price', label: 'Unit Price', render: (r) => formatCurrency(r.unit_price) },
-        { key: 'total_amount', label: 'Total', render: (r) => <strong>{formatCurrency(r.total_amount)}</strong> },
+        { key: 'unit_price', label: 'Unit Price', render: (r) => formatCurrency(r.unit_price, r.currency) },
+        { key: 'total_amount', label: 'Total', render: (r) => <strong>{formatCurrency(r.total_amount, r.currency)}</strong> },
         { key: 'payment_status', label: 'Payment', render: (r) => <StatusBadge status={r.payment_status} /> },
       ]}
       viewFields={(r) => [
@@ -109,8 +110,8 @@ export default function Sales() {
         ['Buyer', r.buyer],
         ['Market', r.market],
         ['Quantity', `${formatNumber(r.quantity)} ${r.unit || 'kg'}`],
-        ['Unit Price', formatCurrency(r.unit_price)],
-        ['Total Amount', formatCurrency(r.total_amount)],
+        ['Unit Price', formatCurrency(r.unit_price, r.currency)],
+        ['Total Amount', formatCurrency(r.total_amount, r.currency)],
         ['Payment Status', r.payment_status],
         ['Notes', r.notes, true],
       ]}

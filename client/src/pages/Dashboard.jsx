@@ -5,7 +5,7 @@ import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
-import { formatCurrency, formatNumber, formatDate, getGreeting, displayName } from '../lib/format.js';
+import { formatCurrency, formatNumber, formatDate, getGreeting, displayName, formatTotals, sumByCurrency, currenciesUsed, getCurrency } from '../lib/format.js';
 import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
 
 const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
@@ -41,7 +41,7 @@ export default function Dashboard() {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const dark = useIsDark();
-  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '' });
+  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '', currency: '' });
 
   const d = data || {};
   const agg = useMemo(() => computeAggregates(d, filters), [d, filters]);
@@ -105,6 +105,19 @@ export default function Dashboard() {
         </select>
         <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.from} onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))} />
         <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.to} onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} />
+        {agg.currencies.length > 1 && (
+          <select
+            className="dashboard-filter-select"
+            value={filters.currency}
+            onChange={(e) => setFilters((f) => ({ ...f, currency: e.target.value }))}
+            aria-label="Currency"
+          >
+            <option value="">All currencies (charts in {agg.chartCurrency})</option>
+            {agg.currencies.map((c) => (
+              <option key={c} value={c}>Only {c}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Crop distribution */}
@@ -209,7 +222,7 @@ export default function Dashboard() {
             <StatTile label="Total Harvested" value={formatNumber(Math.round(agg.harvest.totalQty))} sub="kg" />
             <StatTile label="Avg Yield" value={agg.harvest.avgYield.toFixed(0)} sub="kg/ha" color="var(--primary)" />
             <StatTile label="Harvest Records" value={agg.harvest.count} sub="records" color="var(--blue)" />
-            <StatTile label="Harvest Costs" value={formatCurrency(agg.harvest.totalCost)} sub="total" color="var(--red)" />
+            <StatTile label="Harvest Costs" value={agg.harvest.costText} sub="total" color="var(--red)" />
           </div>
         </Card>
       </div>
@@ -217,16 +230,16 @@ export default function Dashboard() {
       {/* Revenue vs expenses */}
       <div className="chart-card full-width" style={{ marginBottom: 20 }}>
         <div className="chart-card-header">
-          <h3><i className="fas fa-chart-area" style={{ color: 'var(--primary)', marginRight: 8 }} />Revenue vs Expenses</h3>
+          <h3><i className="fas fa-chart-area" style={{ color: 'var(--primary)', marginRight: 8 }} />Revenue vs Expenses · {agg.chartCurrency}</h3>
           <div className="wrap-row" style={{ fontSize: 12 }}>
             <span style={{ color: 'var(--green)', fontWeight: 600 }}>
-              <i className="fas fa-arrow-up" /> {formatCurrency(agg.finance.totalSales)} Revenue
+              <i className="fas fa-arrow-up" /> {formatCurrency(agg.finance.totalSales, agg.chartCurrency)} Revenue
             </span>
             <span style={{ color: 'var(--red)', fontWeight: 600 }}>
-              <i className="fas fa-arrow-down" /> {formatCurrency(agg.finance.totalExpenses)} Expenses
+              <i className="fas fa-arrow-down" /> {formatCurrency(agg.finance.totalExpenses, agg.chartCurrency)} Expenses
             </span>
             <span style={{ color: 'var(--blue)', fontWeight: 600 }}>
-              Net: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses)}
+              Net: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses, agg.chartCurrency)}
             </span>
           </div>
         </div>
@@ -252,7 +265,7 @@ export default function Dashboard() {
 
       {/* Expense breakdown + sales analytics */}
       <div className="chart-grid">
-        <Card title="Expense Breakdown" icon="fa-receipt" iconColor="var(--red)" bodyStyle={{ height: 260 }}>
+        <Card title={`Expense Breakdown · ${agg.chartCurrency}`} icon="fa-receipt" iconColor="var(--red)" bodyStyle={{ height: 260 }}>
           {agg.expenseBreakdown.labels.length ? (
             <Doughnut
               key={`eb-${dark}`}
@@ -266,14 +279,14 @@ export default function Dashboard() {
             <NoData label="No expense data" />
           )}
         </Card>
-        <Card title="Sales Analytics" icon="fa-hand-holding-usd" iconColor="var(--green)">
+        <Card title={`Sales Analytics · ${agg.chartCurrency}`} icon="fa-hand-holding-usd" iconColor="var(--green)">
           <div className="stat-grid" style={{ '--stat-min': '140px' }}>
-            <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid)} color="#2E7D32" max={16} />
-            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending)} color="#F57F17" max={16} />
-            <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'])} color="#1565C0" max={16} />
+            <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" max={16} />
+            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F57F17" max={16} />
+            <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1565C0" max={16} />
           </div>
           <div className="stat-grid" style={{ marginTop: 16 }}>
-            <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales)} sub={`${agg.filteredSales.length} records`} max={20} />
+            <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={`${agg.salesInCurrency} records`} max={20} />
           </div>
         </Card>
       </div>
@@ -391,8 +404,18 @@ function computeAggregates(d, filters) {
   const activeCycles = cycles.filter((c) => ['Planted', 'Growing', 'Ready for Harvest'].includes(c.status));
   const totalPlanted = cycles.filter((c) => !['Planned', 'Cancelled'].includes(c.status)).reduce((s, c) => s + (c.area_planted || 0), 0);
   const expectedProd = cycles.reduce((s, c) => s + (c.expected_production || 0), 0);
-  const totalExpenses = filteredExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-  const totalSales = filteredSales.reduce((s, x) => s + (x.total_amount || 0), 0);
+  // money is never converted between currencies: cards show a total per currency
+  // (or only the chosen currency); charts show one currency at a time
+  const currencies = currenciesUsed(filteredSales, filteredExpenses, filteredHarvests);
+  const chartCurrency = filters.currency || currencies[0] || getCurrency();
+  const inCurrency = (r) => (r.currency || getCurrency()) === chartCurrency;
+  const money = (rows, value) => (filters.currency
+    ? formatCurrency(rows.filter(inCurrency).reduce((s, r) => s + (value(r) || 0), 0), chartCurrency)
+    : formatTotals(sumByCurrency(rows, value)));
+  const chartExpenses = filteredExpenses.filter(inCurrency);
+  const chartSales = filteredSales.filter(inCurrency);
+  const totalExpenses = chartExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalSales = chartSales.reduce((s, x) => s + (x.total_amount || 0), 0);
   const lowStock = (d.inventory || []).filter((i) => i.current_quantity <= i.minimum_stock).length;
 
   const kpis = [
@@ -402,8 +425,8 @@ function computeAggregates(d, filters) {
     { icon: 'fa-expand', color: 'blue', label: 'Planted Area', value: `${totalPlanted.toFixed(1)} ha`, link: '/crop-cycles' },
     { icon: 'fa-chart-line', color: 'purple', label: 'Expected Harvest', value: `${formatNumber(Math.round(expectedProd))} kg`, link: '/crop-cycles' },
     { icon: 'fa-wheat-awn', color: 'green', label: 'Harvest Records', value: filteredHarvests.length, link: '/harvest' },
-    { icon: 'fa-receipt', color: 'red', label: 'Total Expenses', value: formatCurrency(totalExpenses), link: '/expenses' },
-    { icon: 'fa-hand-holding-usd', color: 'green', label: 'Total Sales', value: formatCurrency(totalSales), link: '/sales' },
+    { icon: 'fa-receipt', color: 'red', label: 'Total Expenses', value: money(filteredExpenses, (e) => e.amount), link: '/expenses' },
+    { icon: 'fa-hand-holding-usd', color: 'green', label: 'Total Sales', value: money(filteredSales, (x) => x.total_amount), link: '/sales' },
     { icon: 'fa-boxes', color: 'blue', label: 'Inventory Items', value: (d.inventory || []).length, link: '/inventory' },
     { icon: 'fa-exclamation-triangle', color: lowStock > 0 ? 'red' : 'green', label: 'Low Stock Items', value: lowStock, link: '/inventory' },
   ];
@@ -446,22 +469,22 @@ function computeAggregates(d, filters) {
   // harvest analytics
   const totalQty = filteredHarvests.reduce((s, h) => s + (h.quantity || 0), 0);
   const totalArea2 = filteredHarvests.reduce((s, h) => s + (h.harvested_area || 0), 0);
-  const totalHarvestCost = filteredHarvests.reduce((s, h) => s + (h.labor_cost || 0) + (h.transport_cost || 0) + (h.other_costs || 0), 0);
+  const harvestCostText = money(filteredHarvests, (h) => (h.labor_cost || 0) + (h.transport_cost || 0) + (h.other_costs || 0));
 
   // finance by month
   const expByMonth = {};
-  filteredExpenses.forEach((e) => { const k = e.expense_date?.substring(0, 7); if (k) expByMonth[k] = (expByMonth[k] || 0) + (e.amount || 0); });
+  chartExpenses.forEach((e) => { const k = e.expense_date?.substring(0, 7); if (k) expByMonth[k] = (expByMonth[k] || 0) + (e.amount || 0); });
   const salByMonth = {};
-  filteredSales.forEach((s) => { const k = s.sale_date?.substring(0, 7); if (k) salByMonth[k] = (salByMonth[k] || 0) + (s.total_amount || 0); });
+  chartSales.forEach((s) => { const k = s.sale_date?.substring(0, 7); if (k) salByMonth[k] = (salByMonth[k] || 0) + (s.total_amount || 0); });
   const finKeys = [...new Set([...Object.keys(expByMonth), ...Object.keys(salByMonth)])].sort();
 
   // expense breakdown
   const catMap = {};
-  filteredExpenses.forEach((e) => { catMap[e.category || 'Other'] = (catMap[e.category || 'Other'] || 0) + (e.amount || 0); });
+  chartExpenses.forEach((e) => { catMap[e.category || 'Other'] = (catMap[e.category || 'Other'] || 0) + (e.amount || 0); });
 
   // sales by status
   const salesByStatus = { Paid: 0, Pending: 0, 'Partially Paid': 0 };
-  filteredSales.forEach((s) => { salesByStatus[s.payment_status] = (salesByStatus[s.payment_status] || 0) + (s.total_amount || 0); });
+  chartSales.forEach((s) => { salesByStatus[s.payment_status] = (salesByStatus[s.payment_status] || 0) + (s.total_amount || 0); });
 
   // inventory health
   const inv = d.inventory || [];
@@ -502,6 +525,9 @@ function computeAggregates(d, filters) {
     kpis,
     cycles,
     filteredSales,
+    currencies,
+    chartCurrency,
+    salesInCurrency: chartSales.length,
     land: {
       planted: plantedArea,
       fallow: fallowArea,
@@ -516,7 +542,7 @@ function computeAggregates(d, filters) {
       totalQty,
       avgYield: totalArea2 > 0 ? totalQty / totalArea2 : 0,
       count: filteredHarvests.length,
-      totalCost: totalHarvestCost,
+      costText: harvestCostText,
     },
     finance: {
       labels: finKeys.map(monthLabel),

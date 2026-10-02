@@ -1,12 +1,13 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { CycleSelect } from '../components/relationFields.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 import { EXPENSE_CATEGORIES } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', crop_cycle_id: '', category: '', description: '', amount: 0,
   expense_date: '', payment_method: '', supplier: '', notes: '',
 };
@@ -26,7 +27,7 @@ function Body({ bind }) {
       </FormRow>
       <CycleSelect bind={bind} />
       <FormRow>
-        <NumberField label="Amount" required {...bind('amount')} />
+        <MoneyField label="Amount" required bind={bind} name="amount" />
         <DateField label="Expense Date" required {...bind('expense_date')} />
       </FormRow>
       <TextField label="Description" {...bind('description')} />
@@ -82,13 +83,13 @@ export default function Expenses() {
         { key: 'category', label: 'Category', render: (r) => <span className="badge badge-primary">{r.category || 'Other'}</span> },
         { key: 'description', label: 'Description', className: 'text-truncate', render: (r) => r.description || '—' },
         { key: 'farm', label: 'Farm', render: (r) => r.farms?.name || '—' },
-        { key: 'amount', label: 'Amount', render: (r) => <strong style={{ color: 'var(--red)' }}>{formatCurrency(r.amount)}</strong> },
+        { key: 'amount', label: 'Amount', render: (r) => <strong style={{ color: 'var(--red)' }}>{formatCurrency(r.amount, r.currency)}</strong> },
         { key: 'supplier', label: 'Supplier', render: (r) => r.supplier || '—' },
       ]}
       viewFields={(r) => [
         ['Date', formatDate(r.expense_date)],
         ['Category', r.category],
-        ['Amount', formatCurrency(r.amount)],
+        ['Amount', formatCurrency(r.amount, r.currency)],
         ['Farm', r.farms?.name],
         ['Payment Method', r.payment_method],
         ['Supplier', r.supplier],

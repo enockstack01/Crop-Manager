@@ -34,7 +34,9 @@ export async function seedUser(userId, opts = {}) {
   await clearUser(userId);
 
   const U = { user_id: userId };
-  const many = (Model, docs) => Model.insertMany(docs.map((doc) => ({ ...U, ...doc })));
+  // demo amounts are Zambian, so money records are in ZMW
+  const money = (Model) => (Model.schema.path('currency') ? { currency: 'ZMW' } : {});
+  const many = (Model, docs) => Model.insertMany(docs.map((doc) => ({ ...U, ...money(Model), ...doc })));
 
   await M.Profile.findOneAndUpdate(
     { user_id: userId },

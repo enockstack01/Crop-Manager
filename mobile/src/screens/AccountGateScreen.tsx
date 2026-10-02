@@ -91,7 +91,7 @@ function RequestForm({ profile, onCancel }: { profile: any; onCancel?: () => voi
         <NumberField label="Farm Size" value={v.farm_size} onChangeValue={set('farm_size')} placeholder="0" />
         <SelectField label="Unit" value={v.farm_size_unit} onChangeValue={set('farm_size_unit')} options={['hectares', 'acres']} />
         <TextField label="Main Crops" value={v.main_crops} onChangeValue={set('main_crops')} placeholder="e.g. Maize, beans, coffee" />
-        <SelectField label="Currency" required value={v.currency} onChangeValue={set('currency')} options={CURRENCY_OPTIONS} hint="Used for all money values" />
+        <SelectField label="Default Currency" required value={v.currency} onChangeValue={set('currency')} options={CURRENCY_OPTIONS} hint="You can pick another one on each record" />
         <TextAreaField label="Anything else we should know?" value={v.message} onChangeValue={set('message')} />
         <Button
           title="Send request"

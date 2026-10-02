@@ -33,9 +33,12 @@ function KpiTile({ k, onPress }: { k: ProfileKpi; onPress?: () => void }) {
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontFamily: ff('500'), fontSize: 11, color: colors.textLight }} numberOfLines={1}>{k.label}</Text>
-        <Text style={{ fontFamily: ff('700'), fontSize: 16, color: colors.text, marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
-          {k.value}
-        </Text>
+        {/* money in several currencies: one line per currency */}
+        {String(k.value).split(' · ').map((part) => (
+          <Text key={part} style={{ fontFamily: ff('700'), fontSize: 16, color: colors.text, marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
+            {part}
+          </Text>
+        ))}
       </View>
     </PressableScale>
   );

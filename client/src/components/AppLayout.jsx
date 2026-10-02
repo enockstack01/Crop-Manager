@@ -36,9 +36,8 @@ function Shell() {
     return <AccountGate profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
   }
 
-  // every money value follows the user's chosen currency; pages remount when it changes
-  const currency = profile?.currency || 'USD';
-  setCurrency(currency);
+  // the default currency pre-fills new records (each record keeps its own currency)
+  setCurrency(profile?.currency);
 
   return (
     <div className="app-layout">
@@ -77,7 +76,7 @@ function Shell() {
               onAction={() => refetch()}
             />
           ) : (
-            <Outlet key={currency} />
+            <Outlet />
           )}
         </div>
       </main>

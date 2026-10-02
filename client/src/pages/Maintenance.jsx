@@ -1,10 +1,11 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 
 const INITIAL = {
+  currency: '',
   equipment_id: '', maintenance_date: '', type: '', description: '', cost: 0,
   performed_by: '', next_maintenance: '', notes: '',
 };
@@ -24,7 +25,7 @@ function MaintBody({ bind }) {
       </FormRow>
       <FormRow>
         <TextField label="Type" {...bind('type')} placeholder="e.g. Service / Repair" />
-        <NumberField label="Cost" {...bind('cost')} />
+        <MoneyField label="Cost" bind={bind} name="cost" />
       </FormRow>
       <TextArea label="Description" {...bind('description')} />
       <FormRow>
@@ -76,14 +77,14 @@ export default function Maintenance() {
         { key: 'equipment', label: 'Equipment', render: (r) => <span className="badge badge-primary">{r.equipment?.name || '—'}</span> },
         { key: 'type', label: 'Type', render: (r) => r.type || '—' },
         { key: 'description', label: 'Description', className: 'text-truncate', render: (r) => r.description || '—' },
-        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost) : '—') },
+        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost, r.currency) : '—') },
         { key: 'performed_by', label: 'Performed By', render: (r) => r.performed_by || '—' },
       ]}
       viewFields={(r) => [
         ['Date', formatDate(r.maintenance_date)],
         ['Equipment', r.equipment?.name],
         ['Type', r.type],
-        ['Cost', formatCurrency(r.cost)],
+        ['Cost', formatCurrency(r.cost, r.currency)],
         ['Performed By', r.performed_by],
         ['Next Maintenance', r.next_maintenance ? formatDate(r.next_maintenance) : '—'],
         ['Description', r.description, true],

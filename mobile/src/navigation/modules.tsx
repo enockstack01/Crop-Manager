@@ -4,7 +4,7 @@ import { formatCurrency, formatDate, formatNumber } from '../lib/format';
 import { mediaUrl } from '../env';
 import { Image } from 'react-native';
 import { STATUS_TONES } from '../theme/theme';
-import { FormApi, DateField, NumberField, SelectField, TextAreaField, TextField } from '../components/fields';
+import { FormApi, DateField, NumberField, SelectField, TextAreaField, TextField, MoneyField } from '../components/fields';
 import { PhotoField } from '../components/PhotoField';
 import { CycleSelect, FarmFieldRow } from '../components/relationFields';
 import {
@@ -335,12 +335,13 @@ const planting: ModuleConfig = {
     ['Date', formatDate(r.planting_date)], ['Crop', r.crop_cycles?.crops?.name],
     ['Farm', r.crop_cycles?.farms?.name], ['Field', r.crop_cycles?.fields?.name],
     ['Seed Quantity', r.seed_quantity ? `${formatNumber(r.seed_quantity)} ${r.seed_unit || 'kg'}` : '—'],
-    ['Seed Cost', r.seed_cost || '—'],
+    ['Seed Cost', r.seed_cost ? formatCurrency(r.seed_cost, r.currency) : '—'],
     ['Row Spacing', r.row_spacing ? `${r.row_spacing} ${r.spacing_unit || 'cm'}` : '—'],
     ['Plant Spacing', r.plant_spacing ? `${r.plant_spacing} ${r.spacing_unit || 'cm'}` : '—'],
     ['Seed Source', r.seed_source], ['Method', r.planting_method], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     crop_cycle_id: '', planting_date: '', seed_quantity: '', seed_unit: 'kg', seed_source: '',
     seed_cost: '', row_spacing: '', plant_spacing: '', spacing_unit: 'cm', planting_method: '', notes: '',
   },
@@ -357,7 +358,7 @@ const planting: ModuleConfig = {
       <NumberField label="Seed Quantity" {...f.bind('seed_quantity')} />
       <TextField label="Seed Unit" {...f.bind('seed_unit')} />
       <TextField label="Seed Source" {...f.bind('seed_source')} />
-      <NumberField label="Seed Cost" {...f.bind('seed_cost')} />
+      <MoneyField label="Seed Cost" form={f} name="seed_cost" />
       <NumberField label="Row Spacing" {...f.bind('row_spacing')} />
       <NumberField label="Plant Spacing" {...f.bind('plant_spacing')} />
       <SelectField label="Spacing Unit" {...f.bind('spacing_unit')} options={SPACING_UNITS} placeholder="" />
@@ -383,16 +384,17 @@ const activities: ModuleConfig = {
   row: (r) => ({
     title: r.activity_type, subtitle: `${farmField(r)}${r.description ? ` — ${r.description}` : ''}`,
     right: formatDate(r.activity_date),
-    badge: r.total_cost ? { label: formatCurrency(r.total_cost), tone: 'neutral' } : null,
+    badge: r.total_cost ? { label: formatCurrency(r.total_cost, r.currency), tone: 'neutral' } : null,
   }),
   detail: (r) => [
     ['Date', formatDate(r.activity_date)], ['Type', r.activity_type], ['Farm', r.farms?.name], ['Field', r.fields?.name],
     ['Crop', r.crop_cycles?.crops?.name], ['Performed By', r.performed_by],
-    ['Labor Cost', formatCurrency(r.labor_cost)], ['Equipment Cost', formatCurrency(r.equipment_cost)],
-    ['Material Cost', formatCurrency(r.material_cost)], ['Total Cost', formatCurrency(r.total_cost)],
+    ['Labor Cost', formatCurrency(r.labor_cost, r.currency)], ['Equipment Cost', formatCurrency(r.equipment_cost, r.currency)],
+    ['Material Cost', formatCurrency(r.material_cost, r.currency)], ['Total Cost', formatCurrency(r.total_cost, r.currency)],
     ['Description', r.description], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     farm_id: '', field_id: '', crop_cycle_id: '', activity_type: '', activity_date: '',
     description: '', labor_cost: 0, equipment_cost: 0, material_cost: 0, performed_by: '', notes: '',
   },
@@ -408,9 +410,9 @@ const activities: ModuleConfig = {
       <SelectField label="Activity Type" required {...f.bind('activity_type')} placeholder="Select Type" options={ACTIVITY_TYPES} />
       <DateField label="Date" required {...f.bind('activity_date')} />
       <TextAreaField label="Description" {...f.bind('description')} />
-      <NumberField label="Labor Cost" {...f.bind('labor_cost')} />
-      <NumberField label="Equipment Cost" {...f.bind('equipment_cost')} />
-      <NumberField label="Material Cost" {...f.bind('material_cost')} />
+      <MoneyField label="Labor Cost" form={f} name="labor_cost" />
+      <MoneyField label="Equipment Cost" form={f} name="equipment_cost" />
+      <MoneyField label="Material Cost" form={f} name="material_cost" />
       <TextField label="Performed By" {...f.bind('performed_by')} />
       <TextAreaField label="Notes" {...f.bind('notes')} />
     </>
@@ -440,9 +442,10 @@ const irrigation: ModuleConfig = {
     ['Volume', r.water_volume ? `${formatNumber(r.water_volume)} ${r.water_unit || 'm³'}` : '—'],
     ['Duration', r.duration_hours ? `${r.duration_hours} hours` : '—'],
     ['Area Irrigated', r.area_irrigated ? `${formatNumber(r.area_irrigated)} ${r.area_unit || 'ha'}` : '—'],
-    ['Cost', formatCurrency(r.cost)], ['Operator', r.operator], ['Notes', r.notes],
+    ['Cost', formatCurrency(r.cost, r.currency)], ['Operator', r.operator], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     farm_id: '', field_id: '', crop_cycle_id: '', irrigation_date: '', irrigation_method: '',
     duration_hours: '', water_volume: '', water_unit: 'cubic metres', area_irrigated: '',
     area_unit: 'hectares', cost: 0, operator: '', notes: '',
@@ -460,7 +463,7 @@ const irrigation: ModuleConfig = {
       <SelectField label="Method" required {...f.bind('irrigation_method')} placeholder="Select Method" options={IRRIGATION_METHODS} />
       <DateField label="Date" required {...f.bind('irrigation_date')} />
       <NumberField label="Duration (hours)" {...f.bind('duration_hours')} />
-      <NumberField label="Cost" {...f.bind('cost')} />
+      <MoneyField label="Cost" form={f} name="cost" />
       <NumberField label="Water Volume" {...f.bind('water_volume')} />
       <SelectField label="Water Unit" {...f.bind('water_unit')} options={WATER_UNITS} placeholder="" />
       <NumberField label="Area Irrigated" {...f.bind('area_irrigated')} />
@@ -492,10 +495,11 @@ const fertilizers: ModuleConfig = {
   detail: (r) => [
     ['Date', formatDate(r.application_date)], ['Fertilizer', r.fertilizer_name], ['Type', r.fertilizer_type],
     ['Method', r.application_method], ['Quantity', r.quantity ? `${formatNumber(r.quantity)} ${r.unit || 'kg'}` : '—'],
-    ['Cost', formatCurrency(r.cost)], ['Farm', r.farms?.name], ['Field', r.fields?.name],
+    ['Cost', formatCurrency(r.cost, r.currency)], ['Farm', r.farms?.name], ['Field', r.fields?.name],
     ['Supplier', r.supplier], ['Applied By', r.applied_by], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     farm_id: '', field_id: '', crop_cycle_id: '', application_date: '', fertilizer_name: '',
     fertilizer_type: '', quantity: '', unit: 'kg', application_method: '', cost: 0,
     supplier: '', applied_by: '', notes: '',
@@ -515,7 +519,7 @@ const fertilizers: ModuleConfig = {
       <SelectField label="Method" {...f.bind('application_method')} placeholder="Select Method" options={FERTILIZER_METHODS} />
       <NumberField label="Quantity" {...f.bind('quantity')} />
       <TextField label="Unit" {...f.bind('unit')} />
-      <NumberField label="Cost" {...f.bind('cost')} />
+      <MoneyField label="Cost" form={f} name="cost" />
       <TextField label="Supplier" {...f.bind('supplier')} />
       <TextField label="Applied By" {...f.bind('applied_by')} />
       <TextAreaField label="Notes" {...f.bind('notes')} />
@@ -545,11 +549,12 @@ const cropProtection: ModuleConfig = {
   detail: (r) => [
     ['Date', formatDate(r.protection_date)], ['Problem Type', r.problem_type], ['Problem', r.problem_name],
     ['Severity', r.severity], ['Treatment', r.treatment], ['Product', r.product_name],
-    ['Quantity', r.quantity ? `${r.quantity} ${r.unit || 'L'}` : '—'], ['Cost', formatCurrency(r.cost)],
+    ['Quantity', r.quantity ? `${r.quantity} ${r.unit || 'L'}` : '—'], ['Cost', formatCurrency(r.cost, r.currency)],
     ['Farm', r.farms?.name], ['Field', r.fields?.name], ['Applied By', r.applied_by],
     ['Method', r.application_method], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     farm_id: '', field_id: '', crop_cycle_id: '', protection_date: '', problem_type: '',
     problem_name: '', severity: '', treatment: '', product_name: '', quantity: '',
     unit: 'litres', application_method: '', cost: 0, applied_by: '', notes: '',
@@ -572,7 +577,7 @@ const cropProtection: ModuleConfig = {
       <SelectField label="Application Method" {...f.bind('application_method')} placeholder="Select Method" options={PROTECTION_METHODS} />
       <NumberField label="Quantity" {...f.bind('quantity')} />
       <TextField label="Unit" {...f.bind('unit')} />
-      <NumberField label="Cost" {...f.bind('cost')} />
+      <MoneyField label="Cost" form={f} name="cost" />
       <TextField label="Applied By" {...f.bind('applied_by')} />
       <TextAreaField label="Notes" {...f.bind('notes')} />
     </>
@@ -673,12 +678,13 @@ const harvest: ModuleConfig = {
       ['Quantity', `${formatNumber(r.quantity)} ${r.unit || 'kg'}`],
       ['Harvested Area', r.harvested_area ? `${formatNumber(r.harvested_area)} ${r.area_unit || 'ha'}` : '—'],
       ['Grade', r.grade], ['Quality', r.quality], ['Storage', r.storage_location],
-      ['Total Cost', formatCurrency(total)], ['Labor Cost', formatCurrency(r.labor_cost)],
-      ['Transport Cost', formatCurrency(r.transport_cost)], ['Other Costs', formatCurrency(r.other_costs)],
+      ['Total Cost', formatCurrency(total, r.currency)], ['Labor Cost', formatCurrency(r.labor_cost, r.currency)],
+      ['Transport Cost', formatCurrency(r.transport_cost, r.currency)], ['Other Costs', formatCurrency(r.other_costs, r.currency)],
       ['Notes', r.notes],
     ];
   },
   initial: {
+    currency: '',
     farm_id: '', field_id: '', crop_id: '', crop_cycle_id: '', harvest_date: '',
     harvested_area: '', area_unit: 'hectares', quantity: '', unit: 'kg', grade: '',
     quality: 'Good', storage_location: '', labor_cost: 0, transport_cost: 0, other_costs: 0, notes: '',
@@ -705,9 +711,9 @@ const harvest: ModuleConfig = {
         <SelectField label="Area Unit" {...f.bind('area_unit')} options={AREA_UNITS} placeholder="" />
         <TextField label="Grade" {...f.bind('grade')} />
         <TextField label="Storage Location" {...f.bind('storage_location')} />
-        <NumberField label="Labor Cost" {...f.bind('labor_cost')} />
-        <NumberField label="Transport Cost" {...f.bind('transport_cost')} />
-        <NumberField label="Other Costs" {...f.bind('other_costs')} />
+        <MoneyField label="Labor Cost" form={f} name="labor_cost" />
+        <MoneyField label="Transport Cost" form={f} name="transport_cost" />
+        <MoneyField label="Other Costs" form={f} name="other_costs" />
         <TextAreaField label="Notes" {...f.bind('notes')} />
       </>
     );
@@ -736,12 +742,13 @@ const inventory: ModuleConfig = {
     const status = r.current_quantity <= 0 ? 'Out of Stock' : r.current_quantity <= r.minimum_stock * 1.5 ? 'Low Stock' : 'In Stock';
     return [
       ['Item', r.name], ['Category', r.category], ['Current Stock', `${formatNumber(r.current_quantity)} ${r.unit}`],
-      ['Minimum Stock', formatNumber(r.minimum_stock)], ['Status', status], ['Unit Cost', formatCurrency(r.unit_cost)],
+      ['Minimum Stock', formatNumber(r.minimum_stock)], ['Status', status], ['Unit Cost', formatCurrency(r.unit_cost, r.currency)],
       ['Supplier', r.supplier], ['Expiry Date', r.expiry_date ? formatDate(r.expiry_date) : '—'],
       ['Storage Location', r.storage_location], ['Notes', r.notes],
     ];
   },
   initial: {
+    currency: '',
     name: '', category: '', unit: 'kg', current_quantity: 0, minimum_stock: 0, unit_cost: 0,
     supplier: '', expiry_date: '', storage_location: '', notes: '',
   },
@@ -754,7 +761,7 @@ const inventory: ModuleConfig = {
       <TextField label="Item Name" required {...f.bind('name')} />
       <SelectField label="Category" required {...f.bind('category')} placeholder="Select Category" options={INVENTORY_CATEGORIES} />
       <SelectField label="Unit" {...f.bind('unit')} options={INVENTORY_UNITS} placeholder="" />
-      <NumberField label="Unit Cost" {...f.bind('unit_cost')} />
+      <MoneyField label="Unit Cost" form={f} name="unit_cost" />
       <NumberField label="Current Quantity" {...f.bind('current_quantity')} />
       <NumberField label="Minimum Stock" {...f.bind('minimum_stock')} />
       <TextField label="Supplier" {...f.bind('supplier')} />
@@ -781,9 +788,10 @@ const equipment: ModuleConfig = {
     ['Equipment', r.name], ['Type', r.equipment_type], ['Model', r.model], ['Serial Number', r.serial_number],
     ['Status', r.status], ['Condition', r.condition], ['Location', r.location],
     ['Purchase Date', r.purchase_date ? formatDate(r.purchase_date) : '—'],
-    ['Purchase Cost', formatCurrency(r.purchase_cost)], ['Notes', r.notes],
+    ['Purchase Cost', formatCurrency(r.purchase_cost, r.currency)], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     name: '', equipment_type: '', model: '', serial_number: '', purchase_date: '',
     purchase_cost: 0, condition: '', location: '', status: 'Available', notes: '',
   },
@@ -795,7 +803,7 @@ const equipment: ModuleConfig = {
       <TextField label="Model" {...f.bind('model')} />
       <TextField label="Serial Number" {...f.bind('serial_number')} />
       <DateField label="Purchase Date" {...f.bind('purchase_date')} />
-      <NumberField label="Purchase Cost" {...f.bind('purchase_cost')} />
+      <MoneyField label="Purchase Cost" form={f} name="purchase_cost" />
       <TextField label="Condition" {...f.bind('condition')} placeholder="e.g. Good" />
       <TextField label="Location" {...f.bind('location')} />
       <SelectField label="Status" {...f.bind('status')} options={EQUIPMENT_STATUS} placeholder="" />
@@ -817,15 +825,16 @@ const maintenance: ModuleConfig = {
   },
   row: (r) => ({
     title: r.equipment?.name || 'Maintenance', subtitle: [r.type, r.description].filter(Boolean).join(' — ') || '—',
-    right: formatDate(r.maintenance_date), badge: r.cost ? { label: formatCurrency(r.cost), tone: 'neutral' } : null,
+    right: formatDate(r.maintenance_date), badge: r.cost ? { label: formatCurrency(r.cost, r.currency), tone: 'neutral' } : null,
   }),
   detail: (r) => [
     ['Date', formatDate(r.maintenance_date)], ['Equipment', r.equipment?.name], ['Type', r.type],
-    ['Cost', formatCurrency(r.cost)], ['Performed By', r.performed_by],
+    ['Cost', formatCurrency(r.cost, r.currency)], ['Performed By', r.performed_by],
     ['Next Maintenance', r.next_maintenance ? formatDate(r.next_maintenance) : '—'],
     ['Description', r.description], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     equipment_id: '', maintenance_date: '', type: '', description: '', cost: 0,
     performed_by: '', next_maintenance: '', notes: '',
   },
@@ -838,7 +847,7 @@ const maintenance: ModuleConfig = {
         <SelectField label="Equipment" {...f.bind('equipment_id')} placeholder="Select Equipment" options={eq.map((e: any) => ({ value: e.id, label: e.name }))} />
         <DateField label="Maintenance Date" required {...f.bind('maintenance_date')} />
         <TextField label="Type" {...f.bind('type')} placeholder="e.g. Service / Repair" />
-        <NumberField label="Cost" {...f.bind('cost')} />
+        <MoneyField label="Cost" form={f} name="cost" />
         <TextAreaField label="Description" {...f.bind('description')} />
         <TextField label="Performed By" {...f.bind('performed_by')} />
         <DateField label="Next Maintenance" {...f.bind('next_maintenance')} />
@@ -865,14 +874,15 @@ const expenses: ModuleConfig = {
   },
   row: (r) => ({
     title: r.category || 'Other', subtitle: [r.description, r.farms?.name].filter(Boolean).join(' · ') || '—',
-    right: formatCurrency(r.amount), badge: r.supplier ? { label: r.supplier, tone: 'neutral' } : null,
+    right: formatCurrency(r.amount, r.currency), badge: r.supplier ? { label: r.supplier, tone: 'neutral' } : null,
   }),
   detail: (r) => [
-    ['Date', formatDate(r.expense_date)], ['Category', r.category], ['Amount', formatCurrency(r.amount)],
+    ['Date', formatDate(r.expense_date)], ['Category', r.category], ['Amount', formatCurrency(r.amount, r.currency)],
     ['Farm', r.farms?.name], ['Payment Method', r.payment_method], ['Supplier', r.supplier],
     ['Description', r.description], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     farm_id: '', crop_cycle_id: '', category: '', description: '', amount: 0,
     expense_date: '', payment_method: '', supplier: '', notes: '',
   },
@@ -885,7 +895,7 @@ const expenses: ModuleConfig = {
         <SelectField label="Farm" {...f.bind('farm_id')} placeholder="Select Farm" options={fm.map((x: any) => ({ value: x.id, label: x.name }))} />
         <SelectField label="Category" required {...f.bind('category')} placeholder="Select Category" options={EXPENSE_CATEGORIES} />
         <CycleSelect form={f} />
-        <NumberField label="Amount" required {...f.bind('amount')} />
+        <MoneyField label="Amount" required form={f} name="amount" />
         <DateField label="Expense Date" required {...f.bind('expense_date')} />
         <TextField label="Description" {...f.bind('description')} />
         <TextField label="Payment Method" {...f.bind('payment_method')} />
@@ -913,17 +923,18 @@ const sales: ModuleConfig = {
     ];
   },
   row: (r) => ({
-    title: `${r.crops?.name || '—'} — ${formatCurrency(r.total_amount)}`,
+    title: `${r.crops?.name || '—'} — ${formatCurrency(r.total_amount, r.currency)}`,
     subtitle: [r.buyer, r.market].filter(Boolean).join(' · ') || `${formatNumber(r.quantity)} ${r.unit || 'kg'}`,
     right: formatDate(r.sale_date), badge: r.payment_status ? { label: r.payment_status, tone: tone(r.payment_status) } : null,
   }),
   detail: (r) => [
     ['Date', formatDate(r.sale_date)], ['Crop', r.crops?.name], ['Farm', r.farms?.name], ['Buyer', r.buyer],
     ['Market', r.market], ['Quantity', `${formatNumber(r.quantity)} ${r.unit || 'kg'}`],
-    ['Unit Price', formatCurrency(r.unit_price)], ['Total Amount', formatCurrency(r.total_amount)],
+    ['Unit Price', formatCurrency(r.unit_price, r.currency)], ['Total Amount', formatCurrency(r.total_amount, r.currency)],
     ['Payment Status', r.payment_status], ['Notes', r.notes],
   ],
   initial: {
+    currency: '',
     farm_id: '', crop_id: '', crop_cycle_id: '', buyer: '', quantity: 0, unit: 'kg',
     unit_price: 0, sale_date: '', market: '', payment_status: 'Pending', notes: '',
   },
@@ -945,7 +956,7 @@ const sales: ModuleConfig = {
         <TextField label="Market" {...f.bind('market')} />
         <NumberField label="Quantity" {...f.bind('quantity')} />
         <TextField label="Unit" {...f.bind('unit')} />
-        <NumberField label="Unit Price" {...f.bind('unit_price')} />
+        <MoneyField label="Unit Price" form={f} name="unit_price" />
         <DateField label="Sale Date" required {...f.bind('sale_date')} />
         <SelectField label="Payment Status" {...f.bind('payment_status')} options={PAYMENT_STATUS} placeholder="" />
         <TextAreaField label="Notes" {...f.bind('notes')} />

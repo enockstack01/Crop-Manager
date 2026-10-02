@@ -90,3 +90,23 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 16px;
 }
+/* MoneyField: currency picker joined to the amount input */
+.money-input {
+    display: flex;
+    min-width: 0;
+}
+.money-input .money-currency {
+    flex: 0 0 auto;
+    width: 92px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 0;
+    font-weight: 600;
+    background-color: var(--bg);
+}
+.money-input input {
+    flex: 1;
+    min-width: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}

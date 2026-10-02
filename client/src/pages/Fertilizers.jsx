@@ -1,12 +1,13 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, NumberField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate, formatNumber } from '../lib/format.js';
 import { FERTILIZER_METHODS, FERTILIZER_TYPES } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', field_id: '', crop_cycle_id: '', application_date: '', fertilizer_name: '',
   fertilizer_type: '', quantity: '', unit: 'kg', application_method: '', cost: 0,
   supplier: '', applied_by: '', notes: '',
@@ -32,7 +33,7 @@ function Body(form) {
         <TextField label="Unit" {...bind('unit')} />
       </FormRow>
       <FormRow>
-        <NumberField label="Cost" {...bind('cost')} />
+        <MoneyField label="Cost" bind={bind} name="cost" />
         <TextField label="Supplier" {...bind('supplier')} />
       </FormRow>
       <TextField label="Applied By" {...bind('applied_by')} />
@@ -98,7 +99,7 @@ export default function Fertilizers() {
         },
         { key: 'quantity', label: 'Quantity', render: (r) => (r.quantity ? `${formatNumber(r.quantity)} ${r.unit || 'kg'}` : '—') },
         { key: 'application_method', label: 'Method', render: (r) => r.application_method || '—' },
-        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost) : '—') },
+        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost, r.currency) : '—') },
       ]}
       viewFields={(r) => [
         ['Date', formatDate(r.application_date)],
@@ -106,7 +107,7 @@ export default function Fertilizers() {
         ['Type', r.fertilizer_type],
         ['Method', r.application_method],
         ['Quantity', r.quantity ? `${formatNumber(r.quantity)} ${r.unit || 'kg'}` : '—'],
-        ['Cost', formatCurrency(r.cost)],
+        ['Cost', formatCurrency(r.cost, r.currency)],
         ['Farm', r.farms?.name],
         ['Field', r.fields?.name],
         ['Supplier', r.supplier],

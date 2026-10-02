@@ -31,7 +31,7 @@ export function DashboardScreen({ navigation }: any) {
   const { profile } = useProfile();
   const { colors, isDark } = useTheme();
   const { isWide } = useLayout();
-  const [filters, setFilters] = useState<DashFilters>({ farm: '', season: '', from: '', to: '' });
+  const [filters, setFilters] = useState<DashFilters>({ farm: '', season: '', from: '', to: '', currency: '' });
 
   const d = data || {};
   const agg = useMemo(() => computeDashboard(d, filters), [d, filters]);
@@ -75,6 +75,14 @@ export function DashboardScreen({ navigation }: any) {
         <SelectField value={filters.season} onChangeValue={set('season')} placeholder="All Seasons" options={(d.seasons || []).map((s: any) => ({ value: s.id, label: s.name }))} />
         <DateField value={filters.from} onChangeValue={set('from')} />
         <DateField value={filters.to} onChangeValue={set('to')} />
+        {agg.currencies.length > 1 ? (
+          <SelectField
+            value={filters.currency || ''}
+            onChangeValue={set('currency')}
+            placeholder={`All currencies (charts in ${agg.chartCurrency})`}
+            options={agg.currencies.map((c: string) => ({ value: c, label: `Only ${c}` }))}
+          />
+        ) : null}
       </Grid>
 
 
@@ -107,24 +115,24 @@ export function DashboardScreen({ navigation }: any) {
               <StatTile label="Total Harvested" value={formatNumber(Math.round(agg.harvest.totalQty))} sub="kg" />
               <StatTile label="Avg Yield" value={agg.harvest.avgYield.toFixed(0)} sub="kg/ha" color={colors.primary} />
               <StatTile label="Harvest Records" value={agg.harvest.count} sub="records" color={colors.blue} />
-              <StatTile label="Harvest Costs" value={formatCurrency(agg.harvest.totalCost)} sub="total" color={colors.red} />
+              <StatTile label="Harvest Costs" value={agg.harvest.costText} sub="total" color={colors.red} />
             </Grid>
           </ChartCard>
         </Grid>
 
         <ChartCard
-          title="Revenue vs Expenses"
+          title={`Revenue vs Expenses · ${agg.chartCurrency}`}
           icon="chart-area"
           right={
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, width: '100%', marginTop: 4 }}>
               <AppText weight="600" style={{ fontSize: 12, color: colors.green }}>
-                <Icon name="arrow-up" size={10} color={colors.green} /> {formatCurrency(agg.finance.totalSales)} Revenue
+                <Icon name="arrow-up" size={10} color={colors.green} /> {formatCurrency(agg.finance.totalSales, agg.chartCurrency)} Revenue
               </AppText>
               <AppText weight="600" style={{ fontSize: 12, color: colors.red }}>
-                <Icon name="arrow-down" size={10} color={colors.red} /> {formatCurrency(agg.finance.totalExpenses)} Expenses
+                <Icon name="arrow-down" size={10} color={colors.red} /> {formatCurrency(agg.finance.totalExpenses, agg.chartCurrency)} Expenses
               </AppText>
               <AppText weight="600" style={{ fontSize: 12, color: colors.blue }}>
-                Net: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses)}
+                Net: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses, agg.chartCurrency)}
               </AppText>
             </View>
           }
@@ -140,17 +148,17 @@ export function DashboardScreen({ navigation }: any) {
         </ChartCard>
 
         <Grid columns={pairCols} gap={20}>
-          <ChartCard title="Expense Breakdown" icon="receipt" iconColor={colors.red}>
+          <ChartCard title={`Expense Breakdown · ${agg.chartCurrency}`} icon="receipt" iconColor={colors.red}>
             <Donut data={agg.expenseBreakdown} emptyLabel="No expense data" />
           </ChartCard>
-          <ChartCard title="Sales Analytics" icon="hand-holding-dollar" iconColor={colors.green}>
+          <ChartCard title={`Sales Analytics · ${agg.chartCurrency}`} icon="hand-holding-dollar" iconColor={colors.green}>
             <Grid columns={isWide ? 3 : 1} gap={12}>
-              <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid)} color="#2E7D32" />
-              <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending)} color="#F57F17" />
-              <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'])} color="#1565C0" />
+              <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" />
+              <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F57F17" />
+              <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1565C0" />
             </Grid>
             <View style={{ marginTop: 16 }}>
-              <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales)} sub={`${agg.filteredSales.length} records`} />
+              <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={`${agg.salesInCurrency} records`} />
             </View>
           </ChartCard>
         </Grid>

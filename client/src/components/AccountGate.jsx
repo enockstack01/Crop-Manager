@@ -123,7 +123,7 @@ function RequestForm({ profile, onCancel }) {
       </FormRow>
       <FormRow>
         <SelectField label="Account Type" required value={v.account_type} onChange={set('account_type')} options={REQUESTABLE_ACCOUNT_TYPES} />
-        <SelectField label="Currency" required value={v.currency} onChange={set('currency')} options={CURRENCY_OPTIONS} hint="Used for all money values" />
+        <SelectField label="Default Currency" required value={v.currency} onChange={set('currency')} options={CURRENCY_OPTIONS} hint="You can pick another one on each record" />
       </FormRow>
       <TextField label="Farm / Organisation Name" required value={v.organization} onChange={set('organization')} placeholder="e.g. Green Valley Farm" />
       <FormRow>

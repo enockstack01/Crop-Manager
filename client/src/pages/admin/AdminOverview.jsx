@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAdminOverview } from '../../lib/useAdmin.js';
 import { PageHeader, Loading, EmptyState, FitValue } from '../../components/ui.jsx';
-import { displayName, formatCurrency, formatNumber, formatDate, formatDateTime } from '../../lib/format.js';
+import { displayName, formatNumber, formatDate, formatDateTime, formatTotals } from '../../lib/format.js';
 import { StatusPill, useAccountActions } from './accountActions.jsx';
 
 const RECORD_LABELS = {
@@ -51,8 +51,8 @@ export default function AdminOverview() {
         <Kpi icon="fa-circle-pause" color={users.on_hold ? 'orange' : 'green'} label="On Hold" value={users.on_hold || 0} to="/admin/users?status=on_hold" />
         <Kpi icon="fa-user-slash" color={users.deactivated ? 'red' : 'green'} label="Deactivated" value={users.deactivated || 0} to="/admin/users?status=deactivated" />
         <Kpi icon="fa-database" color="blue" label="Total Records" value={formatNumber(totalRecords)} />
-        <Kpi icon="fa-hand-holding-usd" color="green" label="Sales Value (all users)" value={formatCurrency(finance.sales_total)} />
-        <Kpi icon="fa-receipt" color="red" label="Expenses (all users)" value={formatCurrency(finance.expenses_total)} />
+        <Kpi icon="fa-hand-holding-usd" color="green" label="Sales Value (all users)" value={formatTotals(finance.sales_by_currency)} />
+        <Kpi icon="fa-receipt" color="red" label="Expenses (all users)" value={formatTotals(finance.expenses_by_currency)} />
       </div>
 
       {/* account requests waiting for approval */}

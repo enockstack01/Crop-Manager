@@ -1,6 +1,6 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, NumberField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { StatusBadge } from '../components/ui.jsx';
 import { useAll } from '../lib/useResource.js';
@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from '../lib/format.js';
 import { PROBLEM_TYPES, PROTECTION_METHODS, SEVERITIES } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', field_id: '', crop_cycle_id: '', protection_date: '', problem_type: '',
   problem_name: '', severity: '', treatment: '', product_name: '', quantity: '',
   unit: 'litres', application_method: '', cost: 0, applied_by: '', notes: '',
@@ -36,7 +37,7 @@ function Body(form) {
       <FormRow cols={3}>
         <NumberField label="Quantity" {...bind('quantity')} />
         <TextField label="Unit" {...bind('unit')} />
-        <NumberField label="Cost" {...bind('cost')} />
+        <MoneyField label="Cost" bind={bind} name="cost" />
       </FormRow>
       <TextField label="Applied By" {...bind('applied_by')} />
       <TextArea label="Notes" {...bind('notes')} />
@@ -102,7 +103,7 @@ export default function CropProtection() {
           ),
         },
         { key: 'treatment', label: 'Treatment', render: (r) => r.treatment || '—' },
-        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost) : '—') },
+        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost, r.currency) : '—') },
       ]}
       viewFields={(r) => [
         ['Date', formatDate(r.protection_date)],
@@ -112,7 +113,7 @@ export default function CropProtection() {
         ['Treatment', r.treatment],
         ['Product', r.product_name],
         ['Quantity', r.quantity ? `${r.quantity} ${r.unit || 'L'}` : '—'],
-        ['Cost', formatCurrency(r.cost)],
+        ['Cost', formatCurrency(r.cost, r.currency)],
         ['Farm', r.farms?.name],
         ['Field', r.fields?.name],
         ['Applied By', r.applied_by],

@@ -23,11 +23,16 @@ export function formatNumber(num?: number | string | null): string {
   return Number(num).toLocaleString('en-US');
 }
 
-// The signed-in user's currency (Settings → Currency, default USD). RootGate sets it
-// from the profile before the app renders, so every formatCurrency() call uses it.
+// The signed-in user's default currency (Settings → Default currency, default USD).
+// RootGate sets it from the profile; it pre-fills the currency on new records and is
+// the fallback when a value has no currency of its own. Records carry their own
+// `currency`, so pass it: formatCurrency(r.amount, r.currency).
 let userCurrency = 'USD';
 export function setCurrency(code?: string | null) {
   userCurrency = code || 'USD';
+}
+export function getCurrency(): string {
+  return userCurrency;
 }
 
 /** What the app calls the user: their name, or their account type until they give one. */
@@ -35,13 +40,40 @@ export function displayName(profile?: { full_name?: string | null; role?: string
   return profile?.full_name?.trim() || profile?.role || 'Farmer';
 }
 
-export function formatCurrency(amount?: number | string | null, currency = userCurrency): string {
+export function formatCurrency(amount?: number | string | null, currency?: string | null): string {
+  currency = currency || userCurrency;
   if (amount === null || amount === undefined || amount === '') return `${currency} 0.00`;
   return (
     currency +
     ' ' +
     Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   );
+}
+
+type Money = { currency?: string | null };
+
+/** Totals per currency — money in different currencies is never added together. */
+export function sumByCurrency<T extends Money>(rows: T[] | undefined, value: (r: T) => any): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of rows || []) {
+    const c = r.currency || userCurrency;
+    out[c] = (out[c] || 0) + (Number(value(r)) || 0);
+  }
+  return out;
+}
+
+/** "USD 1,200.00 · RWF 450,000.00" (largest first); "USD 0.00" when empty. */
+export function formatTotals(totals: Record<string, number>, sep = ' · '): string {
+  const entries = Object.entries(totals || {}).filter(([, v]) => v !== 0);
+  if (!entries.length) return formatCurrency(0);
+  return entries.sort((a, b) => b[1] - a[1]).map(([c, v]) => formatCurrency(v, c)).join(sep);
+}
+
+/** Currencies used by these rows, most-used first (by number of records). */
+export function currenciesUsed(...rowSets: (Money[] | undefined)[]): string[] {
+  const n: Record<string, number> = {};
+  for (const rows of rowSets) for (const r of rows || []) { const c = r.currency || userCurrency; n[c] = (n[c] || 0) + 1; }
+  return Object.keys(n).sort((a, b) => n[b] - n[a]);
 }
 
 export function getGreeting(): string {

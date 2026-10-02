@@ -1,11 +1,12 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { StatusBadge } from '../components/ui.jsx';
 import { formatCurrency, formatDate } from '../lib/format.js';
 import { EQUIPMENT_STATUS } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   name: '', equipment_type: '', model: '', serial_number: '', purchase_date: '',
   purchase_cost: 0, condition: '', location: '', status: 'Available', notes: '',
 };
@@ -31,7 +32,7 @@ function EquipmentForm(props) {
           </FormRow>
           <FormRow>
             <DateField label="Purchase Date" {...bind('purchase_date')} />
-            <NumberField label="Purchase Cost" {...bind('purchase_cost')} />
+            <MoneyField label="Purchase Cost" bind={bind} name="purchase_cost" />
           </FormRow>
           <FormRow>
             <TextField label="Condition" {...bind('condition')} placeholder="e.g. Good" />
@@ -75,7 +76,7 @@ export default function Equipment() {
         ['Condition', r.condition],
         ['Location', r.location],
         ['Purchase Date', r.purchase_date ? formatDate(r.purchase_date) : '—'],
-        ['Purchase Cost', formatCurrency(r.purchase_cost)],
+        ['Purchase Cost', formatCurrency(r.purchase_cost, r.currency)],
         ['Notes', r.notes, true],
       ]}
     />

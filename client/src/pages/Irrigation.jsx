@@ -1,12 +1,13 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, NumberField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate, formatNumber } from '../lib/format.js';
 import { AREA_UNITS, IRRIGATION_METHODS, WATER_UNITS } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', field_id: '', crop_cycle_id: '', irrigation_date: '', irrigation_method: '',
   duration_hours: '', water_volume: '', water_unit: 'cubic metres', area_irrigated: '',
   area_unit: 'hectares', cost: 0, operator: '', notes: '',
@@ -25,7 +26,7 @@ function Body(form) {
       </FormRow>
       <FormRow>
         <NumberField label="Duration (hours)" {...bind('duration_hours')} />
-        <NumberField label="Cost" {...bind('cost')} />
+        <MoneyField label="Cost" bind={bind} name="cost" />
       </FormRow>
       <FormRow>
         <NumberField label="Water Volume" {...bind('water_volume')} />
@@ -99,7 +100,7 @@ export default function Irrigation() {
         },
         { key: 'water_volume', label: 'Volume', render: (r) => (r.water_volume ? `${formatNumber(r.water_volume)} ${r.water_unit || 'm³'}` : '—') },
         { key: 'duration_hours', label: 'Duration', render: (r) => (r.duration_hours ? `${r.duration_hours} hrs` : '—') },
-        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost) : '—') },
+        { key: 'cost', label: 'Cost', render: (r) => (r.cost ? formatCurrency(r.cost, r.currency) : '—') },
       ]}
       viewFields={(r) => [
         ['Date', formatDate(r.irrigation_date)],
@@ -109,7 +110,7 @@ export default function Irrigation() {
         ['Volume', r.water_volume ? `${formatNumber(r.water_volume)} ${r.water_unit || 'm³'}` : '—'],
         ['Duration', r.duration_hours ? `${r.duration_hours} hours` : '—'],
         ['Area Irrigated', r.area_irrigated ? `${formatNumber(r.area_irrigated)} ${r.area_unit || 'ha'}` : '—'],
-        ['Cost', formatCurrency(r.cost)],
+        ['Cost', formatCurrency(r.cost, r.currency)],
         ['Operator', r.operator],
         ['Notes', r.notes, true],
       ]}

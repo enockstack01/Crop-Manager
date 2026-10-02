@@ -1,6 +1,6 @@
 // Dashboard aggregation — exact port of client/src/pages/Dashboard.jsx:computeAggregates
 // so the mobile dashboard shows the same figures, labels and colours as the web app.
-import { formatCurrency, formatNumber } from '../../lib/format';
+import { currenciesUsed, formatCurrency, formatNumber, formatTotals, getCurrency, sumByCurrency } from '../../lib/format';
 
 const monthLabel = (key: string) => {
   const [y, m] = key.split('-');
@@ -9,7 +9,7 @@ const monthLabel = (key: string) => {
 const n = (v: any) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 const pairs = (map: Record<string, number>) => Object.entries(map).map(([label, value]) => ({ label, value }));
 
-export type DashFilters = { farm: string; season: string; from: string; to: string };
+export type DashFilters = { farm: string; season: string; from: string; to: string; currency?: string };
 export type KpiTone = 'green' | 'blue' | 'orange' | 'red' | 'purple';
 
 export const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
@@ -36,8 +36,18 @@ export function computeDashboard(d: any, filters: DashFilters) {
   const activeCycles = cycles.filter((c: any) => ['Planted', 'Growing', 'Ready for Harvest'].includes(c.status));
   const totalPlanted = cycles.filter((c: any) => !['Planned', 'Cancelled'].includes(c.status)).reduce((s: number, c: any) => s + n(c.area_planted), 0);
   const expectedProd = cycles.reduce((s: number, c: any) => s + n(c.expected_production), 0);
-  const totalExpenses = filteredExpenses.reduce((s: number, e: any) => s + n(e.amount), 0);
-  const totalSales = filteredSales.reduce((s: number, x: any) => s + n(x.total_amount), 0);
+  // money is never converted between currencies: cards show a total per currency
+  // (or only the chosen currency); charts show one currency at a time
+  const currencies = currenciesUsed(filteredSales, filteredExpenses, filteredHarvests);
+  const chartCurrency = filters.currency || currencies[0] || getCurrency();
+  const inCurrency = (r: any) => (r.currency || getCurrency()) === chartCurrency;
+  const money = (rows: any[], value: (r: any) => number) => (filters.currency
+    ? formatCurrency(rows.filter(inCurrency).reduce((s: number, r: any) => s + (value(r) || 0), 0), chartCurrency)
+    : formatTotals(sumByCurrency(rows, value)));
+  const chartExpenses = filteredExpenses.filter(inCurrency);
+  const chartSales = filteredSales.filter(inCurrency);
+  const totalExpenses = chartExpenses.reduce((s: number, e: any) => s + n(e.amount), 0);
+  const totalSales = chartSales.reduce((s: number, x: any) => s + n(x.total_amount), 0);
   const inv = d.inventory || [];
   const lowStock = inv.filter((i: any) => i.current_quantity <= i.minimum_stock).length;
 
@@ -48,8 +58,8 @@ export function computeDashboard(d: any, filters: DashFilters) {
     { icon: 'expand', tone: 'blue', label: 'Planted Area', value: `${totalPlanted.toFixed(1)} ha`, link: 'crop-cycles' },
     { icon: 'chart-line', tone: 'purple', label: 'Expected Harvest', value: `${formatNumber(Math.round(expectedProd))} kg`, link: 'crop-cycles' },
     { icon: 'wheat-awn', tone: 'green', label: 'Harvest Records', value: String(filteredHarvests.length), link: 'harvest' },
-    { icon: 'receipt', tone: 'red', label: 'Total Expenses', value: formatCurrency(totalExpenses), link: 'expenses' },
-    { icon: 'hand-holding-dollar', tone: 'green', label: 'Total Sales', value: formatCurrency(totalSales), link: 'sales' },
+    { icon: 'receipt', tone: 'red', label: 'Total Expenses', value: money(filteredExpenses, (e) => n(e.amount)), link: 'expenses' },
+    { icon: 'hand-holding-dollar', tone: 'green', label: 'Total Sales', value: money(filteredSales, (x) => n(x.total_amount)), link: 'sales' },
     { icon: 'boxes-stacked', tone: 'blue', label: 'Inventory Items', value: String(inv.length), link: 'inventory' },
     { icon: 'triangle-exclamation', tone: lowStock > 0 ? 'red' : 'green', label: 'Low Stock Items', value: String(lowStock), link: 'inventory' },
   ];
@@ -97,22 +107,22 @@ export function computeDashboard(d: any, filters: DashFilters) {
   // harvest analytics
   const totalQty = filteredHarvests.reduce((s: number, h: any) => s + n(h.quantity), 0);
   const totalArea2 = filteredHarvests.reduce((s: number, h: any) => s + n(h.harvested_area), 0);
-  const totalHarvestCost = filteredHarvests.reduce((s: number, h: any) => s + n(h.labor_cost) + n(h.transport_cost) + n(h.other_costs), 0);
+  const harvestCostText = money(filteredHarvests, (h) => n(h.labor_cost) + n(h.transport_cost) + n(h.other_costs));
 
   // finance by month
   const expByMonth: Record<string, number> = {};
-  filteredExpenses.forEach((e: any) => { const k = e.expense_date?.substring(0, 7); if (k) expByMonth[k] = (expByMonth[k] || 0) + n(e.amount); });
+  chartExpenses.forEach((e: any) => { const k = e.expense_date?.substring(0, 7); if (k) expByMonth[k] = (expByMonth[k] || 0) + n(e.amount); });
   const salByMonth: Record<string, number> = {};
-  filteredSales.forEach((s: any) => { const k = s.sale_date?.substring(0, 7); if (k) salByMonth[k] = (salByMonth[k] || 0) + n(s.total_amount); });
+  chartSales.forEach((s: any) => { const k = s.sale_date?.substring(0, 7); if (k) salByMonth[k] = (salByMonth[k] || 0) + n(s.total_amount); });
   const finKeys = [...new Set([...Object.keys(expByMonth), ...Object.keys(salByMonth)])].sort();
 
   // expense breakdown
   const catMap: Record<string, number> = {};
-  filteredExpenses.forEach((e: any) => { catMap[e.category || 'Other'] = (catMap[e.category || 'Other'] || 0) + n(e.amount); });
+  chartExpenses.forEach((e: any) => { catMap[e.category || 'Other'] = (catMap[e.category || 'Other'] || 0) + n(e.amount); });
 
   // sales by status
   const salesByStatus: Record<string, number> = { Paid: 0, Pending: 0, 'Partially Paid': 0 };
-  filteredSales.forEach((s: any) => { salesByStatus[s.payment_status] = (salesByStatus[s.payment_status] || 0) + n(s.total_amount); });
+  chartSales.forEach((s: any) => { salesByStatus[s.payment_status] = (salesByStatus[s.payment_status] || 0) + n(s.total_amount); });
 
   // inventory health
   const now = Date.now();
@@ -152,6 +162,9 @@ export function computeDashboard(d: any, filters: DashFilters) {
     kpis,
     cycles,
     filteredSales,
+    currencies,
+    chartCurrency,
+    salesInCurrency: chartSales.length,
     land: {
       planted: plantedArea,
       fallow: fallowArea,
@@ -167,7 +180,7 @@ export function computeDashboard(d: any, filters: DashFilters) {
       totalQty,
       avgYield: totalArea2 > 0 ? totalQty / totalArea2 : 0,
       count: filteredHarvests.length,
-      totalCost: totalHarvestCost,
+      costText: harvestCostText,
     },
     finance: {
       labels: finKeys.map(monthLabel),

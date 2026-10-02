@@ -6,6 +6,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { ff, radius, spacing } from '../theme/theme';
 import { formatDate, parseISODate, toISODate } from '../lib/format';
 import { AppText } from './ui';
+import { CURRENCIES } from '../lib/currencies';
 import { Sheet } from './Sheet';
 
 /* --------------------------------------------------------------- useForm */
@@ -161,6 +162,31 @@ export function TextAreaField(props: Parameters<typeof TextField>[0]) {
 }
 
 /* ----------------------------------------------------------- SelectField */
+/**
+ * An amount with its currency picked right beside it: [USD ▾][ 0.00 ].
+ * Every money field in a record shares the record's `currency`.
+ */
+export function MoneyField({
+  label, required, hint, form, name, currencyName = 'currency',
+}: {
+  label?: string; required?: boolean; hint?: string;
+  form: FormApi<any>; name: string; currencyName?: string;
+}) {
+  return (
+    <Field label={label} required={required} hint={hint}>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ width: 104 }}>
+          <SelectField {...form.bind(currencyName)} options={CURRENCY_CODES} placeholder="" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <NumberField {...form.bind(name)} placeholder="0.00" />
+        </View>
+      </View>
+    </Field>
+  );
+}
+const CURRENCY_CODES = CURRENCIES.map((c) => c.code);
+
 export function SelectField({
   label, required, hint, value, onChangeValue, options = [], placeholder = 'Select…',
 }: {

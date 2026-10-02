@@ -162,7 +162,10 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
                   </span>
                   <span className="farm-profile-kpi-info">
                     <span className="farm-profile-kpi-label">{k.label}</span>
-                    <FitValue className="farm-profile-kpi-value" value={k.value} />
+                    {/* money in several currencies: one line per currency */}
+                    {String(k.value).split(' · ').map((part) => (
+                      <FitValue key={part} className="farm-profile-kpi-value" value={part} />
+                    ))}
                   </span>
                 </button>
               ))}

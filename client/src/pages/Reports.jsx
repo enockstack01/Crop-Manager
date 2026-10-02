@@ -5,7 +5,7 @@ import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../fe
 import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
-import { formatCurrency, formatNumber, formatDate } from '../lib/format.js';
+import { formatCurrency, formatNumber, formatDate, currenciesUsed, getCurrency } from '../lib/format.js';
 
 const REPORTS = [
   { id: 'production', label: 'Production', icon: 'fa-wheat-awn' },
@@ -111,10 +111,17 @@ function useFilteredData(d, filters) {
       (c) => farmOk(c) && seasonOk(c, c.season_id || null) && (filters.from || filters.to ? inRange(c.planting_date) : true),
     );
     const harvests = (d.harvests || []).filter((h) => farmOk(h) && seasonOk(h) && inRange(h.harvest_date));
-    const expenses = (d.expenses || []).filter((e) => farmOk(e) && seasonOk(e) && inRange(e.expense_date));
-    const sales = (d.sales || []).filter((s) => farmOk(s) && seasonOk(s) && inRange(s.sale_date));
+    const allExpenses = (d.expenses || []).filter((e) => farmOk(e) && seasonOk(e) && inRange(e.expense_date));
+    const allSales = (d.sales || []).filter((s) => farmOk(s) && seasonOk(s) && inRange(s.sale_date));
 
-    return { cycles, harvests, expenses, sales };
+    // money is never converted: the financial report covers one currency at a time
+    const currencies = currenciesUsed(allSales, allExpenses);
+    const currency = filters.currency && currencies.includes(filters.currency) ? filters.currency : currencies[0] || getCurrency();
+    const inCurrency = (r) => (r.currency || getCurrency()) === currency;
+    const expenses = allExpenses.filter(inCurrency);
+    const sales = allSales.filter(inCurrency);
+
+    return { cycles, harvests, expenses, sales, currency, currencies };
   }, [d, filters]);
 }
 
@@ -284,7 +291,8 @@ function buildYield({ harvests }, dark) {
   };
 }
 
-function buildFinancial({ expenses, sales }, dark) {
+function buildFinancial({ expenses, sales, currency }, dark) {
+  const money = (v) => formatCurrency(v, currency);
   const byMonth = {};
   const m = (k) => (byMonth[k] ||= { month: k, revenue: 0, expenses: 0 });
   sales.forEach((s) => { if (s.sale_date) m(s.sale_date.substring(0, 7)).revenue += num(s.total_amount); });
@@ -304,9 +312,9 @@ function buildFinancial({ expenses, sales }, dark) {
 
   const columns = [
     { key: 'month', label: 'Month', render: (r) => monthLabel(r.month) },
-    { key: 'revenue', label: 'Revenue', align: 'right', render: (r) => formatCurrency(r.revenue) },
-    { key: 'expenses', label: 'Expenses', align: 'right', render: (r) => formatCurrency(r.expenses) },
-    { key: 'net', label: 'Net', align: 'right', render: (r) => <span style={{ color: r.net >= 0 ? '#2E7D32' : '#D32F2F' }}>{formatCurrency(r.net)}</span> },
+    { key: 'revenue', label: 'Revenue', align: 'right', render: (r) => money(r.revenue) },
+    { key: 'expenses', label: 'Expenses', align: 'right', render: (r) => money(r.expenses) },
+    { key: 'net', label: 'Net', align: 'right', render: (r) => <span style={{ color: r.net >= 0 ? '#2E7D32' : '#D32F2F' }}>{money(r.net)}</span> },
     { key: 'margin', label: 'Margin', align: 'right', render: (r) => (r.revenue ? `${Math.round(r.margin)}%` : '—') },
   ];
   const tableRows = [
@@ -352,9 +360,9 @@ function buildFinancial({ expenses, sales }, dark) {
   return {
     empty: months.length === 0,
     tiles: [
-      { label: 'Total Revenue', value: formatCurrency(totRev), color: '#2E7D32' },
-      { label: 'Total Expenses', value: formatCurrency(totExp), color: '#D32F2F' },
-      { label: 'Net Profit', value: formatCurrency(net), color: net >= 0 ? '#2E7D32' : '#D32F2F' },
+      { label: 'Total Revenue', value: money(totRev), color: '#2E7D32' },
+      { label: 'Total Expenses', value: money(totExp), color: '#D32F2F' },
+      { label: 'Net Profit', value: money(net), color: net >= 0 ? '#2E7D32' : '#D32F2F' },
       { label: 'Profit Margin', value: totRev ? `${Math.round((net / totRev) * 100)}%` : '—', color: 'var(--blue)' },
     ],
     chart,
@@ -362,11 +370,11 @@ function buildFinancial({ expenses, sales }, dark) {
     tableRows,
     extra:
       cats.length > 0 ? (
-        <ReportCard title="Expense Breakdown" icon="fa-receipt" iconColor="var(--red)">
+        <ReportCard title={`Expense Breakdown · ${currency}`} icon="fa-receipt" iconColor="var(--red)">
           <ReportTable
             columns={[
               { key: 'category', label: 'Category' },
-              { key: 'amount', label: 'Amount', align: 'right', render: (r) => formatCurrency(r.amount) },
+              { key: 'amount', label: 'Amount', align: 'right', render: (r) => money(r.amount) },
               { key: 'share', label: 'Share', align: 'right', render: (r) => `${Math.round((r.amount / totExp) * 100)}%` },
             ]}
             rows={cats.map((c) => ({ ...c, _key: c.category }))}
@@ -374,7 +382,7 @@ function buildFinancial({ expenses, sales }, dark) {
         </ReportCard>
       ) : null,
     csv: {
-      headers: ['Month', 'Revenue', 'Expenses', 'Net', 'Margin (%)'],
+      headers: ['Month', `Revenue (${currency})`, `Expenses (${currency})`, `Net (${currency})`, 'Margin (%)'],
       rows: months.map((r) => [r.month, round1(r.revenue), round1(r.expenses), round1(r.net), Math.round(r.margin)]),
     },
   };
@@ -440,7 +448,7 @@ export default function Reports() {
   const toast = useToast();
   const dark = useIsDark();
   const [active, setActive] = useState('production');
-  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '' });
+  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '', currency: '' });
 
   const d = data || {};
   const filtered = useFilteredData(d, filters);
@@ -466,6 +474,7 @@ export default function Reports() {
     if (filters.farm) parts.push((d.farms || []).find((x) => x.id === filters.farm)?.name);
     if (filters.season) parts.push((d.seasons || []).find((x) => x.id === filters.season)?.name);
     if (filters.from || filters.to) parts.push(`${filters.from || '…'} → ${filters.to || '…'}`);
+    if (active === 'financial') parts.push(`amounts in ${filtered.currency}`);
     return parts.filter(Boolean).join(' · ') || 'All farms · all time';
   };
 
@@ -493,6 +502,11 @@ export default function Reports() {
           </select>
           <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.from} onChange={setF('from')} />
           <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.to} onChange={setF('to')} />
+          {filtered.currencies.length > 1 && (
+            <select className="dashboard-filter-select" value={filtered.currency} onChange={setF('currency')} aria-label="Currency">
+              {filtered.currencies.map((c) => <option key={c} value={c}>Money in {c}</option>)}
+            </select>
+          )}
         </div>
       </div>
 

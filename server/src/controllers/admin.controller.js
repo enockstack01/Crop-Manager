@@ -60,8 +60,8 @@ export const overview = asyncHandler(async (_req, res) => {
     M.Profile.countDocuments({ onboarded: true }),
     M.Profile.find({}).sort({ created_at: -1 }).limit(8).lean(),
     M.Profile.find({ account_status: 'pending' }).sort({ 'access_request.submitted_at': 1 }).limit(10).lean(),
-    M.Sale.aggregate([{ $group: { _id: null, total: { $sum: '$total_amount' }, n: { $sum: 1 } } }]),
-    M.Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' }, n: { $sum: 1 } } }]),
+    M.Sale.aggregate([{ $group: { _id: '$currency', total: { $sum: '$total_amount' }, n: { $sum: 1 } } }]),
+    M.Expense.aggregate([{ $group: { _id: '$currency', total: { $sum: '$amount' }, n: { $sum: 1 } } }]),
   ]);
 
   const totals = {};
@@ -89,10 +89,11 @@ export const overview = asyncHandler(async (_req, res) => {
     pending_requests: serialize(pendingRequests),
     records: totals,
     finance: {
-      sales_total: salesAgg[0]?.total || 0,
-      sales_count: salesAgg[0]?.n || 0,
-      expenses_total: expenseAgg[0]?.total || 0,
-      expenses_count: expenseAgg[0]?.n || 0,
+      // money is never converted: one total per currency
+      sales_by_currency: Object.fromEntries(salesAgg.map((r) => [r._id || 'USD', r.total])),
+      sales_count: salesAgg.reduce((n, r) => n + r.n, 0),
+      expenses_by_currency: Object.fromEntries(expenseAgg.map((r) => [r._id || 'USD', r.total])),
+      expenses_count: expenseAgg.reduce((n, r) => n + r.n, 0),
     },
     recent_users: serialize(recent),
   });

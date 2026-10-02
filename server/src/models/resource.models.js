@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 import { ownedSchema, ref } from './_base.js';
+import { currencyField } from '../lib/currencies.js';
 
 const InventoryItemSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   name: { type: String, required: true, trim: true },
   category: { type: String, required: true },
   unit: { type: String, default: 'kg' },
@@ -24,6 +26,7 @@ const InventoryTransactionSchema = ownedSchema({
 });
 
 const EquipmentSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   name: { type: String, required: true, trim: true },
   equipment_type: { type: String, trim: true },
   model: { type: String, trim: true },
@@ -37,6 +40,7 @@ const EquipmentSchema = ownedSchema({
 });
 
 const EquipmentMaintenanceSchema = ownedSchema({
+  currency: currencyField, // money values in this record are in this currency
   equipment_id: { ...ref('Equipment'), default: null, index: true },
   maintenance_date: { type: String, required: true },
   type: { type: String, trim: true },

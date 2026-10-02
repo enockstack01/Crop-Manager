@@ -6,6 +6,7 @@ import { Sheet } from '../components/Sheet';
 import { Button } from '../components/Button';
 import { AppText } from '../components/ui';
 import { useForm } from '../components/fields';
+import { getCurrency } from '../lib/format';
 import type { ModuleConfig } from '../navigation/modules';
 
 export function ResourceFormSheet({
@@ -24,10 +25,12 @@ export function ResourceFormSheet({
   const isEdit = !!editing;
 
   const startValues = useMemo(() => {
-    if (!isEdit) return config.initial;
+    // money records: new ones start in the user's default currency (Settings)
+    const withCurrency = (v: Record<string, any>) => ('currency' in config.initial && !v.currency ? { ...v, currency: getCurrency() } : v);
+    if (!isEdit) return withCurrency(config.initial);
     const picked: Record<string, any> = {};
     for (const key of Object.keys(config.initial)) picked[key] = editing[key] ?? config.initial[key];
-    return config.fromRow ? { ...picked, ...config.fromRow(editing) } : picked;
+    return withCurrency(config.fromRow ? { ...picked, ...config.fromRow(editing) } : picked);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEdit, editing]);
 

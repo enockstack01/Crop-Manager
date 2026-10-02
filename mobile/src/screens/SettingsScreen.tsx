@@ -89,8 +89,8 @@ export function SettingsScreen() {
             </Grid>
             <Grid columns={isTablet ? 2 : 1} gap={18}>
               <SelectField
-                label="Currency"
-                hint="All money values in CropManager are shown in this currency"
+                label="Default Currency"
+                hint="Pre-selected when you record an amount; you can pick another currency on each record"
                 value={current.currency}
                 onChangeValue={set('currency')}
                 options={CURRENCY_OPTIONS}

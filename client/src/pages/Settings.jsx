@@ -96,11 +96,11 @@ export default function Settings() {
           </FormRow>
           <FormRow>
             <SelectField
-              label="Currency"
+              label="Default Currency"
               value={current.currency}
               onChange={set('currency')}
               options={CURRENCY_OPTIONS}
-              hint="All money values in CropManager are shown in this currency"
+              hint="Pre-selected when you record an amount; you can pick another currency on each record"
             />
             <TextField
               label="Account Type"

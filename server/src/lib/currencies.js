@@ -28,3 +28,7 @@ export const CURRENCIES = [
 ];
 
 export const CURRENCY_CODES = CURRENCIES.map((c) => c.code);
+
+/** Schema path for the currency of a record's money values (filled from the owner's
+ * default currency when a record is saved without one). */
+export const currencyField = { type: String, enum: CURRENCY_CODES, uppercase: true, trim: true };

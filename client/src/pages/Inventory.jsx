@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
 import { Modal } from '../components/Modal.jsx';
-import { FormRow, NumberField, TextField, DateField, SelectField, TextArea, ModalFooter } from '../components/form.jsx';
+import { FormRow, NumberField, TextField, DateField, SelectField, TextArea, ModalFooter, MoneyField } from '../components/form.jsx';
 import { IconButton, StatusBadge } from '../components/ui.jsx';
 import { api } from '../lib/api.js';
 import { useToast } from '../components/Toast.jsx';
@@ -11,6 +11,7 @@ import { formatCurrency, formatDate, formatNumber } from '../lib/format.js';
 import { INVENTORY_CATEGORIES, INVENTORY_UNITS } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   name: '', category: '', unit: 'kg', current_quantity: 0, minimum_stock: 0, unit_cost: 0,
   supplier: '', expiry_date: '', storage_location: '', notes: '',
 };
@@ -45,7 +46,7 @@ function ItemForm(props) {
           </FormRow>
           <FormRow>
             <SelectField label="Unit" {...bind('unit')} options={INVENTORY_UNITS} />
-            <NumberField label="Unit Cost" {...bind('unit_cost')} />
+            <MoneyField label="Unit Cost" bind={bind} name="unit_cost" />
           </FormRow>
           <FormRow>
             <NumberField label="Current Quantity" {...bind('current_quantity')} />
@@ -135,7 +136,7 @@ export default function Inventory() {
           { key: 'current_quantity', label: 'Current Stock', render: (r) => <strong>{formatNumber(r.current_quantity)}</strong> },
           { key: 'minimum_stock', label: 'Min Stock', render: (r) => formatNumber(r.minimum_stock) },
           { key: 'status', label: 'Status', render: (r) => <StatusBadge status={stockStatus(r)} /> },
-          { key: 'unit_cost', label: 'Unit Cost', render: (r) => (r.unit_cost ? formatCurrency(r.unit_cost) : '—') },
+          { key: 'unit_cost', label: 'Unit Cost', render: (r) => (r.unit_cost ? formatCurrency(r.unit_cost, r.currency) : '—') },
           { key: 'expiry_date', label: 'Expiry', render: (r) => (r.expiry_date ? formatDate(r.expiry_date) : '—') },
         ]}
         viewFields={(r) => [
@@ -144,7 +145,7 @@ export default function Inventory() {
           ['Current Stock', `${formatNumber(r.current_quantity)} ${r.unit}`],
           ['Minimum Stock', formatNumber(r.minimum_stock)],
           ['Status', stockStatus(r)],
-          ['Unit Cost', formatCurrency(r.unit_cost)],
+          ['Unit Cost', formatCurrency(r.unit_cost, r.currency)],
           ['Supplier', r.supplier],
           ['Expiry Date', r.expiry_date ? formatDate(r.expiry_date) : '—'],
           ['Storage Location', r.storage_location],

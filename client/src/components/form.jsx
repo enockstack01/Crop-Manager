@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { CURRENCIES } from '../lib/currencies.js';
 
 /** Tiny controlled-form helper. `bind(name)` wires an input to `values[name]`. */
 export function useForm(initial = {}) {
@@ -78,6 +79,25 @@ export function SelectField({ label, required, hint, full, options = [], placeho
         })}
         {children}
       </select>
+    </Wrap>
+  );
+}
+
+/**
+ * An amount with its currency picked right beside it: [USD ▾][ 0.00 ].
+ * Every money field in a record shares the record's `currency`.
+ */
+export function MoneyField({ label, required, hint, full, bind, name, currencyName = 'currency', ...rest }) {
+  return (
+    <Wrap label={label} required={required} hint={hint} full={full}>
+      <div className="money-input">
+        <select className="form-control form-select money-currency" aria-label={`${label} currency`} {...bind(currencyName)}>
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code} title={c.name}>{c.code}</option>
+          ))}
+        </select>
+        <input className="form-control" type="number" step="any" min="0" {...bind(name)} {...rest} />
+      </div>
     </Wrap>
   );
 }

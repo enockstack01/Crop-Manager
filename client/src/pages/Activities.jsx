@@ -1,12 +1,13 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 import { ACTIVITY_TYPES } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', field_id: '', crop_cycle_id: '', activity_type: '', activity_date: '',
   description: '', labor_cost: 0, equipment_cost: 0, material_cost: 0, performed_by: '', notes: '',
 };
@@ -24,9 +25,9 @@ function ActivityBody(form) {
       </FormRow>
       <TextArea label="Description" {...bind('description')} />
       <FormRow cols={3}>
-        <NumberField label="Labor Cost" {...bind('labor_cost')} />
-        <NumberField label="Equipment Cost" {...bind('equipment_cost')} />
-        <NumberField label="Material Cost" {...bind('material_cost')} />
+        <MoneyField label="Labor Cost" bind={bind} name="labor_cost" />
+        <MoneyField label="Equipment Cost" bind={bind} name="equipment_cost" />
+        <MoneyField label="Material Cost" bind={bind} name="material_cost" />
       </FormRow>
       <TextField label="Performed By" {...bind('performed_by')} />
       <TextArea label="Notes" {...bind('notes')} />
@@ -91,7 +92,7 @@ export default function Activities() {
         },
         { key: 'crop', label: 'Crop', render: (r) => r.crop_cycles?.crops?.name || '—' },
         { key: 'description', label: 'Description', className: 'text-truncate', render: (r) => r.description || '—' },
-        { key: 'total_cost', label: 'Total Cost', render: (r) => (r.total_cost ? formatCurrency(r.total_cost) : '—') },
+        { key: 'total_cost', label: 'Total Cost', render: (r) => (r.total_cost ? formatCurrency(r.total_cost, r.currency) : '—') },
       ]}
       viewFields={(r) => [
         ['Date', formatDate(r.activity_date)],
@@ -100,10 +101,10 @@ export default function Activities() {
         ['Field', r.fields?.name],
         ['Crop', r.crop_cycles?.crops?.name],
         ['Performed By', r.performed_by],
-        ['Labor Cost', formatCurrency(r.labor_cost)],
-        ['Equipment Cost', formatCurrency(r.equipment_cost)],
-        ['Material Cost', formatCurrency(r.material_cost)],
-        ['Total Cost', formatCurrency(r.total_cost)],
+        ['Labor Cost', formatCurrency(r.labor_cost, r.currency)],
+        ['Equipment Cost', formatCurrency(r.equipment_cost, r.currency)],
+        ['Material Cost', formatCurrency(r.material_cost, r.currency)],
+        ['Total Cost', formatCurrency(r.total_cost, r.currency)],
         ['Description', r.description, true],
         ['Notes', r.notes, true],
       ]}

@@ -3,6 +3,7 @@ import { useResourceMutations } from '../lib/useResource.js';
 import { useToast } from './Toast.jsx';
 import { Modal } from './Modal.jsx';
 import { ModalFooter, useForm } from './form.jsx';
+import { getCurrency } from '../lib/format.js';
 
 /**
  * Modal-wrapped create/edit form for a resource. Handles the mutation,
@@ -27,10 +28,12 @@ export function ResourceForm({
   const isEdit = !!editing;
 
   const startValues = useMemo(() => {
-    if (!isEdit) return initial;
+    // money records: new ones start in the user's default currency (Settings)
+    const withCurrency = (v) => ('currency' in initial && !v.currency ? { ...v, currency: getCurrency() } : v);
+    if (!isEdit) return withCurrency(initial);
     const picked = {};
     for (const key of Object.keys(initial)) picked[key] = editing[key] ?? initial[key];
-    return fromRow ? { ...picked, ...fromRow(editing) } : picked;
+    return withCurrency(fromRow ? { ...picked, ...fromRow(editing) } : picked);
   }, [isEdit, editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const form = useForm(startValues);

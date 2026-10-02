@@ -1,12 +1,13 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, NumberField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatCurrency, formatDate, formatNumber } from '../lib/format.js';
 import { AREA_UNITS, HARVEST_QUALITY } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   farm_id: '', field_id: '', crop_id: '', crop_cycle_id: '', harvest_date: '',
   harvested_area: '', area_unit: 'hectares', quantity: '', unit: 'kg', grade: '',
   quality: 'Good', storage_location: '', labor_cost: 0, transport_cost: 0, other_costs: 0, notes: '',
@@ -51,9 +52,9 @@ function Body(form) {
         <TextField label="Storage Location" {...bind('storage_location')} />
       </FormRow>
       <FormRow cols={3}>
-        <NumberField label="Labor Cost" {...bind('labor_cost')} />
-        <NumberField label="Transport Cost" {...bind('transport_cost')} />
-        <NumberField label="Other Costs" {...bind('other_costs')} />
+        <MoneyField label="Labor Cost" bind={bind} name="labor_cost" />
+        <MoneyField label="Transport Cost" bind={bind} name="transport_cost" />
+        <MoneyField label="Other Costs" bind={bind} name="other_costs" />
       </FormRow>
       <TextArea label="Notes" {...bind('notes')} />
     </>
@@ -124,7 +125,7 @@ export default function Harvest() {
         { key: 'quantity', label: 'Quantity', render: (r) => <><strong>{formatNumber(r.quantity)}</strong> {r.unit || 'kg'}</> },
         { key: 'harvested_area', label: 'Area', render: (r) => (r.harvested_area ? `${formatNumber(r.harvested_area)} ${r.area_unit || 'ha'}` : '—') },
         { key: 'quality', label: 'Quality', render: (r) => r.quality || '—' },
-        { key: 'total_cost', label: 'Total Cost', render: (r) => (totalCost(r) ? formatCurrency(totalCost(r)) : '—') },
+        { key: 'total_cost', label: 'Total Cost', render: (r) => (totalCost(r) ? formatCurrency(totalCost(r), r.currency) : '—') },
       ]}
       viewFields={(r) => [
         ['Harvest Date', formatDate(r.harvest_date)],
@@ -136,9 +137,9 @@ export default function Harvest() {
         ['Grade', r.grade],
         ['Quality', r.quality],
         ['Storage', r.storage_location],
-        ['Total Cost', formatCurrency(totalCost(r))],
-        ['Labor Cost', formatCurrency(r.labor_cost)],
-        ['Transport Cost', formatCurrency(r.transport_cost)],
+        ['Total Cost', formatCurrency(totalCost(r), r.currency)],
+        ['Labor Cost', formatCurrency(r.labor_cost, r.currency)],
+        ['Transport Cost', formatCurrency(r.transport_cost, r.currency)],
         ['Notes', r.notes, true],
       ]}
     />

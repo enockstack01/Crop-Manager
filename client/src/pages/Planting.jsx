@@ -1,11 +1,12 @@
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
-import { FormRow, TextField, NumberField, DateField, SelectField, TextArea } from '../components/form.jsx';
+import { FormRow, TextField, NumberField, DateField, SelectField, TextArea, MoneyField } from '../components/form.jsx';
 import { CycleSelect, useCycleOptions } from '../components/relationFields.jsx';
-import { formatDate, formatNumber } from '../lib/format.js';
+import { formatCurrency, formatDate, formatNumber } from '../lib/format.js';
 import { SPACING_UNITS } from '../lib/options.js';
 
 const INITIAL = {
+  currency: '',
   crop_cycle_id: '', planting_date: '', seed_quantity: '', seed_unit: 'kg', seed_source: '',
   seed_cost: '', row_spacing: '', plant_spacing: '', spacing_unit: 'cm', planting_method: '', notes: '',
 };
@@ -40,7 +41,7 @@ function PlantingForm(props) {
           </FormRow>
           <FormRow>
             <TextField label="Seed Source" {...bind('seed_source')} />
-            <NumberField label="Seed Cost" {...bind('seed_cost')} />
+            <MoneyField label="Seed Cost" bind={bind} name="seed_cost" />
           </FormRow>
           <FormRow cols={3}>
             <NumberField label="Row Spacing" {...bind('row_spacing')} />
@@ -99,7 +100,7 @@ export default function Planting() {
         ['Farm', r.crop_cycles?.farms?.name],
         ['Field', r.crop_cycles?.fields?.name],
         ['Seed Quantity', r.seed_quantity ? `${formatNumber(r.seed_quantity)} ${r.seed_unit || 'kg'}` : '—'],
-        ['Seed Cost', r.seed_cost || '—'],
+        ['Seed Cost', r.seed_cost ? formatCurrency(r.seed_cost, r.currency) : '—'],
         ['Row Spacing', r.row_spacing ? `${r.row_spacing} ${r.spacing_unit || 'cm'}` : '—'],
         ['Plant Spacing', r.plant_spacing ? `${r.plant_spacing} ${r.spacing_unit || 'cm'}` : '—'],
         ['Seed Source', r.seed_source],

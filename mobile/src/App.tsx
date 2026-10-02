@@ -66,10 +66,9 @@ function RootGate() {
     return <AccountGateScreen profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
   }
   if (!profile.onboarded) return <OnboardingScreen profile={profile} />;
-  // every money value follows the user's chosen currency; the app remounts when it changes
-  const currency = profile.currency || 'USD';
-  setCurrency(currency);
-  return <AppNavigator key={currency} />;
+  // the default currency pre-fills new records (each record keeps its own currency)
+  setCurrency(profile.currency);
+  return <AppNavigator />;
 }
 
 function NavRoot() {
