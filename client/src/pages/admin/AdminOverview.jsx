@@ -14,7 +14,8 @@ const RECORD_LABELS = {
   Notification: 'Notifications', CalculationHistory: 'Calculations',
 };
 
-function Kpi({ icon, color, label, value, to }) {
+function Kpi({ icon, color, label, value, to })
+ {
   const navigate = useNavigate();
   return (
     <div className="kpi-card" style={{ cursor: to ? 'pointer' : 'default' }} onClick={to ? () => navigate(to) : undefined}>
