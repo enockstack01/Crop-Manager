@@ -5,7 +5,9 @@ import { api } from '../lib/api.js';
 import { formatDateTime } from '../lib/format.js';
 import { CURRENCY_OPTIONS, REQUESTABLE_ACCOUNT_TYPES } from '../lib/currencies.js';
 import { LeafMark } from './LeafMark.jsx';
+import { LanguageMenu } from './LanguageMenu.jsx';
 import { FormRow, NumberField, SelectField, TextArea, TextField } from './form.jsx';
+import { t } from '../i18n/index.js';
 
 /**
  * Shown instead of the app to signed-in users whose account is not active yet:
@@ -20,8 +22,8 @@ export function AccountGate({ profile, onRefresh, refreshing }) {
   // while waiting for approval, check back every 30 s so the dashboard opens on its own
   useEffect(() => {
     if (status !== 'pending') return undefined;
-    const t = setInterval(onRefresh, 30_000);
-    return () => clearInterval(t);
+    const timer = setInterval(onRefresh, 30_000);
+    return () => clearInterval(timer);
   }, [status, onRefresh]);
 
   return (
@@ -30,7 +32,7 @@ export function AccountGate({ profile, onRefresh, refreshing }) {
         <div className="auth-split-brand-icon">
           <LeafMark size={96} color="#fff" />
         </div>
-        <h1>CropManager</h1>
+        <h1>{t('CropManager')}</h1>
         <p>
           Streamline your crop production. Track farms, fields, crop cycles, activities, harvests,
           inventory, and finances — all in one place.
@@ -39,11 +41,14 @@ export function AccountGate({ profile, onRefresh, refreshing }) {
 
       <div className="auth-split-form">
         <div className={`auth-split-form-wrapper${showForm ? ' account-gate-wide' : ''}`}>
+          <div className="account-gate-lang">
+            <LanguageMenu className="lang-btn" />
+          </div>
           <div className="auth-split-mobile-brand" aria-hidden="true">
             <span className="auth-split-mobile-logo">
               <LeafMark size={26} color="#fff" />
             </span>
-            CropManager
+            {t('CropManager')}
           </div>
           {showForm ? (
             <RequestForm profile={profile} onCancel={status === 'rejected' ? () => setResubmit(false) : null} />
@@ -62,7 +67,7 @@ function SignOutLink() {
   return (
     <p className="subtitle auth-split-switch">
       Signed in with the wrong account?{' '}
-      <a href="#" onClick={(e) => { e.preventDefault(); signOut(); }}>Sign out</a>
+      <a href="#" onClick={(e) => { e.preventDefault(); signOut(); }}>{t('Sign out')}</a>
     </p>
   );
 }
@@ -98,7 +103,7 @@ function RequestForm({ profile, onCancel }) {
 
   return (
     <form onSubmit={onSubmit}>
-      <h2>Request your account</h2>
+      <h2>{t('Request your account')}</h2>
       <p className="subtitle">
         Tell us about you and your farm. An administrator reviews every request before the
         dashboard is unlocked.
@@ -140,7 +145,7 @@ function RequestForm({ profile, onCancel }) {
       <div className="account-gate-actions">
         {onCancel && (
           <button type="button" className="btn btn-secondary" onClick={onCancel}>
-            Cancel
+            {t('Cancel')}
           </button>
         )}
         <button
@@ -148,7 +153,7 @@ function RequestForm({ profile, onCancel }) {
           className="btn btn-primary"
           disabled={submit.isPending || !v.organization.trim() || !v.country.trim()}
         >
-          {submit.isPending ? <><i className="fas fa-spinner fa-spin" /> Sending...</> : <><i className="fas fa-paper-plane" /> Send request</>}
+          {submit.isPending ? <><i className="fas fa-spinner fa-spin" /> {t('Sending...')}</> : <><i className="fas fa-paper-plane" /> {t('Send request')}</>}
         </button>
       </div>
     </form>
@@ -195,26 +200,26 @@ function StatusNotice({ profile, onRefresh, refreshing, onResubmit }) {
 
       {profile.status_reason && profile.account_status !== 'pending' && (
         <div className="account-gate-reason">
-          <strong>Note from the administrator:</strong> {profile.status_reason}
+          <strong>{t('Note from the administrator:')}</strong> {profile.status_reason}
         </div>
       )}
 
       {profile.account_status === 'pending' && submitted && (
         <div className="account-gate-summary">
-          <div><span>Account type</span><strong>{profile.access_request.account_type}</strong></div>
-          <div><span>Farm / organisation</span><strong>{profile.access_request.organization}</strong></div>
-          <div><span>Sent</span><strong>{formatDateTime(submitted)}</strong></div>
+          <div><span>{t('Account type')}</span><strong>{profile.access_request.account_type}</strong></div>
+          <div><span>{t('Farm / organisation')}</span><strong>{profile.access_request.organization}</strong></div>
+          <div><span>{t('Sent')}</span><strong>{formatDateTime(submitted)}</strong></div>
         </div>
       )}
 
       <div className="account-gate-actions">
         {profile.account_status === 'rejected' && (
           <button className="btn btn-primary" onClick={onResubmit}>
-            <i className="fas fa-rotate" /> Send a new request
+            <i className="fas fa-rotate" /> {t('Send a new request')}
           </button>
         )}
         <button className="btn btn-secondary" onClick={onRefresh} disabled={refreshing}>
-          <i className={`fas fa-arrows-rotate${refreshing ? ' fa-spin' : ''}`} /> Check status
+          <i className={`fas fa-arrows-rotate${refreshing ? ' fa-spin' : ''}`} /> {t('Check status')}
         </button>
       </div>
     </div>

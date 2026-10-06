@@ -10,6 +10,7 @@ import { LeafLogo } from '../components/LeafLogo';
 import { useConfirm } from '../components/Confirm';
 import { haptics } from '../lib/haptics';
 import { NAV_SECTIONS } from './navConfig';
+import { t } from '../i18n';
 
 /*
  * The web app's sidebar (layout.css .sidebar): dark green gradient, logo row with a
@@ -39,7 +40,7 @@ function NavItem({ icon, label, active, onPress, danger }: { icon: string; label
       <View style={{ width: 20, alignItems: 'center' }}>
         <Icon name={icon} size={14} color={color} />
       </View>
-      <Text style={{ color, fontSize: 13, fontFamily: ff('500') }} numberOfLines={1}>{label}</Text>
+      <Text style={{ color, fontSize: 13, fontFamily: ff('500') }} numberOfLines={1}>{t(label)}</Text>
     </Pressable>
   );
 }
@@ -89,7 +90,7 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
                   color: 'rgba(255,255,255,0.35)', paddingTop: 16, paddingBottom: 6, paddingHorizontal: 20,
                 }}
               >
-                {section.label}
+                {t(section.label)}
               </Text>
             ) : null}
             {section.items.map((item) => (

@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { shadow } from '../theme/theme';
 import { PressableScale } from './PressableScale';
+import { t } from '../i18n';
 
 export function FAB({ onPress, icon = 'plus', label = 'Add' }: { onPress: () => void; icon?: string; label?: string }) {
   const { colors } = useTheme();
@@ -30,7 +31,7 @@ export function FAB({ onPress, icon = 'plus', label = 'Add' }: { onPress: () => 
         feedback="press"
         scaleTo={0.9}
         accessibilityRole="button"
-        accessibilityLabel={label}
+        accessibilityLabel={t(label)}
         style={{
           width: 58,
           height: 58,

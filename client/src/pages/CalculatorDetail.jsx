@@ -5,6 +5,7 @@ import { useResourceMutations } from '../lib/useResource.js';
 import { useToast } from '../components/Toast.jsx';
 import { PageHeader } from '../components/ui.jsx';
 import { NumberField, SelectField } from '../components/form.jsx';
+import { t } from '../i18n/index.js';
 
 export default function CalculatorDetail() {
   const { type } = useParams();
@@ -45,7 +46,7 @@ export default function CalculatorDetail() {
       <>
         <PageHeader title="Calculator not found" />
         <Link to="/calculators" className="btn btn-secondary">
-          Back to calculators
+          {t('Back to calculators')}
         </Link>
       </>
     );
@@ -74,7 +75,7 @@ export default function CalculatorDetail() {
         subtitle={calc.desc}
         action={
           <button className="btn btn-secondary" onClick={() => navigate('/calculators')}>
-            <i className="fas fa-arrow-left" /> All Calculators
+            <i className="fas fa-arrow-left" /> {t('All Calculators')}
           </button>
         }
       />
@@ -89,13 +90,13 @@ export default function CalculatorDetail() {
         )}
 
         <button type="submit" className="btn btn-primary">
-          <i className="fas fa-calculator" /> Calculate
+          <i className="fas fa-calculator" /> {t('Calculate')}
         </button>
 
         {result && (
           <>
             <div className="calc-result">
-              <h4>Result</h4>
+              <h4>{t('Result')}</h4>
               {result.map((r) => (
                 <div key={r.label} className="calc-result-item">
                   <span className="label">{r.label}</span>
@@ -104,7 +105,7 @@ export default function CalculatorDetail() {
               ))}
             </div>
             <button type="button" className="btn btn-secondary" style={{ marginTop: 12 }} onClick={save}>
-              <i className="fas fa-save" /> Save to history
+              <i className="fas fa-save" /> {t('Save to history')}
             </button>
           </>
         )}

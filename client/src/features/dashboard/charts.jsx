@@ -12,6 +12,7 @@ import {
   Ticks,
   Tooltip,
 } from 'chart.js';
+import { legendWithValues, valueLabelsPlugin } from './valueLabels.js';
 
 const NARROW = 440; // px of chart width below which charts switch to their compact layout
 
@@ -40,9 +41,22 @@ const responsiveLayout = {
 
 ChartJS.register(
   responsiveLayout,
+  valueLabelsPlugin,
   ArcElement, BarElement, LineElement, PointElement,
   CategoryScale, LinearScale, Filler, Legend, Tooltip
 );
+
+/* House style for every chart (as in LivestockPro): headroom above the highest
+   value so its printed number fits, thin bars rounded at the data end, smooth
+   lines with a dot per (labelled) value, and doughnut legends with value + share. */
+ChartJS.defaults.scales.linear.grace = '15%';
+ChartJS.defaults.layout.padding = { top: 6, right: 20, left: 0, bottom: 0 };
+Object.assign(ChartJS.defaults.datasets.bar, { maxBarThickness: 34, borderRadius: 4, borderSkipped: 'start' });
+Object.assign(ChartJS.defaults.datasets.line, { cubicInterpolationMode: 'monotone', pointRadius: 3, pointHoverRadius: 5 });
+for (const type of ['doughnut', 'pie']) {
+  const base = ChartJS.overrides[type].plugins.legend.labels.generateLabels;
+  ChartJS.overrides[type].plugins.legend.labels.generateLabels = (chart) => legendWithValues(chart, base);
+}
 
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 const tickFont = (ctx) => ({ family: 'Inter', size: ctx.chart.width < NARROW ? 9 : 11 });
@@ -72,6 +86,8 @@ export function baseOptions() {
   return {
     responsive: true,
     maintainAspectRatio: false,
+    // hovering anywhere in a column shows every series at that point
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
         labels: { color: textColor(), font: { family: 'Inter', size: 12 }, padding: 16, usePointStyle: true, pointStyleWidth: 10 },
@@ -89,7 +105,7 @@ export function baseOptions() {
     scales: {
       x: {
         ticks: { color: textColor(), font: tickFont, autoSkip: true, autoSkipPadding: 8, maxRotation: 45 },
-        grid: { color: gridColor() },
+        grid: { display: false },
         border: { color: gridColor() },
       },
       y: {
@@ -101,8 +117,8 @@ export function baseOptions() {
             return Math.abs(v) >= 10000 ? compact.format(v) : Ticks.formatters.numeric.call(this, v, i, ticks);
           },
         },
-        grid: { color: gridColor() },
-        border: { color: gridColor() },
+        grid: { color: gridColor(), drawTicks: false },
+        border: { display: false },
         beginAtZero: true,
       },
     },

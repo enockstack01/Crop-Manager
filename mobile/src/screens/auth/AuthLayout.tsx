@@ -7,6 +7,7 @@ import { ff, radius, shadow, spacing } from '../../theme/theme';
 import { AppText, useLayout } from '../../components/ui';
 import { LeafLogo } from '../../components/LeafLogo';
 import { haptics } from '../../lib/haptics';
+import { t } from '../../i18n';
 
 /**
  * The web app's sign-in page at phone width (client/src/components/AuthScreen.jsx):
@@ -73,8 +74,8 @@ export function AuthLayout({
               <Text style={{ fontSize: 20, fontFamily: ff('800'), color: colors.text }}>CropManager</Text>
             </View>
 
-            <AppText weight="700" style={{ fontSize: isTablet ? 28 : 26, lineHeight: 34 }}>{heading}</AppText>
-            <AppText variant="subtitle" style={{ marginTop: 6, marginBottom: 30 }}>{intro}</AppText>
+            <AppText weight="700" style={{ fontSize: isTablet ? 28 : 26, lineHeight: 34 }}>{t(heading)}</AppText>
+            <AppText variant="subtitle" style={{ marginTop: 6, marginBottom: 30 }}>{t(intro)}</AppText>
 
             {/* Clerk-style card */}
             <View
@@ -83,8 +84,8 @@ export function AuthLayout({
                 paddingHorizontal: 24, paddingVertical: 28, ...shadow(3),
               }}
             >
-              <AppText weight="700" style={{ fontSize: 17, textAlign: 'center' }}>{title}</AppText>
-              <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 }}>{subtitle}</AppText>
+              <AppText weight="700" style={{ fontSize: 17, textAlign: 'center' }}>{t(title)}</AppText>
+              <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 24 }}>{t(subtitle)}</AppText>
               {children}
             </View>
 
@@ -111,7 +112,7 @@ export function TextLink({ title, onPress, muted, disabled, size = 13 }: { title
       style={({ pressed }) => ({ opacity: disabled ? 0.4 : pressed ? 0.6 : 1 })}
     >
       <AppText weight={muted ? '500' : '600'} style={{ fontSize: size }} color={muted ? colors.textLight : colors.primary}>
-        {title}
+        {t(title)}
       </AppText>
     </Pressable>
   );
@@ -133,7 +134,7 @@ export function OrDivider() {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginVertical: 4 }}>
       <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-      <AppText style={{ fontSize: 13, color: colors.textLight }}>or</AppText>
+      <AppText style={{ fontSize: 13, color: colors.textLight }}>{t('or')}</AppText>
       <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
     </View>
   );

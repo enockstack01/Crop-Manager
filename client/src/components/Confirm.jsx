@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState } from 'react';
 import { Modal } from './Modal.jsx';
+import { t } from '../i18n/index.js';
 
 const ConfirmCtx = createContext(() => Promise.resolve(false));
 export const useConfirm = () => useContext(ConfirmCtx);
@@ -31,20 +32,20 @@ export function ConfirmProvider({ children }) {
         footer={
           <>
             <button className="btn btn-secondary" onClick={() => finish(false)}>
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               className={`btn ${state?.danger ? 'btn-danger' : 'btn-primary'}`}
               onClick={() => finish(true)}
             >
-              {state?.confirmLabel}
+              {t(state?.confirmLabel)}
             </button>
           </>
         }
       >
         <p
           style={{ color: 'var(--text-light)', lineHeight: 1.6 }}
-          dangerouslySetInnerHTML={{ __html: state?.message || '' }}
+          dangerouslySetInnerHTML={{ __html: t(state?.message) || '' }}
         />
       </Modal>
     </ConfirmCtx.Provider>

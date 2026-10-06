@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { t as translate } from '../i18n/index.js';
 
 const ToastCtx = createContext(() => {});
 export const useToast = () => useContext(ToastCtx);
@@ -39,7 +40,7 @@ export function ToastProvider({ children }) {
           toasts.map((t) => (
             <div key={t.id} className={`toast toast-${t.type} toast-show`}>
               <i className={`fas ${ICONS[t.type] || ICONS.info}`} style={{ color: COLORS[t.type] || COLORS.info }} />
-              <span className="toast-message">{t.message}</span>
+              <span className="toast-message">{translate(t.message)}</span>
               <button className="toast-close" onClick={() => remove(t.id)}>
                 <i className="fas fa-times" />
               </button>

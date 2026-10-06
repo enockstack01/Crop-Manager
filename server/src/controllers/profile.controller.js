@@ -9,7 +9,7 @@ import { Profile } from '../models/index.js';
 
 // role is deliberately absent: new users are Farmers and only an admin can change it
 // (PATCH /api/admin/users/:id)
-const EDITABLE = ['full_name', 'phone', 'location', 'onboarded', 'currency'];
+const EDITABLE = ['full_name', 'phone', 'location', 'onboarded', 'currency', 'language'];
 
 // account types a user may request (Administrator is granted, never requested)
 export const REQUESTABLE_ACCOUNT_TYPES = ['Farmer', 'Farm Manager', 'Agronomist', 'Cooperative Manager'];

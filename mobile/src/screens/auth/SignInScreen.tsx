@@ -10,6 +10,7 @@ import { useToast } from '../../components/Toast';
 import { haptics } from '../../lib/haptics';
 import { AuthError, AuthLayout, AuthSwitch, OrDivider, TextLink } from './AuthLayout';
 import { clerkMessage, usePasswordRules } from './clerkHelpers';
+import { t } from '../../i18n';
 
 /*
  * Mirrors the web app's Clerk <SignIn/> flow on the same Clerk instance:
@@ -275,7 +276,7 @@ export function SignInScreen({ navigation }: any) {
           <>
             <AuthError message={error} />
             {secondFactor?.strategy === 'totp' ? (
-              <AppText variant="subtitle">Enter the 6-digit code from your authenticator app.</AppText>
+              <AppText variant="subtitle">{t('Enter the 6-digit code from your authenticator app.')}</AppText>
             ) : null}
             {codeField(submitSecondFactor)}
             <Button title="Verify" icon="shield-check-outline" loading={busy} disabled={code.trim().length < 6} onPress={submitSecondFactor} />

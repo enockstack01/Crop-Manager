@@ -10,6 +10,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { radius, shadow } from '../theme/theme';
 import { AppText, ChartCard, Grid, IconButton, PageHeader, Screen, useLayout } from '../components/ui';
 import { PressableScale } from '../components/PressableScale';
+import { t } from '../i18n';
 
 /** web Calculators page: centred .calc-card grid (icon tile, title, description) + history. */
 export function CalculatorsScreen({ navigation }: any) {
@@ -49,7 +50,7 @@ export function CalculatorsScreen({ navigation }: any) {
 
       <ChartCard title="Recent Calculations" icon="clock" style={{ marginTop: 24 }} bodyStyle={{ padding: 0 }}>
         {history.length === 0 ? (
-          <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', padding: 24 }}>No calculation history yet</AppText>
+          <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', padding: 24 }}>{t('No calculation history yet')}</AppText>
         ) : (
           history.map((h: any, i: number) => {
             const calc = CALCULATORS.find((c) => c.type === h.calculator_type);

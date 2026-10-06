@@ -9,6 +9,7 @@ import { ff, radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
 import { PressableScale } from './PressableScale';
 import { clerkMessage } from '../screens/auth/clerkHelpers';
+import { t } from '../i18n';
 
 // lets the browser hand the OAuth result back to the app when it redirects
 WebBrowser.maybeCompleteAuthSession();
@@ -150,7 +151,7 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
       onPress={onPress}
       disabled={busy}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={t(label)}
       style={{
         minHeight: 44,
         borderRadius: radius.md,
@@ -168,7 +169,7 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
       <View style={{ width: 20, alignItems: 'center' }}>
         {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <GoogleG size={17} />}
       </View>
-      <Text style={{ color: colors.text, fontFamily: ff('600'), fontSize: 13 }}>{label}</Text>
+      <Text style={{ color: colors.text, fontFamily: ff('600'), fontSize: 13 }}>{t(label)}</Text>
     </PressableScale>
   );
 }

@@ -11,3 +11,6 @@ npm-debug.log*
 .DS_Store
 coverage/
 .vite/
+
+# Python (scripts/i18n)
+__pycache__/

@@ -7,6 +7,7 @@ import { useConfirm } from '../../components/Confirm.jsx';
 import { PageHeader, DataTable, Pagination, TableToolbar, FilterSelect, EmptyState, IconButton } from '../../components/ui.jsx';
 import { debounce, displayName, formatDate, formatNumber } from '../../lib/format.js';
 import { ACTIONS, STATUS_META, StatusPill, actionsFor, useAccountActions } from './accountActions.jsx';
+import { t } from '../../i18n/index.js';
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function AdminUsers() {
 
   const del = async (row) => {
     const ok = await confirm(
-      `Permanently delete <strong>${row.full_name || row.email || row.user_id}</strong>?<br>This removes their Clerk account and <strong>all</strong> their farm data. This cannot be undone.`
+      `Permanently delete <strong>${row.full_name || row.email || row.user_id}</strong>?<br>{t('This removes their Clerk account and')} <strong>{t('all')}</strong> their farm data. This cannot be undone.`
     );
     if (!ok) return;
     try {
@@ -78,7 +79,7 @@ export default function AdminUsers() {
               render: (r) => (
                 <>
                   <strong>{displayName(r)}</strong>
-                  {r.is_admin && <span className="badge badge-primary" style={{ marginLeft: 8 }}>Admin</span>}
+                  {r.is_admin && <span className="badge badge-primary" style={{ marginLeft: 8 }}>{t('Admin')}</span>}
                   <br />
                   <span className="text-xs text-light">{r.email || r.user_id}</span>
                 </>

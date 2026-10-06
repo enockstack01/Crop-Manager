@@ -4,6 +4,7 @@ import { useToast } from './Toast.jsx';
 import { Modal } from './Modal.jsx';
 import { ModalFooter, useForm } from './form.jsx';
 import { getCurrency } from '../lib/format.js';
+import { t } from '../i18n/index.js';
 
 /**
  * Modal-wrapped create/edit form for a resource. Handles the mutation,
@@ -54,7 +55,7 @@ export function ResourceForm({
       const payload = toPayload(form.values);
       if (isEdit) await update.mutateAsync({ id: editing.id, ...payload });
       else await create.mutateAsync(payload);
-      onSaved(`${title} ${isEdit ? 'updated' : 'added'} successfully`);
+      onSaved(t(isEdit ? '{{name}} updated successfully' : '{{name}} added successfully', { name: t(title) }));
     } catch (e2) {
       setErr(e2.message || 'Failed to save');
       toast(e2.message || 'Failed to save', 'error');
@@ -65,9 +66,9 @@ export function ResourceForm({
     <Modal
       open
       onClose={onClose}
-      title={`${isEdit ? 'Edit' : 'Add'} ${title}`}
+      title={t(isEdit ? 'Edit {{name}}' : 'Add {{name}}', { name: t(title) })}
       size={size}
-      footer={<ModalFooter onCancel={onClose} saving={saving} saveLabel={`Save ${title}`} />}
+      footer={<ModalFooter onCancel={onClose} saving={saving} saveLabel={t('Save {{name}}', { name: t(title) })} />}
     >
       <form id="resource-form" onSubmit={submit}>
         {err && (

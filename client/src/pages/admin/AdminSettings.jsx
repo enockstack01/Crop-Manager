@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast.jsx';
 import { useConfirm } from '../../components/Confirm.jsx';
 import { PageHeader, Loading, EmptyState, ViewGrid, IconButton } from '../../components/ui.jsx';
 import { formatNumber } from '../../lib/format.js';
+import { t } from '../../i18n/index.js';
 
 function fmtUptime(s) {
   if (s == null) return '—';
@@ -52,7 +53,7 @@ export default function AdminSettings() {
       <div className="chart-grid">
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-server" style={{ color: 'var(--primary)', marginRight: 8 }} />Application</h3>
+            <h3><i className="fas fa-server" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Application')}</h3>
           </div>
           <div className="card-body">
             <ViewGrid
@@ -69,7 +70,7 @@ export default function AdminSettings() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-database" style={{ color: 'var(--blue)', marginRight: 8 }} />Database</h3>
+            <h3><i className="fas fa-database" style={{ color: 'var(--blue)', marginRight: 8 }} />{t('Database')}</h3>
           </div>
           <div className="card-body">
             <ViewGrid
@@ -89,12 +90,12 @@ export default function AdminSettings() {
       <div className="chart-grid">
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-user-shield" style={{ color: 'var(--purple)', marginRight: 8 }} />Administrator allowlist</h3>
+            <h3><i className="fas fa-user-shield" style={{ color: 'var(--purple)', marginRight: 8 }} />{t('Administrator allowlist')}</h3>
           </div>
           <div className="card-body">
             <p style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 12 }}>
               Anyone signing in with one of these emails is automatically granted admin. Env-configured
-              entries are managed in <code>server/.env</code> and can&apos;t be removed here.
+              entries are managed in <code>{t('server/.env')}</code> {t('and can\'t be removed here.')}
             </p>
 
             <form onSubmit={add} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -107,27 +108,27 @@ export default function AdminSettings() {
                 required
               />
               <button className="btn btn-primary" disabled={addAdmin.isPending}>
-                <i className="fas fa-plus" /> Add
+                <i className="fas fa-plus" /> {t('Add')}
               </button>
             </form>
 
             <div>
               {allow.env.map((e) => (
                 <div key={e} style={row}>
-                  <span>{e} <span className="badge badge-neutral" style={{ marginLeft: 6 }}>env</span></span>
-                  <span style={{ color: 'var(--text-light)', fontSize: 12 }}>locked</span>
+                  <span>{e} <span className="badge badge-neutral" style={{ marginLeft: 6 }}>{t('env')}</span></span>
+                  <span style={{ color: 'var(--text-light)', fontSize: 12 }}>{t('locked')}</span>
                 </div>
               ))}
               {allow.managed
                 .filter((e) => !allow.env.includes(e))
                 .map((e) => (
                   <div key={e} style={row}>
-                    <span>{e} <span className="badge badge-primary" style={{ marginLeft: 6 }}>managed</span></span>
+                    <span>{e} <span className="badge badge-primary" style={{ marginLeft: 6 }}>{t('managed')}</span></span>
                     <IconButton icon="fa-trash" title="Remove" danger onClick={() => remove(e)} />
                   </div>
                 ))}
               {allow.env.length === 0 && allow.managed.length === 0 && (
-                <div style={{ color: 'var(--text-light)', fontSize: 13 }}>No admins configured</div>
+                <div style={{ color: 'var(--text-light)', fontSize: 13 }}>{t('No admins configured')}</div>
               )}
             </div>
           </div>
@@ -135,7 +136,7 @@ export default function AdminSettings() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-layer-group" style={{ color: 'var(--primary)', marginRight: 8 }} />Collection counts</h3>
+            <h3><i className="fas fa-layer-group" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Collection counts')}</h3>
           </div>
           <div className="card-body">
             <div className="detail-grid">

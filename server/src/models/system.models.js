@@ -29,6 +29,7 @@ const ProfileSchema = ownedSchema({
   // account_type, message, submitted_at }
   access_request: { type: mongoose.Schema.Types.Mixed, default: null },
   currency: { type: String, enum: CURRENCY_CODES, default: 'USD' },
+  language: { type: String, enum: ['en', 'fr', 'rw', 'sw', null], default: null }, // interface language (web + mobile)
   last_seen_at: { type: Date, default: null },
 });
 ProfileSchema.index({ user_id: 1 }, { unique: true });

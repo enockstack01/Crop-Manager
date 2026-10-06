@@ -4,6 +4,7 @@ import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { ff, radius } from '../theme/theme';
 import { PressableScale } from './PressableScale';
+import { t } from '../i18n';
 
 type Kind = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -84,7 +85,7 @@ export function Button({
       ) : icon ? (
         <Icon name={icon} size={sm ? 12 : 13} color={fg[kind]} />
       ) : null}
-      <Text style={{ color: fg[kind], fontFamily: ff('600'), fontSize: sm ? 12 : 13 }}>{title}</Text>
+      <Text style={{ color: fg[kind], fontFamily: ff('600'), fontSize: sm ? 12 : 13 }}>{t(title)}</Text>
     </PressableScale>
   );
 }

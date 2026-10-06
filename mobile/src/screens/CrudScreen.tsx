@@ -14,6 +14,7 @@ import { ResourceFormSheet } from './ResourceFormSheet';
 import { RecordDetailSheet } from './RecordDetailSheet';
 import { InventoryStockSheet } from './InventoryStockSheet';
 import type { FilterDef, ModuleConfig } from '../navigation/modules';
+import { t } from '../i18n';
 
 const PER_PAGE = 15;
 
@@ -68,17 +69,17 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   }, []);
 
   const onDelete = async (row: any) => {
-    const ok = await confirm(`Delete "${row.name || row.buyer || 'this record'}"? This cannot be undone.`);
+    const ok = await confirm(t('Delete "{{name}}"? This cannot be undone.', { name: row.name || row.buyer || t('this record') }));
     if (!ok) return;
     try {
       await remove.mutateAsync(row.id);
-      toast('Deleted successfully');
+      toast(t('Deleted successfully'));
     } catch (e: any) {
-      toast(e?.message || 'Failed to delete', 'error');
+      toast(e?.message || t('Failed to delete'), 'error');
     }
   };
 
-  const addLabel = config.addLabel || `Add ${config.formTitle}`;
+  const addLabel = config.addLabel || t('Add {{name}}', { name: t(config.formTitle) });
 
   /* ---------- header: title, add button, search, filters (web .table-toolbar) ---------- */
   const header = (
@@ -101,7 +102,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
             <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
             <TextInput
               value={search}
-              placeholder={config.searchPlaceholder ?? `Search ${config.title.toLowerCase()}...`}
+              placeholder={config.searchPlaceholder ? t(config.searchPlaceholder) : t('Search {{name}}...', { name: t(config.title).toLowerCase() })}
               placeholderTextColor={colors.placeholder}
               onChangeText={onSearch}
               onFocus={() => setSearchFocused(true)}
@@ -224,7 +225,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
             <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, ...shadow(1) }}>
               <EmptyState
                 icon={config.emptyIcon}
-                title={q || Object.values(filterValues).some(Boolean) ? 'No matching records' : config.emptyTitle}
+                title={q || Object.values(filterValues).some(Boolean) ? t('No matching records') : config.emptyTitle}
                 description={q || Object.values(filterValues).some(Boolean) ? 'Try a different search or clear the filters.' : config.emptyDescription}
                 actionLabel={q ? undefined : addLabel}
                 onAction={() => setForm({ editing: null })}

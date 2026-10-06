@@ -5,8 +5,12 @@ import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
-import { formatCurrency, formatNumber, formatDate, getGreeting, displayName, formatTotals, sumByCurrency, currenciesUsed, getCurrency } from '../lib/format.js';
+import { formatCurrency, formatNumber, getGreeting, displayName, formatTotals, sumByCurrency, currenciesUsed, getCurrency } from '../lib/format.js';
 import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
+import { t } from '../i18n/index.js';
+import { InsightTiles } from '../features/dashboard/InsightTiles.jsx';
+import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed.jsx';
+import { computeActivity, computeAlerts, computeInsights, computeUpcoming } from '../features/dashboard/insights.js';
 
 const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
 const monthLabel = (key) => {
@@ -20,7 +24,7 @@ function Card({ title, icon, iconColor = 'var(--primary)', children, className =
       <div className="chart-card-header">
         <h3>
           <i className={`fas ${icon}`} style={{ color: iconColor, marginRight: 8 }} />
-          {title}
+          {t(title)}
         </h3>
       </div>
       <div className="chart-card-body" style={bodyStyle}>
@@ -32,7 +36,7 @@ function Card({ title, icon, iconColor = 'var(--primary)', children, className =
 
 const NoData = ({ label = 'No data to display' }) => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 120, color: 'var(--text-light)', fontSize: 13 }}>
-    {label}
+    {t(label)}
   </div>
 );
 
@@ -45,6 +49,11 @@ export default function Dashboard() {
 
   const d = data || {};
   const agg = useMemo(() => computeAggregates(d, filters), [d, filters]);
+  const insights = useMemo(() => computeInsights(d, filters, agg.chartCurrency), [d, filters, agg.chartCurrency]);
+  const feed = useMemo(
+    () => ({ activity: computeActivity(d, filters), upcoming: computeUpcoming(d, filters), alerts: computeAlerts(d, filters) }),
+    [d, filters]
+  );
 
   if (isLoading) return <Loading label="Loading dashboard..." />;
   if (isError) {
@@ -66,10 +75,10 @@ export default function Dashboard() {
       <div className="dashboard-header">
         <div>
           <h1 className="page-title">
-            {getGreeting()}, {name}
+            {t(getGreeting())}, {name}
           </h1>
           <p className="page-subtitle" style={{ marginTop: 4 }}>
-            Here&apos;s what&apos;s happening across your farm today.
+            {t("Here's what's happening across your farm today.")}
           </p>
         </div>
       </div>
@@ -88,7 +97,7 @@ export default function Dashboard() {
       {/* filters: 2 x 2 below the farm profile, as in the mobile app */}
       <div className="dashboard-filters-grid">
         <select className="dashboard-filter-select" value={filters.farm} onChange={(e) => setFilters((f) => ({ ...f, farm: e.target.value }))}>
-          <option value="">All Farms</option>
+          <option value="">{t('All Farms')}</option>
           {(d.farms || []).map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
@@ -96,7 +105,7 @@ export default function Dashboard() {
           ))}
         </select>
         <select className="dashboard-filter-select" value={filters.season} onChange={(e) => setFilters((f) => ({ ...f, season: e.target.value }))}>
-          <option value="">All Seasons</option>
+          <option value="">{t('All Seasons')}</option>
           {(d.seasons || []).map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -110,15 +119,18 @@ export default function Dashboard() {
             className="dashboard-filter-select"
             value={filters.currency}
             onChange={(e) => setFilters((f) => ({ ...f, currency: e.target.value }))}
-            aria-label="Currency"
+            aria-label={t('Currency')}
           >
-            <option value="">All currencies (charts in {agg.chartCurrency})</option>
+            <option value="">{t('All currencies (charts in {{currency}})', { currency: agg.chartCurrency })}</option>
             {agg.currencies.map((c) => (
-              <option key={c} value={c}>Only {c}</option>
+              <option key={c} value={c}>{t('Only {{currency}}', { currency: c })}</option>
             ))}
           </select>
         )}
       </div>
+
+      {/* key insights: a figure, a short label and a small chart each */}
+      <InsightTiles insights={insights} />
 
       {/* Crop distribution */}
       <div className="chart-grid">
@@ -144,7 +156,7 @@ export default function Dashboard() {
           <Doughnut
             key={`cs-${dark}`}
             data={{
-              labels: CYCLE_STATUSES,
+              labels: CYCLE_STATUSES.map((s) => t(s)),
               datasets: [{
                 data: CYCLE_STATUSES.map((s) => agg.cycles.filter((c) => c.status === s).length),
                 backgroundColor: ['#1976D2', '#2E7D32', '#66BB6A', '#F9A825', '#FF8F00', '#43A047', '#9E9E9E'],
@@ -161,7 +173,7 @@ export default function Dashboard() {
               key={`hbc-${dark}`}
               data={{
                 labels: agg.harvestByCrop.labels,
-                datasets: [{ label: 'Quantity (kg)', data: agg.harvestByCrop.values, backgroundColor: PALETTE, borderRadius: 6 }],
+                datasets: [{ label: t('Quantity (kg)'), data: agg.harvestByCrop.values, backgroundColor: PALETTE, borderRadius: 6 }],
               }}
               options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, legend: { display: false } } }}
             />
@@ -174,7 +186,7 @@ export default function Dashboard() {
       {/* Production trend */}
       <div className="chart-card full-width" style={{ marginBottom: 20 }}>
         <div className="chart-card-header">
-          <h3><i className="fas fa-chart-line" style={{ color: 'var(--primary)', marginRight: 8 }} />Production Trend</h3>
+          <h3><i className="fas fa-chart-line" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Production Trend')}</h3>
         </div>
         <div className="chart-card-body" style={{ height: 300 }}>
           {agg.trend.labels.length ? (
@@ -183,7 +195,7 @@ export default function Dashboard() {
               data={{
                 labels: agg.trend.labels,
                 datasets: [{
-                  label: 'Harvest (kg)',
+                  label: t('Harvest (kg)'),
                   data: agg.trend.values,
                   borderColor: '#2E7D32',
                   backgroundColor: 'rgba(46,125,50,0.1)',
@@ -209,7 +221,7 @@ export default function Dashboard() {
               key={`cp-${dark}`}
               data={{
                 labels: agg.cropPerf.labels,
-                datasets: [{ label: 'Area (ha)', data: agg.cropPerf.area, backgroundColor: PALETTE, borderRadius: 6 }],
+                datasets: [{ label: t('Area (ha)'), data: agg.cropPerf.area, backgroundColor: PALETTE, borderRadius: 6 }],
               }}
               options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, legend: { display: false } } }}
             />
@@ -230,16 +242,16 @@ export default function Dashboard() {
       {/* Revenue vs expenses */}
       <div className="chart-card full-width" style={{ marginBottom: 20 }}>
         <div className="chart-card-header">
-          <h3><i className="fas fa-chart-area" style={{ color: 'var(--primary)', marginRight: 8 }} />Revenue vs Expenses · {agg.chartCurrency}</h3>
+          <h3><i className="fas fa-chart-area" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Revenue vs Expenses')} · {agg.chartCurrency}</h3>
           <div className="wrap-row" style={{ fontSize: 12 }}>
             <span style={{ color: 'var(--green)', fontWeight: 600 }}>
-              <i className="fas fa-arrow-up" /> {formatCurrency(agg.finance.totalSales, agg.chartCurrency)} Revenue
+              <i className="fas fa-arrow-up" /> {formatCurrency(agg.finance.totalSales, agg.chartCurrency)} {t('Revenue')}
             </span>
             <span style={{ color: 'var(--red)', fontWeight: 600 }}>
-              <i className="fas fa-arrow-down" /> {formatCurrency(agg.finance.totalExpenses, agg.chartCurrency)} Expenses
+              <i className="fas fa-arrow-down" /> {formatCurrency(agg.finance.totalExpenses, agg.chartCurrency)} {t('Expenses')}
             </span>
             <span style={{ color: 'var(--blue)', fontWeight: 600 }}>
-              Net: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses, agg.chartCurrency)}
+              {t('Net')}: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses, agg.chartCurrency)}
             </span>
           </div>
         </div>
@@ -250,12 +262,12 @@ export default function Dashboard() {
               data={{
                 labels: agg.finance.labels,
                 datasets: [
-                  { label: 'Revenue', data: agg.finance.sales, backgroundColor: 'rgba(46,125,50,0.7)', borderRadius: 4, order: 2 },
-                  { label: 'Expenses', data: agg.finance.expenses, backgroundColor: 'rgba(211,47,47,0.7)', borderRadius: 4, order: 3 },
-                  { label: 'Balance', data: agg.finance.balance, type: 'line', borderColor: '#1976D2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
+                  { label: t('Revenue'), data: agg.finance.sales, backgroundColor: 'rgba(46,125,50,0.7)', borderRadius: 4, order: 2 },
+                  { label: t('Expenses'), data: agg.finance.expenses, backgroundColor: 'rgba(211,47,47,0.7)', borderRadius: 4, order: 3 },
+                  { label: t('Balance'), data: agg.finance.balance, type: 'line', borderColor: '#1976D2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
                 ],
               }}
-              options={baseOptions()}
+              options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, valueLabels: { lines: false } } }}
             />
           ) : (
             <NoData label="No financial data yet" />
@@ -265,12 +277,12 @@ export default function Dashboard() {
 
       {/* Expense breakdown + sales analytics */}
       <div className="chart-grid">
-        <Card title={`Expense Breakdown · ${agg.chartCurrency}`} icon="fa-receipt" iconColor="var(--red)" bodyStyle={{ height: 260 }}>
+        <Card title={`${t('Expense Breakdown')} · ${agg.chartCurrency}`} icon="fa-receipt" iconColor="var(--red)" bodyStyle={{ height: 260 }}>
           {agg.expenseBreakdown.labels.length ? (
             <Doughnut
               key={`eb-${dark}`}
               data={{
-                labels: agg.expenseBreakdown.labels,
+                labels: agg.expenseBreakdown.labels.map((c) => t(c)),
                 datasets: [{ data: agg.expenseBreakdown.values, backgroundColor: PALETTE, borderWidth: 2, borderColor: chartBg() }],
               }}
               options={doughnutOptions()}
@@ -279,14 +291,14 @@ export default function Dashboard() {
             <NoData label="No expense data" />
           )}
         </Card>
-        <Card title={`Sales Analytics · ${agg.chartCurrency}`} icon="fa-hand-holding-usd" iconColor="var(--green)">
+        <Card title={`${t('Sales Analytics')} · ${agg.chartCurrency}`} icon="fa-hand-holding-usd" iconColor="var(--green)">
           <div className="stat-grid" style={{ '--stat-min': '140px' }}>
             <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" max={16} />
             <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F57F17" max={16} />
             <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1565C0" max={16} />
           </div>
           <div className="stat-grid" style={{ marginTop: 16 }}>
-            <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={`${agg.salesInCurrency} records`} max={20} />
+            <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={t('{{count}} records', { count: agg.salesInCurrency })} max={20} />
           </div>
         </Card>
       </div>
@@ -318,66 +330,13 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent activities + upcoming events + alerts */}
+      {/* activity feed: recent activity, upcoming harvests, alerts */}
       <div className="chart-grid">
-        <Card title="Recent Activities" icon="fa-clock" iconColor="var(--purple)" bodyStyle={{ maxHeight: 320, overflowY: 'auto' }}>
-          {(d.activities || []).length === 0 ? (
-            <NoData label="No recent activities" />
-          ) : (
-            <div className="activity-timeline">
-              {(d.activities || []).slice(0, 8).map((a) => (
-                <div key={a.id} className="activity-item">
-                  <div className="activity-dot" />
-                  <div className="activity-text">
-                    <strong>{a.activity_type}</strong> — {a.description || 'No description'}
-                  </div>
-                  <div className="activity-meta">
-                    {a.farms?.name || ''} {a.fields?.name ? `/ ${a.fields.name}` : ''} · {formatDate(a.activity_date)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-        <Card title="Upcoming Events" icon="fa-calendar-check" iconColor="var(--blue)" bodyStyle={{ maxHeight: 320, overflowY: 'auto' }}>
-          {agg.upcoming.length === 0 ? (
-            <NoData label="No upcoming events" />
-          ) : (
-            agg.upcoming.map((c) => (
-              <div key={c.id} className="upcoming-event">
-                <div className="upcoming-date">
-                  <span className="day">{new Date(c.expected_harvest_date).getDate()}</span>
-                  <span className="month">{new Date(c.expected_harvest_date).toLocaleString('en', { month: 'short' })}</span>
-                </div>
-                <div className="upcoming-info">
-                  <div className="title">{c.crops?.name || 'Crop'} harvest</div>
-                  <div className="meta">{c.farms?.name || ''}{c.fields?.name ? ` / ${c.fields.name}` : ''}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </Card>
+        <RecentActivity activity={feed.activity} />
+        <UpcomingHarvests items={feed.upcoming} />
       </div>
-
       <div className="chart-grid">
-        <Card title="Alerts" icon="fa-bell" iconColor="var(--orange)" className="full-width" bodyStyle={{ maxHeight: 320, overflowY: 'auto' }}>
-          {agg.alerts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-light)', fontSize: 13 }}>
-              <i className="fas fa-check-circle" style={{ fontSize: 24, color: 'var(--primary)', display: 'block', marginBottom: 8 }} />
-              All clear — no alerts
-            </div>
-          ) : (
-            agg.alerts.map((a, i) => (
-              <div key={i} className={`alert-item alert-${a.type}`}>
-                <i className={`fas ${a.icon}`} />
-                <div className="alert-content">
-                  <strong>{a.title}</strong>
-                  {a.msg}
-                </div>
-              </div>
-            ))
-          )}
-        </Card>
+        <AlertsCard items={feed.alerts} className="full-width" />
       </div>
     </>
   );
@@ -504,23 +463,6 @@ function computeAggregates(d, filters) {
     atRisk: scouting.filter((s) => s.plant_health === 'At Risk').length,
   };
 
-  // upcoming
-  const upcoming = (d.cycles || [])
-    .filter((c) => ['Planned', 'Planted', 'Growing', 'Ready for Harvest'].includes(c.status) && c.expected_harvest_date && new Date(c.expected_harvest_date) >= new Date())
-    .sort((a, b) => new Date(a.expected_harvest_date) - new Date(b.expected_harvest_date))
-    .slice(0, 5);
-
-  // alerts
-  const alerts = [];
-  inv.filter((i) => i.current_quantity <= i.minimum_stock && i.current_quantity > 0).forEach((i) =>
-    alerts.push({ type: 'warning', icon: 'fa-boxes', title: 'LOW STOCK ', msg: `${i.name} is below minimum stock level.` }));
-  inv.filter((i) => i.current_quantity <= 0).forEach((i) =>
-    alerts.push({ type: 'danger', icon: 'fa-boxes', title: 'OUT OF STOCK ', msg: `${i.name} has zero stock.` }));
-  (d.cycles || []).filter((c) => c.status === 'Ready for Harvest').forEach((c) =>
-    alerts.push({ type: 'info', icon: 'fa-wheat-awn', title: 'HARVEST READY ', msg: `${c.crops?.name || ''} is ready for harvest.` }));
-  scouting.filter((s) => s.plant_health === 'At Risk').slice(-3).forEach((s) =>
-    alerts.push({ type: 'danger', icon: 'fa-exclamation-triangle', title: 'CROP HEALTH ', msg: `At-risk observation on ${s.crops?.name || ''} at ${s.farms?.name || ''}.` }));
-
   return {
     kpis,
     cycles,
@@ -556,7 +498,5 @@ function computeAggregates(d, filters) {
     salesByStatus,
     inv: invHealth,
     health,
-    upcoming,
-    alerts,
   };
 }

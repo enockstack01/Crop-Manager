@@ -9,6 +9,7 @@ import { DateField, SelectField } from '../components/fields';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { CYCLE_STATUSES, STATUS_COLORS } from '../features/dashboard/aggregate';
+import { t } from '../i18n';
 
 /*
  * Mirrors the web Reports page (client/src/pages/Reports.jsx): farm/season/date
@@ -99,7 +100,7 @@ export function ReportsScreen() {
     };
     const body = [report.csv.headers, ...report.csv.rows].map((r) => r.map(esc).join(',')).join('\r\n');
     try {
-      await Share.share({ title: `${meta.label} report`, message: body });
+      await Share.share({ title: t('{{report}} Report', { report: t(meta.label) }), message: body });
     } catch {
       toast('Could not export the report', 'error');
     }
@@ -142,16 +143,16 @@ export function ReportsScreen() {
       ) : (
         <View style={{ gap: 20 }}>
           <Grid columns={2} gap={12}>
-            {report.tiles.map((t) => (
-              <StatTile key={t.label} label={t.label} value={t.value} sub={t.sub} color={t.color} />
+            {report.tiles.map((tile) => (
+              <StatTile key={tile.label} label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} />
             ))}
           </Grid>
 
           {report.chart ? (
-            <ChartCard title={`${meta.label} Overview`} icon={meta.icon}>{report.chart}</ChartCard>
+            <ChartCard title={t('{{report}} Overview', { report: t(meta.label) })} icon={meta.icon}>{report.chart}</ChartCard>
           ) : null}
 
-          <ChartCard title={`${meta.label} Detail`} icon="table" bodyStyle={{ padding: 0 }}>
+          <ChartCard title={t('{{report}} Detail', { report: t(meta.label) })} icon="table" bodyStyle={{ padding: 0 }}>
             <ReportTable columns={report.columns} rows={report.rows} />
           </ChartCard>
 
@@ -175,7 +176,7 @@ function ReportTable({ columns, rows }: { columns: Column[]; rows: any[] }) {
     typeof v === 'string' || typeof v === 'number' ? <AppText style={style} numberOfLines={2}>{String(v)}</AppText> : v;
 
   if (!rows.length) {
-    return <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', padding: 24 }}>No data for the selected filters</AppText>;
+    return <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', padding: 24 }}>{t('No data for the selected filters')}</AppText>;
   }
 
   if (isTablet) {
@@ -184,7 +185,7 @@ function ReportTable({ columns, rows }: { columns: Column[]; rows: any[] }) {
         <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border }}>
           {columns.map((c) => (
             <AppText key={c.key} weight="700" style={{ flex: 1, fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, paddingVertical: 12, paddingHorizontal: 16, textAlign: c.align === 'right' ? 'right' : 'left' }}>
-              {c.label}
+              {t(c.label)}
             </AppText>
           ))}
         </View>
@@ -210,7 +211,7 @@ function ReportTable({ columns, rows }: { columns: Column[]; rows: any[] }) {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 }}>
             {rest.map((c) => (
               <View key={c.key} style={{ width: '50%', paddingRight: 8 }}>
-                <AppText weight="700" style={{ fontSize: 10, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>{c.label}</AppText>
+                <AppText weight="700" style={{ fontSize: 10, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t(c.label)}</AppText>
                 {text(cell(c, r), { fontSize: 13, marginTop: 1, fontWeight: r._total ? '700' : '400' })}
               </View>
             ))}

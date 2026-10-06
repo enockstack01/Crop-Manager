@@ -8,6 +8,7 @@ import { AppText, useLayout } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { haptics } from '../../lib/haptics';
 import { PressableScale } from '../../components/PressableScale';
+import { t } from '../../i18n';
 
 export type ProfileKpi = { icon: string; tone: keyof typeof KPI_TONES; label: string; value: string; link: string };
 
@@ -21,7 +22,7 @@ function KpiTile({ k, onPress }: { k: ProfileKpi; onPress?: () => void }) {
       disabled={!onPress}
       scaleTo={0.97}
       accessibilityRole="button"
-      accessibilityLabel={`${k.label}: ${k.value}`}
+      accessibilityLabel={`${t(k.label)}: ${k.value}`}
       style={({ pressed }) => ({
         flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10,
         paddingVertical: 12, paddingHorizontal: 12, borderRadius: radius.lg, borderWidth: 1,
@@ -32,7 +33,7 @@ function KpiTile({ k, onPress }: { k: ProfileKpi; onPress?: () => void }) {
         <Icon name={k.icon} size={14} color={fg} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontFamily: ff('500'), fontSize: 11, color: colors.textLight }} numberOfLines={1}>{k.label}</Text>
+        <Text style={{ fontFamily: ff('500'), fontSize: 11, color: colors.textLight }} numberOfLines={1}>{t(k.label)}</Text>
         {/* money in several currencies: one line per currency */}
         {String(k.value).split(' · ').map((part) => (
           <Text key={part} style={{ fontFamily: ff('700'), fontSize: 16, color: colors.text, marginTop: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55}>
@@ -102,7 +103,7 @@ function LandRing({ segments, total, size, pct }: { segments: Segment[]; total: 
         </G>
       </Svg>
       <Text style={{ fontFamily: ff('800'), fontSize: Math.round(size * 0.2), color: colors.text }}>{pct}%</Text>
-      <Text style={{ fontFamily: ff('500'), fontSize: 11, color: colors.textLight, marginTop: -2 }}>utilised</Text>
+      <Text style={{ fontFamily: ff('500'), fontSize: 11, color: colors.textLight, marginTop: -2 }}>{t('utilised')}</Text>
     </View>
   );
 }
@@ -156,7 +157,7 @@ export function FarmProfileCard({
     return { farm, scopeFarms, scopeFields, total, ringTotal, segments, pct, soils, topFields, maxField, planted: byStatus.Active };
   }, [farms, fields, selected, isDark]);
 
-  const place = p.farm ? [p.farm.location, p.farm.district, p.farm.province].filter(Boolean).join(', ') : `${p.scopeFarms.length} farm${p.scopeFarms.length === 1 ? '' : 's'} in your portfolio`;
+  const place = p.farm ? [p.farm.location, p.farm.district, p.farm.province].filter(Boolean).join(', ') : t(p.scopeFarms.length === 1 ? '{{count}} farm in your portfolio' : '{{count}} farms in your portfolio', { count: p.scopeFarms.length });
   const ringSize = isTablet ? 190 : 150;
   const shown = p.topFields.slice(0, 6);
   const hasLand = p.total > 0 || p.scopeFields.length > 0;
@@ -169,13 +170,13 @@ export function FarmProfileCard({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Icon name="map-location-dot" size={13} color="rgba(255,255,255,0.85)" />
           <Text style={{ fontFamily: ff('700'), fontSize: 11, letterSpacing: 1, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>
-            Farm Profile · Overview
+            {t('Farm Profile · Overview')}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: ff('800'), fontSize: 20, lineHeight: 25, color: '#fff' }} numberOfLines={2}>
-              {p.farm ? p.farm.name : 'All Farms'}
+              {p.farm ? p.farm.name : t('All Farms')}
             </Text>
             <Text style={{ fontFamily: ff('400'), fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 }} numberOfLines={1}>
               {place || '—'}
@@ -184,7 +185,7 @@ export function FarmProfileCard({
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontFamily: ff('800'), fontSize: 20, color: '#fff' }}>{ha(p.total)}</Text>
             <Text style={{ fontFamily: ff('500'), fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
-              {p.farm?.farm_type ? `${p.farm.farm_type} farm · total area` : 'total area'}
+              {p.farm?.farm_type ? `${t(p.farm.farm_type)} · ${t('total area')}` : t('total area')}
             </Text>
           </View>
         </View>
@@ -193,7 +194,7 @@ export function FarmProfileCard({
       {/* farm switcher */}
       {p.scopeFarms.length > 0 || farms.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 20, paddingTop: 14 }}>
-          {[{ id: '', name: 'All Farms' }, ...farms].map((f) => {
+          {[{ id: '', name: t('All Farms') }, ...farms].map((f) => {
             const on = f.id === selected;
             return (
               <Pressable
@@ -216,7 +217,7 @@ export function FarmProfileCard({
       <View style={{ padding: 20, gap: 22 }}>
           {!hasLand ? (
             <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: 8 }}>
-              Add a farm with its total area and fields to see land utilization.
+              {t('Add a farm with its total area and fields to see land utilization.')}
             </AppText>
           ) : (
           /* ring + legend */
@@ -226,7 +227,7 @@ export function FarmProfileCard({
               {p.segments.map((s) => (
                 <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, opacity: s.value > 0 ? 1 : 0.45 }}>
                   <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: s.color }} />
-                  <AppText style={{ fontSize: 12, flex: 1, color: colors.textLight }} numberOfLines={1}>{s.label}</AppText>
+                  <AppText style={{ fontSize: 12, flex: 1, color: colors.textLight }} numberOfLines={1}>{t(s.label)}</AppText>
                   <AppText weight="700" style={{ fontSize: 12 }}>{ha(s.value)}</AppText>
                 </View>
               ))}
@@ -238,7 +239,7 @@ export function FarmProfileCard({
           {kpis.length ? (
             <View>
               <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                Farm at a glance
+                {t('Farm at a glance')}
               </AppText>
               <View style={{ gap: 10 }}>
                 {Array.from({ length: Math.ceil(kpis.length / kpiCols) }, (_, r) => (
@@ -264,7 +265,7 @@ export function FarmProfileCard({
           {shown.length ? (
             <View>
               <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                Land by field
+                {t('Land by field')}
               </AppText>
               <View style={{ gap: 12 }}>
                 {shown.map((f) => {
@@ -277,7 +278,7 @@ export function FarmProfileCard({
                           {f.name}
                           {!selected && f.farms?.name ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{`  ·  ${f.farms.name}`}</AppText> : null}
                         </AppText>
-                        <AppText style={{ fontSize: 11, color }}>{f.status || 'Active'}</AppText>
+                        <AppText style={{ fontSize: 11, color }}>{t(f.status || 'Active')}</AppText>
                         <AppText weight="700" style={{ fontSize: 12, minWidth: 64, textAlign: 'right' }}>{ha(n(f.area))}</AppText>
                       </View>
                       <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.bg, overflow: 'hidden' }}>
@@ -287,7 +288,7 @@ export function FarmProfileCard({
                   );
                 })}
                 {p.topFields.length > shown.length ? (
-                  <AppText variant="caption">+ {p.topFields.length - shown.length} more field{p.topFields.length - shown.length === 1 ? '' : 's'}</AppText>
+                  <AppText variant="caption">+ {t(p.topFields.length - shown.length === 1 ? '{{count}} more field' : '{{count}} more fields', { count: p.topFields.length - shown.length })}</AppText>
                 ) : null}
               </View>
             </View>

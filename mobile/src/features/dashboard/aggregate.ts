@@ -141,23 +141,6 @@ export function computeDashboard(d: any, filters: DashFilters) {
     atRisk: scouting.filter((s: any) => s.plant_health === 'At Risk').length,
   };
 
-  // upcoming
-  const upcoming = (d.cycles || [])
-    .filter((c: any) => ['Planned', 'Planted', 'Growing', 'Ready for Harvest'].includes(c.status) && c.expected_harvest_date && new Date(c.expected_harvest_date) >= new Date())
-    .sort((a: any, b: any) => new Date(a.expected_harvest_date).getTime() - new Date(b.expected_harvest_date).getTime())
-    .slice(0, 5);
-
-  // alerts
-  const alerts: { tone: 'warning' | 'danger' | 'info'; icon: string; title: string; msg: string }[] = [];
-  inv.filter((i: any) => i.current_quantity <= i.minimum_stock && i.current_quantity > 0).forEach((i: any) =>
-    alerts.push({ tone: 'warning', icon: 'boxes-stacked', title: 'LOW STOCK', msg: `${i.name} is below minimum stock level.` }));
-  inv.filter((i: any) => i.current_quantity <= 0).forEach((i: any) =>
-    alerts.push({ tone: 'danger', icon: 'boxes-stacked', title: 'OUT OF STOCK', msg: `${i.name} has zero stock.` }));
-  (d.cycles || []).filter((c: any) => c.status === 'Ready for Harvest').forEach((c: any) =>
-    alerts.push({ tone: 'info', icon: 'wheat-awn', title: 'HARVEST READY', msg: `${c.crops?.name || ''} is ready for harvest.` }));
-  scouting.filter((s: any) => s.plant_health === 'At Risk').slice(-3).forEach((s: any) =>
-    alerts.push({ tone: 'danger', icon: 'triangle-exclamation', title: 'CROP HEALTH', msg: `At-risk observation on ${s.crops?.name || ''} at ${s.farms?.name || ''}.` }));
-
   return {
     kpis,
     cycles,
@@ -194,7 +177,5 @@ export function computeDashboard(d: any, filters: DashFilters) {
     salesByStatus,
     inv: invHealth,
     health,
-    upcoming,
-    alerts,
   };
 }

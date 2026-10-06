@@ -7,6 +7,10 @@ import { useToast } from '../components/Toast.jsx';
 import { PageHeader, Loading } from '../components/ui.jsx';
 import { FormRow, SelectField, TextField } from '../components/form.jsx';
 import { CURRENCY_OPTIONS } from '../lib/currencies.js';
+import { t } from '../i18n/index.js';
+import { useTranslation } from 'react-i18next';
+import { LANGUAGES } from '../i18n/index.js';
+import { useChooseLanguage } from '../components/LanguageMenu.jsx';
 
 export default function Settings() {
   const { profile, isLoading } = useProfile();
@@ -14,6 +18,8 @@ export default function Settings() {
   const toast = useToast();
   const [showClerk, setShowClerk] = useState(false);
   const [values, setValues] = useState(null);
+  const { i18n } = useTranslation();
+  const chooseLanguage = useChooseLanguage();
 
   const mutate = useMutation({
     mutationFn: (body) => api.put('/profile', body).then((r) => r.data),
@@ -42,7 +48,7 @@ export default function Settings() {
       <div className="card" style={{ maxWidth: 720, marginBottom: 20 }}>
         <div className="card-header">
           <h3>
-            <i className="fas fa-user" style={{ color: 'var(--primary)', marginRight: 8 }} /> Personal Information
+            <i className="fas fa-user" style={{ color: 'var(--primary)', marginRight: 8 }} /> {t('Personal Information')}
           </h3>
         </div>
         <div className="card-body">
@@ -72,7 +78,7 @@ export default function Settings() {
             )}
             <div>
               <p className="font-semibold" style={{ fontSize: 14 }}>
-                Profile Photo & Account
+                {t('Profile Photo & Account')}
               </p>
               <button className="btn btn-secondary btn-sm" style={{ marginTop: 6 }} onClick={() => setShowClerk((s) => !s)}>
                 {showClerk ? 'Hide' : 'Manage'} account
@@ -113,9 +119,26 @@ export default function Settings() {
 
           <div style={{ marginTop: 8 }}>
             <button className="btn btn-primary" disabled={mutate.isPending} onClick={save}>
-              <i className="fas fa-save" /> Save Changes
+              <i className="fas fa-save" /> {t('Save Changes')}
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ maxWidth: 720, marginBottom: 20 }}>
+        <div className="card-header">
+          <h3>
+            <i className="fas fa-globe" style={{ color: 'var(--blue)', marginRight: 8 }} /> {t('Language')}
+          </h3>
+        </div>
+        <div className="card-body">
+          <SelectField
+            label="Interface language"
+            value={i18n.language}
+            onChange={(e) => chooseLanguage(e.target.value)}
+            options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+            hint="Also used by the mobile app when you sign in there"
+          />
         </div>
       </div>
 

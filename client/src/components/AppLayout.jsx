@@ -7,6 +7,7 @@ import { OnboardingModal } from './OnboardingModal.jsx';
 import { AccountGate } from './AccountGate.jsx';
 import { EmptyState, Loading } from './ui.jsx';
 import { setCurrency } from '../lib/format.js';
+import { setLanguage } from '../i18n/index.js';
 
 function readDark() {
   try {
@@ -30,6 +31,11 @@ function Shell() {
       /* ignore */
     }
   }, [dark]);
+
+  // the language saved on the profile (chosen on any device) wins over this browser's
+  useEffect(() => {
+    if (profile?.language) setLanguage(profile.language);
+  }, [profile?.language]);
 
   // accounts that are not approved yet see the request form / status page instead of the app
   if (profile && !profile.is_admin && profile.account_status !== 'active') {

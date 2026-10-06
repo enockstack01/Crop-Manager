@@ -76,6 +76,16 @@ export function currenciesUsed(...rowSets: (Money[] | undefined)[]): string[] {
   return Object.keys(n).sort((a, b) => n[b] - n[a]);
 }
 
+/** Short number for chart and tile labels: 950 · 12.4K · 2.6M */
+export function formatCompact(v: number | string | null | undefined): string {
+  const n = Number(v) || 0;
+  const a = Math.abs(n);
+  if (a >= 1e9) return `${+(n / 1e9).toFixed(1)}B`;
+  if (a >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
+  if (a >= 1e3) return `${+(n / 1e3).toFixed(1)}K`;
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
 export function getGreeting(): string {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';

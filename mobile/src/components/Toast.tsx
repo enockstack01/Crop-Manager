@@ -6,6 +6,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
 import { AppText } from './ui';
+import { t } from '../i18n';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 type ToastFn = (message: string, type?: ToastType, duration?: number) => void;
@@ -77,7 +78,7 @@ function ToastItem({ item, onDone }: { item: Item; onDone: (id: number) => void 
         }}
       >
         <Icon name={ICONS[item.type] as any} size={20} color={COLORS[item.type]} />
-        <AppText weight="600" style={{ flexShrink: 1 }}>{item.message}</AppText>
+        <AppText weight="600" style={{ flexShrink: 1 }}>{t(item.message)}</AppText>
       </Pressable>
     </Animated.View>
   );

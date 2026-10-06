@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { badgeClass } from '../lib/format.js';
+import { t } from '../i18n/index.js';
+
+// Shared components translate the English text they are given (see i18n/index.js).
 
 export function PageHeader({ title, subtitle, action }) {
   return (
@@ -8,10 +11,10 @@ export function PageHeader({ title, subtitle, action }) {
       style={{ flexWrap: 'wrap', gap: 12 }}
     >
       <div>
-        <h1 className="page-title">{title}</h1>
+        <h1 className="page-title">{t(title)}</h1>
         {subtitle && (
           <p className="page-subtitle" style={{ marginTop: 4 }}>
-            {subtitle}
+            {t(subtitle)}
           </p>
         )}
       </div>
@@ -39,23 +42,23 @@ export function FitValue({ value, className = '', style }) {
 export function StatTile({ label, value, sub, color = 'var(--text)', tone, max }) {
   return (
     <div className={`stat-tile${tone ? ` tone-${tone}` : ''}`}>
-      <div className="stat-tile-label">{label}</div>
+      <div className="stat-tile-label">{t(label)}</div>
       <FitValue value={value} style={{ color, ...(max ? { '--fit-max': `${max}px` } : null) }} />
-      {sub && <div className="stat-tile-sub">{sub}</div>}
+      {sub && <div className="stat-tile-sub">{t(sub)}</div>}
     </div>
   );
 }
 
 export function StatusBadge({ status }) {
   if (!status) return <span>—</span>;
-  return <span className={`badge ${badgeClass(status)}`}>{status}</span>;
+  return <span className={`badge ${badgeClass(status)}`}>{t(status)}</span>;
 }
 
 export function Loading({ label = 'Loading data...' }) {
   return (
     <div className="loading-state">
       <div className="spinner" />
-      <p>{label}</p>
+      <p>{t(label)}</p>
     </div>
   );
 }
@@ -66,11 +69,11 @@ export function EmptyState({ icon = 'fa-inbox', title, description, actionLabel,
       <div className="empty-state-icon">
         <i className={`fas ${icon}`} />
       </div>
-      <h3 className="empty-state-title">{title}</h3>
-      {description && <p className="empty-state-desc">{description}</p>}
+      <h3 className="empty-state-title">{t(title)}</h3>
+      {description && <p className="empty-state-desc">{t(description)}</p>}
       {actionLabel && (
         <button className="btn btn-primary" onClick={onAction}>
-          <i className="fas fa-plus" /> {actionLabel}
+          <i className="fas fa-plus" /> {t(actionLabel)}
         </button>
       )}
     </div>
@@ -132,7 +135,7 @@ export function TableToolbar({ search, onSearch, searchPlaceholder = 'Search...'
             <i className="fas fa-search" />
             <input
               type="text"
-              placeholder={searchPlaceholder}
+              placeholder={t(searchPlaceholder)}
               defaultValue={search}
               onChange={(e) => onSearch(e.target.value)}
             />
@@ -147,13 +150,13 @@ export function TableToolbar({ search, onSearch, searchPlaceholder = 'Search...'
 export function FilterSelect({ value, onChange, placeholder, options }) {
   return (
     <select className="table-filter-select" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{placeholder}</option>
+      <option value="">{t(placeholder)}</option>
       {options.map((o) => {
         const v = typeof o === 'object' ? o.value : o;
-        const t = typeof o === 'object' ? o.label : o;
+        const text = typeof o === 'object' ? o.label : o;
         return (
           <option key={v} value={v}>
-            {t}
+            {t(text)}
           </option>
         );
       })}
@@ -190,7 +193,7 @@ export function DataTable({
                 className={c.sortable ? 'sortable' : undefined}
                 onClick={c.sortable ? () => onSort(c.key) : undefined}
               >
-                {c.label}
+                {t(c.label)}
                 {c.sortable && (
                   <i
                     className={`fas ${
@@ -200,7 +203,7 @@ export function DataTable({
                 )}
               </th>
             ))}
-            {actions && <th>Actions</th>}
+            {actions && <th>{t('Actions')}</th>}
           </tr>
         </thead>
         <tbody>
@@ -228,7 +231,8 @@ export function IconButton({ icon, title, danger, onClick, color }) {
   return (
     <button
       className={`btn-icon ${danger ? 'btn-icon-danger' : ''}`}
-      title={title}
+      title={t(title)}
+      aria-label={t(title)}
       onClick={onClick}
       type="button"
     >
@@ -242,8 +246,8 @@ export function ViewGrid({ items }) {
     <div className="view-grid">
       {items.map(([label, value, full]) => (
         <div key={label} className={`view-item ${full ? 'full-width' : ''}`}>
-          <label>{label}</label>
-          <p>{value ?? '—'}</p>
+          <label>{t(label)}</label>
+          <p>{typeof value === 'string' ? t(value) || '—' : value ?? '—'}</p>
         </div>
       ))}
     </div>

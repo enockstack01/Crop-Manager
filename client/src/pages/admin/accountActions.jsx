@@ -3,6 +3,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { TextArea } from '../../components/form.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { useAdminUserMutations } from '../../lib/useAdmin.js';
+import { t } from '../../i18n/index.js';
 
 /** Account lifecycle labels (server: models/system.models.js ACCOUNT_STATUSES). */
 export const STATUS_META = {
@@ -78,7 +79,7 @@ export function useAccountActions() {
       footer={
         a && (
           <>
-            <button className="btn btn-secondary" onClick={close}>Cancel</button>
+            <button className="btn btn-secondary" onClick={close}>{t('Cancel')}</button>
             <button className={`btn ${a.btn}`} onClick={run} disabled={update.isPending}>
               <i className={`fas ${update.isPending ? 'fa-spinner fa-spin' : a.icon}`} /> {a.label}
             </button>

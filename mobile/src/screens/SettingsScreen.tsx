@@ -13,6 +13,8 @@ import { Button } from '../components/Button';
 import { SelectField, TextField } from '../components/fields';
 import { CURRENCY_OPTIONS } from '../lib/currencies';
 import { displayName } from '../lib/format';
+import { LANGUAGES, setLanguage } from '../i18n';
+import { useTranslation } from 'react-i18next';
 
 /** web "Profile Settings" page: Personal Information card, plus appearance and account. */
 export function SettingsScreen() {
@@ -25,6 +27,7 @@ export function SettingsScreen() {
   const { mode, setMode, colors } = useTheme();
   const { isTablet } = useLayout();
   const [values, setValues] = useState<Record<string, any> | null>(null);
+  const { i18n } = useTranslation();
 
   const mutate = useMutation({
     mutationFn: (body: any) => api.put('/profile', body).then((r) => r.data),
@@ -102,6 +105,22 @@ export function SettingsScreen() {
               <Button title="Save Changes" icon="content-save" loading={mutate.isPending} onPress={() => mutate.mutate(current)} />
             </View>
           </View>
+        </ChartCard>
+
+        <ChartCard title="Language" icon="globe">
+          <SelectField
+            label="Interface language"
+            hint="Also used by the web app when you sign in there"
+            value={i18n.language}
+            onChangeValue={(code) => {
+              // keep the cached profile in step, or the app would switch straight back
+              qc.setQueryData(['profile'], (p: any) => (p ? { ...p, language: code } : p));
+              api.put('/profile', { language: code }).catch(() => {});
+              setLanguage(code);
+            }}
+            options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+            placeholder=""
+          />
         </ChartCard>
 
         <ChartCard title="Appearance" icon="palette">

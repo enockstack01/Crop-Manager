@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { CURRENCIES } from '../lib/currencies.js';
+import { t } from '../i18n/index.js';
 
 /** Tiny controlled-form helper. `bind(name)` wires an input to `values[name]`. */
 export function useForm(initial = {}) {
@@ -21,28 +22,28 @@ function Wrap({ label, required, hint, children, full }) {
     <div className="form-group" style={full ? { gridColumn: '1 / -1' } : undefined}>
       {label && (
         <label className="form-label">
-          {label}
+          {t(label)}
           {required && <span className="required">*</span>}
         </label>
       )}
       {children}
-      {hint && <div className="form-hint">{hint}</div>}
+      {hint && <div className="form-hint">{t(hint)}</div>}
     </div>
   );
 }
 
-export function TextField({ label, required, hint, full, type = 'text', ...rest }) {
+export function TextField({ label, required, hint, full, type = 'text', placeholder, ...rest }) {
   return (
     <Wrap label={label} required={required} hint={hint} full={full}>
-      <input className="form-control" type={type} {...rest} />
+      <input className="form-control" type={type} placeholder={t(placeholder)} {...rest} />
     </Wrap>
   );
 }
 
-export function NumberField({ label, required, hint, full, step = 'any', ...rest }) {
+export function NumberField({ label, required, hint, full, step = 'any', placeholder, ...rest }) {
   return (
     <Wrap label={label} required={required} hint={hint} full={full}>
-      <input className="form-control" type="number" step={step} {...rest} />
+      <input className="form-control" type="number" step={step} placeholder={t(placeholder)} {...rest} />
     </Wrap>
   );
 }
@@ -55,10 +56,10 @@ export function DateField({ label, required, hint, full, ...rest }) {
   );
 }
 
-export function TextArea({ label, required, hint, full, rows = 3, ...rest }) {
+export function TextArea({ label, required, hint, full, rows = 3, placeholder, ...rest }) {
   return (
     <Wrap label={label} required={required} hint={hint} full={full}>
-      <textarea className="form-control form-textarea" rows={rows} {...rest} />
+      <textarea className="form-control form-textarea" rows={rows} placeholder={t(placeholder)} {...rest} />
     </Wrap>
   );
 }
@@ -67,13 +68,13 @@ export function SelectField({ label, required, hint, full, options = [], placeho
   return (
     <Wrap label={label} required={required} hint={hint} full={full}>
       <select className="form-control form-select" {...rest}>
-        {placeholder !== undefined && <option value="">{placeholder}</option>}
+        {placeholder !== undefined && <option value="">{t(placeholder)}</option>}
         {options.map((o) => {
           const value = typeof o === 'object' ? o.value : o;
           const text = typeof o === 'object' ? o.label : o;
           return (
             <option key={value} value={value}>
-              {text}
+              {t(text)}
             </option>
           );
         })}
@@ -91,7 +92,7 @@ export function MoneyField({ label, required, hint, full, bind, name, currencyNa
   return (
     <Wrap label={label} required={required} hint={hint} full={full}>
       <div className="money-input">
-        <select className="form-control form-select money-currency" aria-label={`${label} currency`} {...bind(currencyName)}>
+        <select className="form-control form-select money-currency" aria-label={`${t(label)} — ${t('Currency')}`} {...bind(currencyName)}>
           {CURRENCIES.map((c) => (
             <option key={c.code} value={c.code} title={c.name}>{c.code}</option>
           ))}
@@ -110,16 +111,16 @@ export function ModalFooter({ onCancel, saving, saveLabel = 'Save', formId = 're
   return (
     <>
       <button type="button" className="btn btn-secondary" onClick={onCancel}>
-        Cancel
+        {t('Cancel')}
       </button>
       <button type="submit" form={formId} className="btn btn-primary" disabled={saving}>
         {saving ? (
           <>
-            <i className="fas fa-spinner fa-spin" /> Saving...
+            <i className="fas fa-spinner fa-spin" /> {t('Saving...')}
           </>
         ) : (
           <>
-            <i className="fas fa-save" /> {saveLabel}
+            <i className="fas fa-save" /> {t(saveLabel)}
           </>
         )}
       </button>

@@ -1,4 +1,5 @@
 // Ported verbatim from the original js/utils.js formatting helpers.
+import { t } from '../i18n/index.js';
 
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -37,7 +38,7 @@ export function getCurrency() {
 
 /** What the app calls the user: their name, or their account type until they give one. */
 export function displayName(profile) {
-  return profile?.full_name?.trim() || profile?.role || 'Farmer';
+  return profile?.full_name?.trim() || t(profile?.role || 'Farmer');
 }
 
 export function formatCurrency(amount, currency) {

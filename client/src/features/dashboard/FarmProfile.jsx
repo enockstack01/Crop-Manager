@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { FitValue } from '../../components/ui.jsx';
+import { t } from '../../i18n/index.js';
 
 /*
  * Farm Profile — the first section of the dashboard, identical to the mobile app's
@@ -54,7 +55,7 @@ function LandRing({ segments, total, pct, size = 170 }) {
       </svg>
       <div className="farm-profile-ring-label">
         <span className="farm-profile-ring-pct" style={{ fontSize: Math.round(size * 0.2) }}>{pct}%</span>
-        <span className="farm-profile-ring-sub">utilised</span>
+        <span className="farm-profile-ring-sub">{t('utilised')}</span>
       </div>
     </div>
   );
@@ -96,30 +97,30 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
 
   const place = p.farm
     ? [p.farm.location, p.farm.district, p.farm.province].filter(Boolean).join(', ')
-    : `${p.scopeFarms.length} farm${p.scopeFarms.length === 1 ? '' : 's'} in your portfolio`;
+    : t(p.scopeFarms.length === 1 ? '{{count}} farm in your portfolio' : '{{count}} farms in your portfolio', { count: p.scopeFarms.length });
   const hasLand = p.total > 0 || p.scopeFields.length > 0;
   const shown = p.topFields.slice(0, 8);
 
   return (
-    <section className="farm-profile" aria-label="Farm profile">
+    <section className="farm-profile" aria-label={t('Farm profile')}>
       <div className="farm-profile-banner">
         <div className="farm-profile-eyebrow">
-          <i className="fas fa-map-location-dot" /> Farm Profile · Overview
+          <i className="fas fa-map-location-dot" /> {t('Farm Profile · Overview')}
         </div>
         <div className="farm-profile-head">
           <div className="farm-profile-title">
-            <h2>{p.farm ? p.farm.name : 'All Farms'}</h2>
+            <h2>{p.farm ? p.farm.name : t('All Farms')}</h2>
             <p>{place || '—'}</p>
           </div>
           <div className="farm-profile-area">
             <strong>{ha(p.total)}</strong>
-            <span>{p.farm?.farm_type ? `${p.farm.farm_type} farm · total area` : 'total area'}</span>
+            <span>{p.farm?.farm_type ? `${t(p.farm.farm_type)} · ${t('total area')}` : t('total area')}</span>
           </div>
         </div>
       </div>
 
-      <div className="farm-profile-chips" role="tablist" aria-label="Choose farm">
-        {[{ id: '', name: 'All Farms' }, ...farms].map((f) => (
+      <div className="farm-profile-chips" role="tablist" aria-label={t('Choose farm')}>
+        {[{ id: '', name: t('All Farms') }, ...farms].map((f) => (
           <button
             key={f.id || 'all'}
             type="button"
@@ -141,19 +142,19 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
               {p.segments.map((s) => (
                 <li key={s.key} className={s.value > 0 ? '' : 'muted'}>
                   <span className="dot" style={{ background: s.color }} />
-                  <span className="label">{s.label}</span>
+                  <span className="label">{t(s.label)}</span>
                   <b>{ha(s.value)}</b>
                 </li>
               ))}
             </ul>
           </div>
         ) : (
-          <p className="farm-profile-empty">Add a farm with its total area and fields to see land utilization.</p>
+          <p className="farm-profile-empty">{t('Add a farm with its total area and fields to see land utilization.')}</p>
         )}
 
         {kpis.length ? (
           <div>
-            <div className="farm-profile-section">Farm at a glance</div>
+            <div className="farm-profile-section">{t('Farm at a glance')}</div>
             <div className="farm-profile-kpis">
               {kpis.map((k) => (
                 <button key={k.label} type="button" className="farm-profile-kpi" onClick={() => onKpiClick?.(k.link)}>
@@ -161,7 +162,7 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
                     <i className={`fas ${k.icon}`} />
                   </span>
                   <span className="farm-profile-kpi-info">
-                    <span className="farm-profile-kpi-label">{k.label}</span>
+                    <span className="farm-profile-kpi-label">{t(k.label)}</span>
                     {/* money in several currencies: one line per currency */}
                     {String(k.value).split(' · ').map((part) => (
                       <FitValue key={part} className="farm-profile-kpi-value" value={part} />
@@ -175,7 +176,7 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
 
         {shown.length ? (
           <div>
-            <div className="farm-profile-section">Land by field</div>
+            <div className="farm-profile-section">{t('Land by field')}</div>
             <div className="farm-profile-fields">
               {shown.map((f) => {
                 const color = STATUS_COLOR[f.status] ?? STATUS_COLOR.Active;
@@ -186,7 +187,7 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
                         {f.name}
                         {!selected && f.farms?.name ? <span className="farm"> · {f.farms.name}</span> : null}
                       </span>
-                      <span className="status" style={{ color }}>{f.status || 'Active'}</span>
+                      <span className="status" style={{ color }}>{t(f.status || 'Active')}</span>
                       <b>{ha(n(f.area))}</b>
                     </div>
                     <div className="farm-profile-bar">
@@ -197,7 +198,7 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
               })}
               {p.topFields.length > shown.length ? (
                 <div className="farm-profile-more">
-                  + {p.topFields.length - shown.length} more field{p.topFields.length - shown.length === 1 ? '' : 's'}
+                  + {t(p.topFields.length - shown.length === 1 ? '{{count}} more field' : '{{count}} more fields', { count: p.topFields.length - shown.length })}
                 </div>
               ) : null}
             </div>

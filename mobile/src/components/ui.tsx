@@ -18,6 +18,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { ff, font, KPI_TONES, radius, shadow, spacing } from '../theme/theme';
 import { haptics } from '../lib/haptics';
 import { PressableScale } from './PressableScale';
+import { t } from '../i18n';
 
 /*
  * UI kit mirroring the web app's CSS (client/src/styles): same type scale, card,
@@ -158,8 +159,8 @@ export function PageHeader({ title, subtitle, action, right }: { title: string; 
     <View style={{ marginBottom: 20, gap: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
         <View style={{ flex: 1 }}>
-          <AppText variant="title" style={{ lineHeight: 31 }}>{title}</AppText>
-          {subtitle ? <AppText variant="subtitle" style={{ marginTop: 4 }}>{subtitle}</AppText> : null}
+          <AppText variant="title" style={{ lineHeight: 31 }}>{t(title)}</AppText>
+          {subtitle ? <AppText variant="subtitle" style={{ marginTop: 4 }}>{t(subtitle)}</AppText> : null}
         </View>
         {right}
       </View>
@@ -225,7 +226,7 @@ export function ChartCard({
         }}
       >
         {icon ? <Icon name={icon} size={15} color={iconColor ?? colors.primary} /> : null}
-        <AppText weight="600" style={{ fontSize: 15, flex: 1 }} numberOfLines={2}>{title}</AppText>
+        <AppText weight="600" style={{ fontSize: 15, flex: 1 }} numberOfLines={2}>{t(title)}</AppText>
         {right}
       </View>
       <View style={[{ padding: 20 }, bodyStyle]}>{children}</View>
@@ -255,7 +256,7 @@ export function KpiCard({
       disabled={!onPress}
       scaleTo={0.98}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${label}: ${value}`}
+      accessibilityLabel={`${t(label)}: ${value}`}
       style={{
         flexDirection: 'row', alignItems: 'flex-start', gap: 14,
         backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
@@ -266,7 +267,7 @@ export function KpiCard({
         <Icon name={icon} size={17} color={fg} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <AppText weight="500" style={{ fontSize: 12, color: colors.textLight, marginBottom: 4 }} numberOfLines={1}>{label}</AppText>
+        <AppText weight="500" style={{ fontSize: 12, color: colors.textLight, marginBottom: 4 }} numberOfLines={1}>{t(label)}</AppText>
         <AppText weight="700" style={{ fontSize: 24, lineHeight: 29 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
           {String(value)}
         </AppText>
@@ -282,12 +283,12 @@ export function StatTile({ label, value, sub, color, tone }: { label: string; va
   return (
     <View style={{ backgroundColor: bg, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center' }}>
       <AppText weight="600" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={2}>
-        {label}
+        {t(label)}
       </AppText>
       <AppText weight="800" style={{ fontSize: 22, lineHeight: 28, color: color ?? colors.text, marginTop: 6 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
         {String(value)}
       </AppText>
-      {sub ? <AppText style={{ fontSize: 11, color: colors.textLight }}>{sub}</AppText> : null}
+      {sub ? <AppText style={{ fontSize: 11, color: colors.textLight }}>{t(sub)}</AppText> : null}
     </View>
   );
 }
@@ -313,7 +314,7 @@ export function Badge({
   const [bg, fg] = tones[tone] ?? tones.neutral;
   return (
     <View style={{ alignSelf: 'flex-start', backgroundColor: bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm }}>
-      <Text style={{ color: fg, fontSize: 11, fontFamily: ff('600') }}>{label}</Text>
+      <Text style={{ color: fg, fontSize: 11, fontFamily: ff('600') }}>{t(label)}</Text>
     </View>
   );
 }
@@ -324,10 +325,10 @@ export function KeyValue({ label, children }: { label: string; children: React.R
   return (
     <View style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>
-        {label}
+        {t(label)}
       </AppText>
       {typeof children === 'string' || typeof children === 'number' ? (
-        <AppText style={{ fontSize: 13 }}>{String(children || '—')}</AppText>
+        <AppText style={{ fontSize: 13 }}>{typeof children === 'string' ? t(children) || '—' : String(children || '—')}</AppText>
       ) : (
         children
       )}
@@ -358,7 +359,7 @@ export function Loading({ label = 'Loading data...' }: { label?: string }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.md, backgroundColor: colors.bg }}>
       <ActivityIndicator size="large" color={colors.primary} />
-      {label ? <AppText variant="subtitle" style={{ fontSize: 13 }}>{label}</AppText> : null}
+      {label ? <AppText variant="subtitle" style={{ fontSize: 13 }}>{t(label)}</AppText> : null}
     </View>
   );
 }
@@ -433,9 +434,9 @@ export function EmptyState({
       >
         <Icon name={icon} size={28} color={colors.primary} />
       </View>
-      <AppText weight="600" style={{ fontSize: 16, textAlign: 'center' }}>{title}</AppText>
+      <AppText weight="600" style={{ fontSize: 16, textAlign: 'center' }}>{t(title)}</AppText>
       {description ? (
-        <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', maxWidth: 340 }}>{description}</AppText>
+        <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', maxWidth: 340 }}>{t(description)}</AppText>
       ) : null}
       {actionLabel && onAction ? (
         <PressableScale
@@ -447,7 +448,7 @@ export function EmptyState({
           }}
         >
           <Icon name="plus" size={13} color="#fff" />
-          <Text style={{ color: '#fff', fontFamily: ff('600'), fontSize: 13 }}>{actionLabel}</Text>
+          <Text style={{ color: '#fff', fontFamily: ff('600'), fontSize: 13 }}>{t(actionLabel)}</Text>
         </PressableScale>
       ) : null}
     </View>

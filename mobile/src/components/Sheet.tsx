@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, shadow, spacing } from '../theme/theme';
 import { AppText, IconButton } from './ui';
+import { t } from '../i18n';
 
 /**
  * Centered dialog matching the web app's <Modal> (modals.css): white card, 16/600
@@ -78,7 +79,7 @@ export function Sheet({
                 borderBottomWidth: 1, borderBottomColor: colors.border,
               }}
             >
-              <AppText weight="600" style={{ fontSize: 16, flex: 1 }} numberOfLines={1}>{title}</AppText>
+              <AppText weight="600" style={{ fontSize: 16, flex: 1 }} numberOfLines={1}>{t(title)}</AppText>
               <IconButton name="close" size={15} onPress={onClose} label="Close" />
             </View>
 

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { t } from '../i18n/index.js';
 
 /**
  * Recreates the original `.modal-overlay` / `.modal` markup and behaviour
@@ -28,8 +29,8 @@ export function Modal({ open, onClose, title, size = '', children, footer }) {
     >
       <div className={`modal ${size}`}>
         <div className="modal-header">
-          <h3 className="modal-title">{title}</h3>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Close">
+          <h3 className="modal-title">{t(title)}</h3>
+          <button className="modal-close-btn" onClick={onClose} aria-label={t('Close')}>
             <i className="fas fa-times" />
           </button>
         </div>

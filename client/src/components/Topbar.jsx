@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useList, useResourceMutations } from '../lib/useResource.js';
 import { displayName, formatDateTime } from '../lib/format.js';
 import { useToast } from './Toast.jsx';
+import { LanguageMenu } from './LanguageMenu.jsx';
+import { t } from '../i18n/index.js';
 
 export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
   const [notifOpen, setNotifOpen] = useState(false);
@@ -39,7 +41,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
           <i className="fas fa-search" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder={t('Search...')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.target.value.trim().length >= 2) {
                 toast('Global search is coming in a future phase', 'info');
@@ -50,7 +52,8 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
       </div>
 
       <div className="topbar-right">
-        <button className="topbar-btn" title="Toggle Dark Mode" onClick={onToggleDark}>
+        <LanguageMenu />
+        <button className="topbar-btn" title={t('Toggle Dark Mode')} onClick={onToggleDark}>
           <i className={`fas ${dark ? 'fa-sun' : 'fa-moon'}`} />
         </button>
 
@@ -71,11 +74,11 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
           </button>
           <div className={`dropdown-menu notif-dropdown ${notifOpen ? 'dropdown-active' : ''}`}>
             <div className="dropdown-menu-header">
-              <span>Notifications</span>
-              <button onClick={markAllRead}>Mark all read</button>
+              <span>{t('Notifications')}</span>
+              <button onClick={markAllRead}>{t('Mark all read')}</button>
             </div>
             {notifs.length === 0 ? (
-              <div className="dropdown-empty">No new notifications</div>
+              <div className="dropdown-empty">{t('No new notifications')}</div>
             ) : (
               notifs.map((n) => (
                 <div key={n.id} className="notif-item unread">
@@ -95,7 +98,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
         <div className="topbar-user" style={{ gap: 10 }}>
           <div className="topbar-user-info">
             <div className="topbar-user-name">{displayName(profile)}</div>
-            <div className="topbar-user-role">{profile?.role || 'Farmer'}</div>
+            <div className="topbar-user-role">{t(profile?.role || 'Farmer')}</div>
           </div>
           <UserButton afterSignOutUrl="/" />
         </div>

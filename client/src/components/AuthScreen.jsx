@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SignIn, SignUp } from '@clerk/clerk-react';
 import { LeafMark } from './LeafMark.jsx';
+import { t } from '../i18n/index.js';
 
 // brand the Clerk form; our own sign-in / sign-up switch link replaces Clerk's card footer
 const appearance = {
@@ -25,7 +26,7 @@ export function AuthScreen({ mode = 'sign-in' }) {
         <div className="auth-split-brand-icon">
           <LeafMark size={96} color="#fff" />
         </div>
-        <h1>CropManager</h1>
+        <h1>{t('CropManager')}</h1>
         <p>
           Streamline your crop production. Track farms, fields, crop cycles, activities, harvests,
           inventory, and finances — all in one place.
@@ -38,7 +39,7 @@ export function AuthScreen({ mode = 'sign-in' }) {
             <span className="auth-split-mobile-logo">
               <LeafMark size={26} color="#fff" />
             </span>
-            CropManager
+            {t('CropManager')}
           </div>
           <h2>{isSignUp ? 'Create your account' : 'Welcome'}</h2>
           <p className="subtitle">

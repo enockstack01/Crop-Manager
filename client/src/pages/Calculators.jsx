@@ -5,6 +5,7 @@ import { useConfirm } from '../components/Confirm.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { PageHeader, IconButton } from '../components/ui.jsx';
 import { formatDateTime } from '../lib/format.js';
+import { t } from '../i18n/index.js';
 
 export default function Calculators() {
   const navigate = useNavigate();
@@ -46,12 +47,12 @@ export default function Calculators() {
         ))}
       </div>
 
-      <h3 className="section-title">Recent Calculations</h3>
+      <h3 className="section-title">{t('Recent Calculations')}</h3>
       <div className="chart-card">
         <div className="chart-card-body">
           {history.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-light)', fontSize: 13 }}>
-              No calculation history yet
+              {t('No calculation history yet')}
             </div>
           ) : (
             history.map((h) => (

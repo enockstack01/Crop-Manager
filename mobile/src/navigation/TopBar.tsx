@@ -12,6 +12,7 @@ import { Icon } from '../components/Icon';
 import { AppText } from '../components/ui';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Toast';
+import { t } from '../i18n';
 
 /** web .topbar-btn: 38px, radius 8, muted icon */
 function TopbarButton({ icon, onPress, label, badge }: { icon: string; onPress: () => void; label: string; badge?: number }) {
@@ -104,12 +105,12 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
       <Sheet visible={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" size="sm"
         footer={notifs.length ? (
           <Pressable onPress={markAllRead} hitSlop={8} accessibilityRole="button">
-            <AppText weight="600" style={{ fontSize: 12, color: colors.primary }}>Mark all read</AppText>
+            <AppText weight="600" style={{ fontSize: 12, color: colors.primary }}>{t('Mark all read')}</AppText>
           </Pressable>
         ) : undefined}
       >
         {notifs.length === 0 ? (
-          <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: spacing.lg }}>No new notifications</AppText>
+          <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: spacing.lg }}>{t('No new notifications')}</AppText>
         ) : (
           notifs.map((n, i) => (
             <View

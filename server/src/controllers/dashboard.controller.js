@@ -33,7 +33,7 @@ export const getDashboard = asyncHandler(async (req, res) => {
       M.Season.find({ user_id: uid }).sort({ name: 1 }).lean(),
       loader('crop-cycles')(uid),
       loader('harvest-records', { sort: { harvest_date: -1 } })(uid),
-      loader('field-activities', { sort: { activity_date: -1 }, limit: 20 })(uid),
+      loader('field-activities', { sort: { activity_date: -1 }, limit: 300 })(uid), // 12-week activity chart
       loader('crop-scouting-records', { sort: { scouting_date: -1 }, limit: 20 })(uid),
       M.Expense.find({ user_id: uid }).lean(),
       loader('sales')(uid),

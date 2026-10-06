@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api.js';
 import { Modal } from './Modal.jsx';
 import { TextField } from './form.jsx';
+import { t } from '../i18n/index.js';
 
 export function OnboardingModal({ profile }) {
   const qc = useQueryClient();
@@ -28,12 +29,12 @@ export function OnboardingModal({ profile }) {
           disabled={save.isPending || !values.full_name.trim()}
           onClick={() => save.mutate(values)}
         >
-          <i className="fas fa-check" /> Get started
+          <i className="fas fa-check" /> {t('Get started')}
         </button>
       }
     >
       <p style={{ color: 'var(--text-light)', marginBottom: 16, lineHeight: 1.5 }}>
-        Confirm your name to get started.
+        {t('Confirm your name to get started.')}
       </p>
       <TextField label="Full Name" required value={values.full_name} onChange={set('full_name')} />
     </Modal>

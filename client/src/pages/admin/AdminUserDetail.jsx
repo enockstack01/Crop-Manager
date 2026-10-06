@@ -8,6 +8,7 @@ import { SelectField } from '../../components/form.jsx';
 import { displayName, formatDate, formatDateTime, formatNumber } from '../../lib/format.js';
 import { USER_ROLES } from '../../lib/options.js';
 import { ACTIONS, StatusPill, actionsFor, useAccountActions } from './accountActions.jsx';
+import { t } from '../../i18n/index.js';
 
 const RECORD_LABELS = {
   Farm: 'Farms', Field: 'Fields', Crop: 'Crops', CropVariety: 'Varieties', Season: 'Seasons',
@@ -79,7 +80,7 @@ export default function AdminUserDetail() {
         subtitle={u.email || u.user_id}
         action={
           <button className="btn btn-secondary" onClick={() => navigate('/admin/users')}>
-            <i className="fas fa-arrow-left" /> Back to users
+            <i className="fas fa-arrow-left" /> {t('Back to users')}
           </button>
         }
       />
@@ -87,7 +88,7 @@ export default function AdminUserDetail() {
       <div className="chart-grid">
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-id-card" style={{ color: 'var(--primary)', marginRight: 8 }} />Account</h3>
+            <h3><i className="fas fa-id-card" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Account')}</h3>
           </div>
           <div className="card-body">
             <ViewGrid
@@ -109,11 +110,11 @@ export default function AdminUserDetail() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-user-shield" style={{ color: 'var(--purple)', marginRight: 8 }} />Access control</h3>
+            <h3><i className="fas fa-user-shield" style={{ color: 'var(--purple)', marginRight: 8 }} />{t('Access control')}</h3>
           </div>
           <div className="card-body">
             <div className="form-group">
-              <label className="form-label">Administrator</label>
+              <label className="form-label">{t('Administrator')}</label>
               <div>
                 <button
                   className={`btn ${u.is_admin ? 'btn-secondary' : 'btn-primary'}`}
@@ -125,7 +126,7 @@ export default function AdminUserDetail() {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Account status</label>
+              <label className="form-label">{t('Account status')}</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <StatusPill status={u.account_status} />
                 {u.status_updated_at && (
@@ -144,7 +145,7 @@ export default function AdminUserDetail() {
                   ))}
                 </div>
               )}
-              {u.is_admin && <div className="form-hint">Administrators always have access.</div>}
+              {u.is_admin && <div className="form-hint">{t('Administrators always have access.')}</div>}
             </div>
             <SelectField
               label="Account type"
@@ -154,15 +155,15 @@ export default function AdminUserDetail() {
             />
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" onClick={doReseed} disabled={reseed.isPending}>
-                <i className="fas fa-seedling" /> Re-seed demo data
+                <i className="fas fa-seedling" /> {t('Re-seed demo data')}
               </button>
               {!isSelf && (
                 <button className="btn btn-danger" onClick={del}>
-                  <i className="fas fa-trash" /> Delete user & all data
+                  <i className="fas fa-trash" /> {t('Delete user & all data')}
                 </button>
               )}
             </div>
-            {isSelf && <p className="form-hint">You cannot change your own access here.</p>}
+            {isSelf && <p className="form-hint">{t('You cannot change your own access here.')}</p>}
           </div>
         </div>
       </div>
@@ -170,7 +171,7 @@ export default function AdminUserDetail() {
       {u.access_request && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-header">
-            <h3><i className="fas fa-file-signature" style={{ color: 'var(--orange)', marginRight: 8 }} />Account request</h3>
+            <h3><i className="fas fa-file-signature" style={{ color: 'var(--orange)', marginRight: 8 }} />{t('Account request')}</h3>
           </div>
           <div className="card-body">
             <ViewGrid
@@ -193,11 +194,11 @@ export default function AdminUserDetail() {
       <div className="chart-grid">
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-layer-group" style={{ color: 'var(--blue)', marginRight: 8 }} />Data breakdown</h3>
+            <h3><i className="fas fa-layer-group" style={{ color: 'var(--blue)', marginRight: 8 }} />{t('Data breakdown')}</h3>
           </div>
           <div className="card-body">
             {totalRecords === 0 ? (
-              <div style={{ color: 'var(--text-light)', fontSize: 13 }}>No records</div>
+              <div style={{ color: 'var(--text-light)', fontSize: 13 }}>{t('No records')}</div>
             ) : (
               <div className="detail-grid">
                 {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => (
@@ -213,7 +214,7 @@ export default function AdminUserDetail() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-clock-rotate-left" style={{ color: 'var(--purple)', marginRight: 8 }} />Recent activity</h3>
+            <h3><i className="fas fa-clock-rotate-left" style={{ color: 'var(--purple)', marginRight: 8 }} />{t('Recent activity')}</h3>
           </div>
           <div className="card-body" style={{ maxHeight: 340, overflowY: 'auto' }}>
             {(u.recent_harvests || []).map((h) => (
@@ -229,7 +230,7 @@ export default function AdminUserDetail() {
               </div>
             ))}
             {!(u.recent_harvests || []).length && !(u.recent_activities || []).length && (
-              <div style={{ color: 'var(--text-light)', fontSize: 13 }}>No recent activity</div>
+              <div style={{ color: 'var(--text-light)', fontSize: 13 }}>{t('No recent activity')}</div>
             )}
           </div>
         </div>

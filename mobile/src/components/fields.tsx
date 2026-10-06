@@ -8,6 +8,7 @@ import { formatDate, parseISODate, toISODate } from '../lib/format';
 import { AppText } from './ui';
 import { CURRENCIES } from '../lib/currencies';
 import { Sheet } from './Sheet';
+import { t } from '../i18n';
 
 /* --------------------------------------------------------------- useForm */
 export type FormApi<T = Record<string, any>> = {
@@ -53,12 +54,12 @@ function Field({
     <View style={{ gap: 6 }}>
       {label ? (
         <AppText variant="label">
-          {label}
+          {t(label)}
           {required ? <AppText variant="label" style={{ color: colors.red }}> *</AppText> : null}
         </AppText>
       ) : null}
       {children}
-      {hint ? <AppText variant="caption" style={{ color: colors.textLight }}>{hint}</AppText> : null}
+      {hint ? <AppText variant="caption" style={{ color: colors.textLight }}>{t(hint)}</AppText> : null}
     </View>
   );
 }
@@ -120,7 +121,7 @@ export function TextField({
         <TextInput
           value={value == null ? '' : String(value)}
           onChangeText={onChangeValue}
-          placeholder={placeholder}
+          placeholder={t(placeholder)}
           placeholderTextColor={colors.placeholder}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -205,7 +206,7 @@ export function SelectField({
         onPress={() => setOpen(true)}
         style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
       >
-        <AppText style={{ fontSize: 13, color: display ? colors.text : colors.placeholder, flex: 1 }} numberOfLines={1}>{display || placeholder}</AppText>
+        <AppText style={{ fontSize: 13, color: display ? colors.text : colors.placeholder, flex: 1 }} numberOfLines={1}>{t(display) || t(placeholder)}</AppText>
         <Icon name="chevron-down" size={11} color={colors.textLight} />
       </Pressable>
 
@@ -216,7 +217,7 @@ export function SelectField({
         {options.map((o) => (
           <SelectRow
             key={optValue(o)}
-            label={optLabel(o)}
+            label={t(optLabel(o))}
             selected={optValue(o) === value}
             onPress={() => { onChangeValue(optValue(o)); setOpen(false); }}
           />

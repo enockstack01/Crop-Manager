@@ -14,6 +14,7 @@ import {
   TableToolbar,
   ViewGrid,
 } from './ui.jsx';
+import { t } from '../i18n/index.js';
 
 const PER_PAGE = 10;
 
@@ -75,14 +76,14 @@ export function CrudPage({
 
   const onDelete = async (row) => {
     const ok = await confirm(
-      `Delete <strong>${escapeHtml(row.name || row.buyer || 'this record')}</strong>? This action cannot be undone.`
+      t('Delete {{name}}? This action cannot be undone.', { name: `<strong>${escapeHtml(row.name || row.buyer || t('this record'))}</strong>` })
     );
     if (!ok) return;
     try {
       await remove.mutateAsync(row.id);
-      toast('Deleted successfully');
+      toast(t('Deleted successfully'));
     } catch (err) {
-      toast(err.message || 'Failed to delete', 'error');
+      toast(err.message || t('Failed to delete'), 'error');
     }
   };
 
@@ -105,7 +106,7 @@ export function CrudPage({
         action={
           FormComponent && (
             <button className="btn btn-primary" onClick={() => setFormState({ editing: null })}>
-              <i className="fas fa-plus" /> {addLabel}
+              <i className="fas fa-plus" /> {t(addLabel)}
             </button>
           )
         }
@@ -142,7 +143,7 @@ export function CrudPage({
           empty={
             <EmptyState
               icon={emptyIcon}
-              title={emptyTitle || `No ${title}`}
+              title={emptyTitle || t('No {{name}}', { name: t(title) })}
               description={emptyDescription}
               actionLabel={FormComponent ? addLabel : undefined}
               onAction={() => setFormState({ editing: null })}
@@ -159,13 +160,13 @@ export function CrudPage({
           onClose={() => setFormState(null)}
           onSaved={(msg) => {
             setFormState(null);
-            toast(msg || 'Saved successfully');
+            toast(msg || t('Saved successfully'));
           }}
         />
       )}
 
       {viewRow && viewFields && (
-        <Modal open onClose={() => setViewRow(null)} title={`${title} details`} size="modal-lg">
+        <Modal open onClose={() => setViewRow(null)} title={t('{{name}} details', { name: t(title) })} size="modal-lg">
           <ViewGrid items={viewFields(viewRow)} />
         </Modal>
       )}

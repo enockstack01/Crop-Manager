@@ -12,6 +12,7 @@ import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
 import { NumberField, SelectField, TextAreaField, TextField } from '../components/fields';
 import { AuthError, AuthLayout } from './auth/AuthLayout';
+import { t } from '../i18n';
 
 /**
  * Shown instead of the app to signed-in users whose account is not active yet:
@@ -150,7 +151,7 @@ function StatusNotice({ profile, onRefresh, refreshing, onResubmit }: { profile:
         {profile.status_reason && profile.account_status !== 'pending' ? (
           <View style={{ padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#F9A825', backgroundColor: isDark ? '#3D3420' : '#FFF8E1' }}>
             <AppText style={{ fontSize: 13, lineHeight: 19 }}>
-              <AppText weight="600" style={{ fontSize: 13 }}>Note from the administrator: </AppText>
+              <AppText weight="600" style={{ fontSize: 13 }}>{t('Note from the administrator:')} </AppText>
               {profile.status_reason}
             </AppText>
           </View>
@@ -164,7 +165,7 @@ function StatusNotice({ profile, onRefresh, refreshing, onResubmit }: { profile:
               ['Sent', formatDateTime(req.submitted_at)],
             ].map(([label, value], i) => (
               <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
-                <AppText variant="subtitle" style={{ fontSize: 13 }}>{label}</AppText>
+                <AppText variant="subtitle" style={{ fontSize: 13 }}>{t(label)}</AppText>
                 <AppText weight="600" style={{ fontSize: 13, flexShrink: 1, textAlign: 'right' }}>{value}</AppText>
               </View>
             ))}

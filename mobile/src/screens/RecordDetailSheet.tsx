@@ -3,6 +3,7 @@ import { Sheet } from '../components/Sheet';
 import { KeyValue } from '../components/ui';
 import { Button } from '../components/Button';
 import type { ModuleConfig } from '../navigation/modules';
+import { t } from '../i18n';
 
 export function RecordDetailSheet({
   config,
@@ -19,7 +20,7 @@ export function RecordDetailSheet({
     <Sheet
       visible
       onClose={onClose}
-      title={`${config.formTitle} details`}
+      title={t('{{name}} details', { name: t(config.formTitle) })}
       footer={
         <>
           <Button title="Close" kind="secondary" onPress={onClose} />

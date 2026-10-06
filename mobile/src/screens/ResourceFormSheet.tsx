@@ -8,6 +8,7 @@ import { AppText } from '../components/ui';
 import { useForm } from '../components/fields';
 import { getCurrency } from '../lib/format';
 import type { ModuleConfig } from '../navigation/modules';
+import { t } from '../i18n';
 
 export function ResourceFormSheet({
   config,
@@ -49,12 +50,15 @@ export function ResourceFormSheet({
     }
     try {
       const payload = config.toPayload ? config.toPayload(form.values) : form.values;
-      if (isEdit) await update.mutateAsync({ id: editing.id, ...payload });
-      else await create.mutateAsync(payload);
-      onSaved(`${config.formTitle} ${isEdit ? 'updated' : 'added'} successfully`);
+      const saved: any = isEdit ? await update.mutateAsync({ id: editing.id, ...payload }) : await create.mutateAsync(payload);
+      onSaved(
+        saved?._offline
+          ? t('{{name}} saved on this phone — it will sync when you are back online', { name: t(config.formTitle) })
+          : t(isEdit ? '{{name}} updated successfully' : '{{name}} added successfully', { name: t(config.formTitle) }),
+      );
     } catch (e: any) {
       setErr(e?.message || 'Failed to save');
-      toast(e?.message || 'Failed to save', 'error');
+      toast(e?.message || t('Failed to save'), 'error');
     }
   };
 
@@ -62,11 +66,11 @@ export function ResourceFormSheet({
     <Sheet
       visible
       onClose={onClose}
-      title={`${isEdit ? 'Edit' : 'Add'} ${config.formTitle}`}
+      title={t(isEdit ? 'Edit {{name}}' : 'Add {{name}}', { name: t(config.formTitle) })}
       footer={
         <>
           <Button title="Cancel" kind="secondary" onPress={onClose} />
-          <Button title={`Save ${config.formTitle}`} icon="content-save" loading={saving} onPress={submit} />
+          <Button title={t('Save {{name}}', { name: t(config.formTitle) })} icon="content-save" loading={saving} onPress={submit} />
         </>
       }
     >

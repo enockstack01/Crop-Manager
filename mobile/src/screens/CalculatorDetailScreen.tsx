@@ -8,6 +8,7 @@ import { radius, spacing } from '../theme/theme';
 import { AppText, EmptyState, PageHeader, Screen } from '../components/ui';
 import { Button } from '../components/Button';
 import { NumberField, SelectField } from '../components/fields';
+import { t } from '../i18n';
 
 export function CalculatorDetailScreen({ route }: any) {
   const { colors, isDark } = useTheme();
@@ -78,7 +79,7 @@ export function CalculatorDetailScreen({ route }: any) {
               borderRadius: radius.lg, padding: 20,
             }}
           >
-            <AppText weight="600" style={{ fontSize: 13, color: isDark ? '#A5D6A7' : colors.primaryDark, marginBottom: 12 }}>Result</AppText>
+            <AppText weight="600" style={{ fontSize: 13, color: isDark ? '#A5D6A7' : colors.primaryDark, marginBottom: 12 }}>{t('Result')}</AppText>
             {result.map((r, i) => (
               <View
                 key={r.label}
@@ -87,7 +88,7 @@ export function CalculatorDetailScreen({ route }: any) {
                   borderBottomWidth: i === result.length - 1 ? 0 : 1, borderBottomColor: 'rgba(46,125,50,0.1)',
                 }}
               >
-                <AppText style={{ fontSize: 13, color: colors.textLight, flex: 1 }}>{r.label}</AppText>
+                <AppText style={{ fontSize: 13, color: colors.textLight, flex: 1 }}>{t(r.label)}</AppText>
                 <AppText weight="700" style={{ fontSize: 13, flexShrink: 1, textAlign: 'right' }}>{r.value}</AppText>
               </View>
             ))}

@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from './api';
+import { onlineManager, QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, ApiError } from './api';
+import { enqueue, flushOutbox, newTempId } from './offline';
 
 /**
  * Generic data hooks for any REST resource exposed by the server registry.
@@ -45,24 +46,90 @@ export function useOne<T = any>(resource: string, id?: string, options: any = {}
   });
 }
 
+/** Apply `fn` to every cached copy (lists, pickers, single records) of a resource. */
+function updateCaches(qc: QueryClient, resource: string, fn: (rows: any[]) => any[], one?: (row: any) => any) {
+  qc.setQueriesData({ queryKey: [resource] }, (old: any) => {
+    if (!old) return old;
+    if (Array.isArray(old)) return fn(old);
+    if (Array.isArray(old.data)) {
+      const data = fn(old.data);
+      return { ...old, data, total: typeof old.total === 'number' ? old.total + (data.length - old.data.length) : old.total };
+    }
+    return one ? one(old) : old;
+  });
+}
+
+/**
+ * Send a change to the server, or — when the phone is offline or the server can't
+ * be reached — queue it (lib/offline.ts) and apply it to the cached data at once.
+ * Queued results carry `_offline: true`.
+ */
+export async function writeOrQueue(
+  qc: QueryClient,
+  op: { method: 'post' | 'put' | 'delete'; url: string; resource: string; body?: any; tempId?: string },
+  applyLocally: () => any,
+) {
+  const queueIt = () => {
+    enqueue(op);
+    const result = applyLocally();
+    return { ...(result || {}), _offline: true };
+  };
+  if (!onlineManager.isOnline()) return queueIt();
+  // a record created offline keeps its temporary id until it is synced: go through the queue
+  if (/\/local-/.test(op.url)) {
+    const result = queueIt();
+    flushOutbox(qc);
+    return result;
+  }
+  try {
+    return (await api.request({ method: op.method, url: op.url, data: op.body })).data;
+  } catch (e) {
+    if (e instanceof ApiError && e.network) return queueIt();
+    throw e;
+  }
+}
+
 export function useResourceMutations(resource: string) {
   const qc = useQueryClient();
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: [resource] });
     qc.invalidateQueries({ queryKey: ['dashboard'] });
   };
+  // offline results are already in the cache; refetching would only hide them until synced
+  const onSuccess = (data: any) => {
+    if (!data?._offline) invalidate();
+  };
 
   const create = useMutation({
-    mutationFn: (body: any) => api.post(`/${resource}`, body).then((r) => r.data),
-    onSuccess: invalidate,
+    networkMode: 'always',
+    mutationFn: (body: any) => {
+      const tempId = newTempId();
+      return writeOrQueue(qc, { method: 'post', url: `/${resource}`, resource, body, tempId }, () => {
+        const row = { ...body, id: tempId, created_at: new Date().toISOString(), _offline: true };
+        updateCaches(qc, resource, (rows) => [row, ...rows]);
+        return row;
+      });
+    },
+    onSuccess,
   });
   const update = useMutation({
-    mutationFn: ({ id, ...body }: any) => api.put(`/${resource}/${id}`, body).then((r) => r.data),
-    onSuccess: invalidate,
+    networkMode: 'always',
+    mutationFn: ({ id, ...body }: any) =>
+      writeOrQueue(qc, { method: 'put', url: `/${resource}/${id}`, resource, body }, () => {
+        const patch = (r: any) => (r?.id === id ? { ...r, ...body, _offline: true } : r);
+        updateCaches(qc, resource, (rows) => rows.map(patch), patch);
+        return { id, ...body };
+      }),
+    onSuccess,
   });
   const remove = useMutation({
-    mutationFn: (id: string) => api.delete(`/${resource}/${id}`).then((r) => r.data),
-    onSuccess: invalidate,
+    networkMode: 'always',
+    mutationFn: (id: string) =>
+      writeOrQueue(qc, { method: 'delete', url: `/${resource}/${id}`, resource }, () => {
+        updateCaches(qc, resource, (rows) => rows.filter((r) => r?.id !== id));
+        return { id, deleted: true };
+      }),
+    onSuccess,
   });
 
   return { create, update, remove, invalidate };

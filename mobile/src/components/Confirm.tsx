@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useRef, useState } from 
 import { Sheet } from './Sheet';
 import { Button } from './Button';
 import { AppText } from './ui';
+import { t } from '../i18n';
 
 type ConfirmOpts = { confirmLabel?: string; danger?: boolean };
 type ConfirmFn = (message: string, opts?: ConfirmOpts) => Promise<boolean>;
@@ -49,7 +50,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
           </>
         }
       >
-        <AppText style={{ fontSize: 14, lineHeight: 22 }}>{state?.message}</AppText>
+        <AppText style={{ fontSize: 14, lineHeight: 22 }}>{t(state?.message)}</AppText>
       </Sheet>
     </ConfirmCtx.Provider>
   );

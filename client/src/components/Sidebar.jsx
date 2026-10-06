@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
 import { LeafMark } from './LeafMark.jsx';
+import { t } from '../i18n/index.js';
 
 const SECTIONS = [
   { items: [{ to: '/', icon: 'fa-th-large', label: 'Dashboard', end: true }] },
@@ -83,7 +84,7 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
       <nav className="sidebar-nav">
         {(isAdmin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS).map((section, i) => (
           <div key={section.label || i}>
-            {section.label && <div className="sidebar-label">{section.label}</div>}
+            {section.label && <div className="sidebar-label">{t(section.label)}</div>}
             {section.items.map((item) => (
               <NavLink
                 key={item.to}
@@ -93,12 +94,12 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
                 className={({ isActive }) => (isActive ? 'nav-active' : undefined)}
               >
                 <i className={`fas ${item.icon}`} />
-                <span className="sidebar-nav-text">{item.label}</span>
+                <span className="sidebar-nav-text">{t(item.label)}</span>
               </NavLink>
             ))}
           </div>
         ))}
-        <div className="sidebar-label">Session</div>
+        <div className="sidebar-label">{t('Session')}</div>
         <a
           href="#logout"
           onClick={(e) => {
@@ -107,14 +108,14 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
           }}
         >
           <i className="fas fa-sign-out-alt" />
-          <span className="sidebar-nav-text">Logout</span>
+          <span className="sidebar-nav-text">{t('Logout')}</span>
         </a>
       </nav>
 
       <div className="sidebar-footer">
         <button className="sidebar-toggle" onClick={onToggle}>
           <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`} />
-          <span className="sidebar-nav-text">Collapse</span>
+          <span className="sidebar-nav-text">{t('Collapse')}</span>
         </button>
       </div>
     </aside>

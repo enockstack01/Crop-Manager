@@ -6,6 +6,7 @@ import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate, currenciesUsed, getCurrency } from '../lib/format.js';
+import { t } from '../i18n/index.js';
 
 const REPORTS = [
   { id: 'production', label: 'Production', icon: 'fa-wheat-awn' },
@@ -49,7 +50,7 @@ function ReportCard({ title, icon, iconColor = 'var(--primary)', right, children
       <div className="chart-card-header">
         <h3>
           <i className={`fas ${icon}`} style={{ color: iconColor, marginRight: 8 }} />
-          {title}
+          {t(title)}
         </h3>
         {right}
       </div>
@@ -60,7 +61,7 @@ function ReportCard({ title, icon, iconColor = 'var(--primary)', right, children
 
 function ReportTable({ columns, rows }) {
   if (!rows.length) {
-    return <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-light)', fontSize: 13 }}>No data for the selected filters</div>;
+    return <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-light)', fontSize: 13 }}>{t('No data for the selected filters')}</div>;
   }
   return (
     <div className="table-responsive">
@@ -68,7 +69,7 @@ function ReportTable({ columns, rows }) {
         <thead>
           <tr>
             {columns.map((c) => (
-              <th key={c.key} style={c.align === 'right' ? { textAlign: 'right' } : undefined}>{c.label}</th>
+              <th key={c.key} style={c.align === 'right' ? { textAlign: 'right' } : undefined}>{t(c.label)}</th>
             ))}
           </tr>
         </thead>
@@ -179,8 +180,8 @@ function buildProduction({ cycles, harvests }, dark) {
         data={{
           labels: rows.map((r) => r.crop),
           datasets: [
-            { label: 'Expected (kg)', data: rows.map((r) => Math.round(r.expected)), backgroundColor: 'rgba(25,118,210,0.55)', borderRadius: 6 },
-            { label: 'Harvested (kg)', data: rows.map((r) => Math.round(r.harvested)), backgroundColor: 'rgba(46,125,50,0.75)', borderRadius: 6 },
+            { label: t('Expected (kg)'), data: rows.map((r) => Math.round(r.expected)), backgroundColor: 'rgba(25,118,210,0.55)', borderRadius: 6 },
+            { label: t('Harvested (kg)'), data: rows.map((r) => Math.round(r.harvested)), backgroundColor: 'rgba(46,125,50,0.75)', borderRadius: 6 },
           ],
         }}
         options={baseOptions()}
@@ -253,7 +254,7 @@ function buildYield({ harvests }, dark) {
         {rows.length ? (
           <Bar
             key={`yc-${dark}`}
-            data={{ labels: rows.map((r) => r.crop), datasets: [{ label: 'Yield (kg/ha)', data: rows.map((r) => Math.round(r.yield)), backgroundColor: PALETTE, borderRadius: 6 }] }}
+            data={{ labels: rows.map((r) => r.crop), datasets: [{ label: t('Yield (kg/ha)'), data: rows.map((r) => Math.round(r.yield)), backgroundColor: PALETTE, borderRadius: 6 }] }}
             options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, legend: { display: false } } }}
           />
         ) : null}
@@ -264,7 +265,7 @@ function buildYield({ harvests }, dark) {
             key={`yt-${dark}`}
             data={{
               labels: mKeys.map(monthLabel),
-              datasets: [{ label: 'Harvest (kg)', data: mKeys.map((k) => Math.round(monthMap[k])), borderColor: '#2E7D32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 3 }],
+              datasets: [{ label: t('Harvest (kg)'), data: mKeys.map((k) => Math.round(monthMap[k])), borderColor: '#2E7D32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 3 }],
             }}
             options={baseOptions()}
           />
@@ -325,7 +326,7 @@ function buildFinancial({ expenses, sales, currency }, dark) {
     },
   ].filter(Boolean);
   // override month render for total row
-  columns[0].render = (r) => (r._total ? 'Total' : monthLabel(r.month));
+  columns[0].render = (r) => (r._total ? t('Total') : monthLabel(r.month));
 
   const chart = (
     <div className="chart-grid" style={{ marginTop: 4 }}>
@@ -336,12 +337,12 @@ function buildFinancial({ expenses, sales, currency }, dark) {
             data={{
               labels: months.map((r) => monthLabel(r.month)),
               datasets: [
-                { label: 'Revenue', data: months.map((r) => Math.round(r.revenue)), backgroundColor: 'rgba(46,125,50,0.7)', borderRadius: 4, order: 2 },
-                { label: 'Expenses', data: months.map((r) => Math.round(r.expenses)), backgroundColor: 'rgba(211,47,47,0.7)', borderRadius: 4, order: 3 },
-                { label: 'Net', data: months.map((r) => Math.round(r.net)), type: 'line', borderColor: '#1976D2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
+                { label: t('Revenue'), data: months.map((r) => Math.round(r.revenue)), backgroundColor: 'rgba(46,125,50,0.7)', borderRadius: 4, order: 2 },
+                { label: t('Expenses'), data: months.map((r) => Math.round(r.expenses)), backgroundColor: 'rgba(211,47,47,0.7)', borderRadius: 4, order: 3 },
+                { label: t('Net'), data: months.map((r) => Math.round(r.net)), type: 'line', borderColor: '#1976D2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
               ],
             }}
-            options={baseOptions()}
+            options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, valueLabels: { lines: false } } }}
           />
         ) : null}
       </div>
@@ -349,7 +350,7 @@ function buildFinancial({ expenses, sales, currency }, dark) {
         {cats.length ? (
           <Doughnut
             key={`finc-${dark}`}
-            data={{ labels: cats.map((c) => c.category), datasets: [{ data: cats.map((c) => Math.round(c.amount)), backgroundColor: PALETTE, borderWidth: 2, borderColor: chartBg() }] }}
+            data={{ labels: cats.map((c) => t(c.category)), datasets: [{ data: cats.map((c) => Math.round(c.amount)), backgroundColor: PALETTE, borderWidth: 2, borderColor: chartBg() }] }}
             options={doughnutOptions()}
           />
         ) : null}
@@ -370,7 +371,7 @@ function buildFinancial({ expenses, sales, currency }, dark) {
     tableRows,
     extra:
       cats.length > 0 ? (
-        <ReportCard title={`Expense Breakdown · ${currency}`} icon="fa-receipt" iconColor="var(--red)">
+        <ReportCard title={`${t('Expense Breakdown')} · ${currency}`} icon="fa-receipt" iconColor="var(--red)">
           <ReportTable
             columns={[
               { key: 'category', label: 'Category' },
@@ -412,7 +413,7 @@ function buildCycles({ cycles }, dark) {
     <div style={{ height: 280 }}>
       <Doughnut
         key={`cyc-${dark}`}
-        data={{ labels: CYCLE_STATUSES, datasets: [{ data: statusCounts, backgroundColor: STATUS_COLORS, borderWidth: 2, borderColor: chartBg() }] }}
+        data={{ labels: CYCLE_STATUSES.map((s) => t(s)), datasets: [{ data: statusCounts, backgroundColor: STATUS_COLORS, borderWidth: 2, borderColor: chartBg() }] }}
         options={doughnutOptions()}
       />
     </div>
@@ -474,8 +475,8 @@ export default function Reports() {
     if (filters.farm) parts.push((d.farms || []).find((x) => x.id === filters.farm)?.name);
     if (filters.season) parts.push((d.seasons || []).find((x) => x.id === filters.season)?.name);
     if (filters.from || filters.to) parts.push(`${filters.from || '…'} → ${filters.to || '…'}`);
-    if (active === 'financial') parts.push(`amounts in ${filtered.currency}`);
-    return parts.filter(Boolean).join(' · ') || 'All farms · all time';
+    if (active === 'financial') parts.push(t('amounts in {{currency}}', { currency: filtered.currency }));
+    return parts.filter(Boolean).join(' · ') || t('All farms · all time');
   };
 
   const exportCSV = () => {
@@ -488,16 +489,16 @@ export default function Reports() {
     <>
       <div className="dashboard-header no-print">
         <div>
-          <h1 className="page-title">Reports</h1>
-          <p className="page-subtitle" style={{ marginTop: 4 }}>Production, yield and financial reporting.</p>
+          <h1 className="page-title">{t('Reports')}</h1>
+          <p className="page-subtitle" style={{ marginTop: 4 }}>{t('Production, yield and financial reporting.')}</p>
         </div>
         <div className="dashboard-filters">
           <select className="dashboard-filter-select" value={filters.farm} onChange={setF('farm')}>
-            <option value="">All Farms</option>
+            <option value="">{t('All Farms')}</option>
             {(d.farms || []).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </select>
           <select className="dashboard-filter-select" value={filters.season} onChange={setF('season')}>
-            <option value="">All Seasons</option>
+            <option value="">{t('All Seasons')}</option>
             {(d.seasons || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
           <input type="date" className="dashboard-filter-select" style={{ padding: '7px 10px' }} value={filters.from} onChange={setF('from')} />
@@ -517,43 +518,43 @@ export default function Reports() {
             className={`btn btn-sm ${active === r.id ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActive(r.id)}
           >
-            <i className={`fas ${r.icon}`} /> {r.label}
+            <i className={`fas ${r.icon}`} /> {t(r.label)}
           </button>
         ))}
         <div style={{ flex: 1 }} />
         <button className="btn btn-sm btn-secondary" onClick={exportCSV} disabled={report.empty}>
-          <i className="fas fa-file-csv" /> Export CSV
+          <i className="fas fa-file-csv" /> {t('Export CSV')}
         </button>
         <button className="btn btn-sm btn-secondary" onClick={() => window.print()}>
-          <i className="fas fa-print" /> Print
+          <i className="fas fa-print" /> {t('Print')}
         </button>
       </div>
 
       <div className="print-only" style={{ marginBottom: 12 }}>
-        <h1 className="page-title">{meta.label} Report</h1>
+        <h1 className="page-title">{t('{{report}} Report', { report: t(meta.label) })}</h1>
         <p className="page-subtitle">
-          {profile?.full_name ? `${profile.full_name} · ` : ''}{filterLabel()} · generated {formatDate(new Date().toISOString())}
+          {profile?.full_name ? `${profile.full_name} · ` : ''}{filterLabel()} · {t('generated {{date}}', { date: formatDate(new Date().toISOString()) })}
         </p>
       </div>
 
       {report.empty ? (
-        <EmptyState icon={meta.icon} title={`No ${meta.label.toLowerCase()} data`} description="Try widening the date range or clearing the farm and season filters. Records are added from the module pages." />
+        <EmptyState icon={meta.icon} title={t('No {{report}} data', { report: t(meta.label).toLowerCase() })} description="Try widening the date range or clearing the farm and season filters. Records are added from the module pages." />
       ) : (
         <>
           <div className="stat-grid" style={{ '--stat-min': '150px', marginBottom: 20 }}>
-            {report.tiles.map((t) => (
-              <StatTile key={t.label} label={t.label} value={t.value} sub={t.sub} color={t.color} />
+            {report.tiles.map((tile) => (
+              <StatTile key={tile.label} label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} />
             ))}
           </div>
 
           {report.chart && (
-            <ReportCard title={`${meta.label} Overview`} icon={meta.icon}>
+            <ReportCard title={t('{{report}} Overview', { report: t(meta.label) })} icon={meta.icon}>
               {report.chart}
             </ReportCard>
           )}
 
           <ReportCard
-            title={`${meta.label} Detail`}
+            title={t('{{report}} Detail', { report: t(meta.label) })}
             icon="fa-table"
             right={<span style={{ fontSize: 12, color: 'var(--text-light)' }}>{filterLabel()}</span>}
           >
