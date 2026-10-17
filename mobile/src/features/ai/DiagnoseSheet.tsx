@@ -6,6 +6,8 @@ import { PhotoField } from '../../components/PhotoField';
 import { TextAreaField } from '../../components/fields';
 import { useToast } from '../../components/Toast';
 import { aiDiagnose, reportToText } from '../../lib/ai';
+import { shareDiagnosisPdf } from '../../lib/pdfReport';
+import { useProfile } from '../../lib/useResource';
 import { AiDisclaimer, AiStatusBar, DiagnosisReport, ErrorNote, Thinking } from './AiBits';
 import { t } from '../../i18n';
 
@@ -16,6 +18,8 @@ export function DiagnoseSheet({ visible, onClose, input, onUse }: {
   const toast = useToast();
   const [photo, setPhoto] = useState<string | null>(input.photo_url || null);
   const [symptoms, setSymptoms] = useState('');
+  const { profile } = useProfile();
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<any>(null);
   const [error, setError] = useState('');
@@ -29,6 +33,16 @@ export function DiagnoseSheet({ visible, onClose, input, onUse }: {
       setError(e?.message || t('The AI assistant could not answer.'));
     } finally {
       setBusy(false);
+    }
+  };
+  const pdf = async () => {
+    setPdfBusy(true);
+    try {
+      await shareDiagnosisPdf(report, { photoUrl: photo, crop: input.crop, owner: profile?.full_name || '' });
+    } catch (e: any) {
+      toast(e?.message || t('Could not create the PDF'), 'error');
+    } finally {
+      setPdfBusy(false);
     }
   };
   const use = async () => {
@@ -48,6 +62,7 @@ export function DiagnoseSheet({ visible, onClose, input, onUse }: {
       title="Diagnose with AI"
       footer={
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {report ? <Button title="Download PDF" icon="file-pdf" kind="secondary" loading={pdfBusy} onPress={pdf} /> : null}
           {report && onUse ? <Button title="Use as recommendation" icon="check" kind="secondary" onPress={use} /> : null}
           <Button title={report ? 'Diagnose again' : 'Diagnose'} icon="wand-magic-sparkles" loading={busy} onPress={run} />
         </View>

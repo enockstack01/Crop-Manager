@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+import { SignedIn, SignedOut } from '@clerk/clerk-react';
 
 import { AppLayout } from './components/AppLayout.jsx';
 import { AuthScreen } from './components/AuthScreen.jsx';
@@ -48,7 +48,7 @@ export function App() {
               <AppLayout />
             </SignedIn>
             <SignedOut>
-              <RedirectToSignIn />
+              <Navigate to="/sign-in" replace />
             </SignedOut>
           </>
         }

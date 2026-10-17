@@ -3,6 +3,7 @@ import { Modal } from '../../components/Modal.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { PhotoUpload } from '../../components/PhotoUpload.jsx';
 import { aiDiagnose, reportToText } from '../../lib/ai.js';
+import { useProfile } from '../../components/profile.jsx';
 import { AiDisclaimer, AiStatusBar, DiagnosisReport, Thinking } from './AiBits.jsx';
 import { t } from '../../i18n/index.js';
 
@@ -13,6 +14,8 @@ import { t } from '../../i18n/index.js';
  */
 export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Use as recommendation' }) {
   const toast = useToast();
+  const { profile } = useProfile();
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [photo, setPhoto] = useState(input.photo_url || null);
   const [symptoms, setSymptoms] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,6 +32,24 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
       setError(err.message || t('The AI assistant could not answer.'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const downloadPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const { downloadDiagnosisPdf } = await import('../../lib/pdfReport.js');
+      await downloadDiagnosisPdf({
+        report,
+        photoUrl: photo,
+        crop: input.crop,
+        owner: profile?.full_name || '',
+        fileName: `CropManager-disease-report-${new Date().toISOString().slice(0, 10)}.pdf`,
+      });
+    } catch (err) {
+      toast(err.message || t('Could not create the PDF'), 'error');
+    } finally {
+      setPdfBusy(false);
     }
   };
 
@@ -51,6 +72,11 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
       footer={
         <>
           <button className="btn btn-secondary" onClick={onClose}>{t('Close')}</button>
+          {report && (
+            <button className="btn btn-secondary" onClick={downloadPdf} disabled={pdfBusy}>
+              <i className="fas fa-file-pdf" /> {pdfBusy ? t('Preparing…') : t('Download PDF')}
+            </button>
+          )}
           {report && onUse && <button className="btn btn-primary" onClick={use}><i className="fas fa-check" /> {t(useLabel)}</button>}
           <button className="btn btn-primary" onClick={run} disabled={busy}>
             <i className="fas fa-wand-magic-sparkles" /> {report ? t('Diagnose again') : t('Diagnose')}

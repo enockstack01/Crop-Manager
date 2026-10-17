@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { baseOptions, breakdownOptions, LEAF, AMBER, INK, useIsDark } from '../features/dashboard/charts.jsx';
@@ -447,6 +447,8 @@ export default function Reports() {
   const { profile } = useProfile();
   const toast = useToast();
   const dark = useIsDark();
+  const bodyRef = useRef(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [active, setActive] = useState('production');
   const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '', currency: '' });
 
@@ -482,6 +484,30 @@ export default function Reports() {
     const stamp = new Date().toISOString().slice(0, 10);
     downloadCSV(`${active}-report-${stamp}.csv`, report.csv.headers, report.csv.rows);
     toast('Report exported as CSV', 'info');
+  };
+
+  const exportPDF = async () => {
+    setPdfBusy(true);
+    try {
+      const { downloadReportPdf } = await import('../lib/pdfReport.js');
+      const stamp = new Date().toISOString().slice(0, 10);
+      await downloadReportPdf({
+        title: t('{{report}} Report', { report: t(meta.label) }),
+        subtitle: filterLabel(),
+        owner: profile?.full_name || '',
+        tiles: report.tiles,
+        headers: report.csv.headers,
+        rows: report.csv.rows,
+        chartRoot: bodyRef.current,
+        dark,
+        fileName: `CropManager-${active}-report-${stamp}.pdf`,
+      });
+      toast('Report downloaded as PDF', 'info');
+    } catch (err) {
+      toast(err.message || 'Could not create the PDF', 'error');
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   return (
@@ -524,6 +550,9 @@ export default function Reports() {
         <button className="btn btn-sm btn-secondary" onClick={exportCSV} disabled={report.empty}>
           <i className="fas fa-file-csv" /> {t('Export CSV')}
         </button>
+        <button className="btn btn-sm btn-primary" onClick={exportPDF} disabled={report.empty || pdfBusy}>
+          <i className="fas fa-file-pdf" /> {pdfBusy ? t('Preparing…') : t('Download PDF')}
+        </button>
         <button className="btn btn-sm btn-secondary" onClick={() => window.print()}>
           <i className="fas fa-print" /> {t('Print')}
         </button>
@@ -536,6 +565,7 @@ export default function Reports() {
         </p>
       </div>
 
+      <div ref={bodyRef}>
       {report.empty ? (
         <EmptyState icon={meta.icon} title={t('No {{report}} data', { report: t(meta.label).toLowerCase() })} description="Try widening the date range or clearing the farm and season filters. Records are added from the module pages." />
       ) : (
@@ -563,6 +593,7 @@ export default function Reports() {
           {report.extra}
         </>
       )}
+      </div>
     </>
   );
 }
