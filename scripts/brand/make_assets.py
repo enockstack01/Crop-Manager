@@ -79,7 +79,7 @@ def rounded(im, radius_fraction=0.22):
     return out
 
 # ---- web
-for name in ('agricoders-logo-disc.png', 'agricoders-logo-navy.png', 'cropmanager-glyph.png'):
+for name in ('agricoders-logo-disc.png', 'agricoders-logo-navy.png'):
     dst = os.path.join(ROOT, 'client', 'public', 'brand', name)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copy(os.path.join(BRAND, name), dst)
@@ -98,7 +98,7 @@ save(tab(256, 0.62), 'client', 'public', 'brand', 'cropmanager-icon.png')
 save(tab(256, 0.62), 'mobile', 'assets', 'brand', 'cropmanager-icon.png')
 
 # ---- mobile: in-app images
-for name in ('agricoders-logo-disc.png', 'cropmanager-glyph.png'):
+for name in ('agricoders-logo-disc.png',):
     dst = os.path.join(ROOT, 'mobile', 'assets', 'brand', name)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copy(os.path.join(BRAND, name), dst)
@@ -115,6 +115,6 @@ mono = Image.new('RGBA', leaf.size, (0, 0, 0, 0))
 mono.putalpha(leaf.split()[3])
 save(on(None, mono, 1024, 0.46), 'mobile', 'assets', 'adaptive-icon-mono.png')
 
-# ---- mobile: splash (Pine, or Night Field in dark mode): the master logo in its white disc
-save(on(None, disc, 1024, 1.0), 'mobile', 'assets', 'splash-icon.png')
-save(on(None, disc, 1024, 1.0), 'mobile', 'assets', 'splash-icon-dark.png')
+# ---- mobile: splash (Pine, or Night Field in dark mode): the CropManager app icon, the same leaf everywhere
+save(tab(1024, 0.62), 'mobile', 'assets', 'splash-icon.png')
+save(tab(1024, 0.62), 'mobile', 'assets', 'splash-icon-dark.png')

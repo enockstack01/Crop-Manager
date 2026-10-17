@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { Animated, Easing, Image, StyleSheet, useColorScheme, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
-const DISC = require('../../assets/brand/agricoders-logo-disc.png');
+const ICON = require('../../assets/brand/cropmanager-icon.png');
 
 // keep the native splash up until the animated one has drawn its first frame
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -24,8 +24,8 @@ export function SplashReadyOnMount() {
 }
 
 /**
- * Animated continuation of the native splash: same background and logo position,
- * so the hand-off is seamless. The master logo lifts, the wordmark fades in, a progress
+ * Animated continuation of the native splash: same background and icon position,
+ * so the hand-off is seamless. The leaf icon lifts, the wordmark fades in, a progress
  * bar runs while the app loads, then the whole layer fades away.
  */
 export function SplashHost({ children }: { children: React.ReactNode }) {
@@ -75,14 +75,14 @@ export function SplashHost({ children }: { children: React.ReactNode }) {
           >
             {/* same size/position as the native splash image (imageWidth 180) */}
             <Animated.View style={{ transform: [{ translateY: leafY }, { scale: leafScale }] }}>
-              <Image source={DISC} style={{ width: 180, height: 180 }} resizeMode="contain" accessibilityLabel="Agricoders" />
+              <Image source={ICON} style={{ width: 180, height: 180 }} resizeMode="contain" accessibilityLabel="CropManager" />
             </Animated.View>
             <Animated.View style={{ position: 'absolute', top: '58%', alignItems: 'center', opacity: intro, transform: [{ translateY: textY }] }}>
-              <Animated.Text style={{ color: '#FFFFFF', fontSize: 14, fontFamily: 'Carlito_700Bold', letterSpacing: 5 }}>AGRICODERS</Animated.Text>
-              <Animated.Text style={{ color: '#FFFFFF', fontSize: 30, fontFamily: 'Carlito_700Bold', marginTop: 10 }}>CropManager</Animated.Text>
+              <Animated.Text style={{ color: '#FFFFFF', fontSize: 30, fontFamily: 'Carlito_700Bold' }}>CropManager</Animated.Text>
               <Animated.Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontFamily: 'Carlito_700Bold', marginTop: 6 }}>
                 Plan, track and grow: your whole farm in one place
               </Animated.Text>
+              <Animated.Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, fontFamily: 'Carlito_400Regular', marginTop: 4 }}>by Agricoders</Animated.Text>
               <View style={{ width: 120, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 28, overflow: 'hidden' }}>
                 <Animated.View
                   style={{
