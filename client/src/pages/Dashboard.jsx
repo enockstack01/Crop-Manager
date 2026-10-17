@@ -87,6 +87,7 @@ export default function Dashboard() {
       <FarmProfile
         farms={d.farms || []}
         fields={d.fields || []}
+        cycles={d.cycles || []}
         selected={filters.farm}
         onSelect={(farm) => setFilters((f) => ({ ...f, farm }))}
         kpis={agg.kpis}

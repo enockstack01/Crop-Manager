@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon';
 import { haptics } from '../../lib/haptics';
 import { PressableScale } from '../../components/PressableScale';
 import { t } from '../../i18n';
+import { buildProfile, STATUS_COLOR } from './farmModel';
 
 export type ProfileKpi = { icon: string; tone: keyof typeof KPI_TONES; label: string; value: string; link: string };
 
@@ -49,17 +50,10 @@ function KpiTile({ k, onPress }: { k: ProfileKpi; onPress?: () => void }) {
  * (or all farms), a land-utilisation ring broken down by field status, a per-field
  * land bar chart and quick stats. The farm chips drive the dashboard's farm filter.
  */
-const n = (v: any) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 const ha = (v: number) => `${(Math.round(v * 10) / 10).toLocaleString('en-US')} ha`;
 
 type Segment = { key: string; label: string; value: number; color: string };
 
-const STATUS_COLOR: Record<string, string> = {
-  Active: '#2E7D32',
-  Preparing: '#1B5E20',
-  Maintenance: '#5B6B5D',
-  Fallow: '#F9A825',
-};
 
 /** Ring gauge: one arc per segment with rounded ends, percentage in the middle. */
 function LandRing({ segments, total, size, pct }: { segments: Segment[]; total: number; size: number; pct: number }) {
@@ -110,6 +104,7 @@ function LandRing({ segments, total, size, pct }: { segments: Segment[]; total: 
 export function FarmProfileCard({
   farms,
   fields,
+  cycles = [],
   selected,
   onSelect,
   kpis = [],
@@ -117,6 +112,8 @@ export function FarmProfileCard({
 }: {
   farms: any[];
   fields: any[];
+  /** crop cycles: what is growing now and how much of each field is planted */
+  cycles?: any[];
   /** selected farm id ('' = all farms) */
   selected: string;
   onSelect: (farmId: string) => void;
@@ -128,37 +125,12 @@ export function FarmProfileCard({
   const { isTablet, width } = useLayout();
   const kpiCols = width >= 1024 ? 4 : width >= 600 ? 3 : 2;
 
-  const p = useMemo(() => {
-    const scopeFarms = selected ? farms.filter((f) => f.id === selected) : farms;
-    const ids = new Set(scopeFarms.map((f) => f.id));
-    const scopeFields = fields.filter((f) => ids.has(f.farm_id));
-    const total = scopeFarms.reduce((s, f) => s + n(f.total_area), 0);
-    const byStatus: Record<string, number> = { Active: 0, Preparing: 0, Maintenance: 0, Fallow: 0 };
-    scopeFields.forEach((f) => {
-      const st = f.status in byStatus ? f.status : 'Active';
-      byStatus[st] += n(f.area);
-    });
-    const allocated = Object.values(byStatus).reduce((a, b) => a + b, 0);
-    const unallocated = Math.max(0, total - allocated);
-    const ringTotal = Math.max(total, allocated);
-    const segments: Segment[] = [
-      { key: 'Active', label: 'Planted', value: byStatus.Active, color: STATUS_COLOR.Active },
-      { key: 'Preparing', label: 'Preparing', value: byStatus.Preparing, color: STATUS_COLOR.Preparing },
-      { key: 'Maintenance', label: 'Maintenance', value: byStatus.Maintenance, color: STATUS_COLOR.Maintenance },
-      { key: 'Fallow', label: 'Fallow', value: byStatus.Fallow, color: STATUS_COLOR.Fallow },
-      { key: 'Unallocated', label: 'Unallocated', value: unallocated, color: isDark ? '#3A3A3A' : '#D5E3D6' },
-    ];
-    const pct = ringTotal > 0 ? Math.round((byStatus.Active / ringTotal) * 100) : 0;
-    const soils = [...new Set(scopeFields.map((f) => f.soil_type).filter(Boolean))];
-    const topFields = [...scopeFields].sort((a, b) => n(b.area) - n(a.area));
-    const maxField = Math.max(1, ...topFields.map((f) => n(f.area)));
-    const farm = selected ? scopeFarms[0] : null;
-    return { farm, scopeFarms, scopeFields, total, ringTotal, segments, pct, soils, topFields, maxField, planted: byStatus.Active };
-  }, [farms, fields, selected, isDark]);
+  const p = useMemo(() => buildProfile({ farms, fields, cycles, selected, dark: isDark }), [farms, fields, cycles, selected, isDark]);
 
   const place = p.farm ? [p.farm.location, p.farm.district, p.farm.province].filter(Boolean).join(', ') : t(p.scopeFarms.length === 1 ? '{{count}} farm in your portfolio' : '{{count}} farms in your portfolio', { count: p.scopeFarms.length });
   const ringSize = isTablet ? 190 : 150;
-  const shown = p.topFields.slice(0, 6);
+  const shown = p.fieldRows.slice(0, 6);
+  const cropTotal = p.crops.reduce((sum: number, c: any) => sum + c.ha, 0);
   const hasLand = p.total > 0 || p.scopeFields.length > 0;
 
   return (
@@ -234,6 +206,62 @@ export function FarmProfileCard({
           </View>
           )}
 
+          {/* what is growing now: area under each crop */}
+          {hasLand ? (
+            <View>
+              <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                {t('What is growing now')}
+              </AppText>
+              {p.crops.length ? (
+                <View style={{ gap: 12 }}>
+                  <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>
+                    <AppText weight="800" style={{ fontSize: 18, color: colors.primaryDark }}>{ha(p.underCrop)}</AppText>
+                    {` ${t('under crop')} · ${p.underCropPct}% ${t('of the farm')} · `}
+                    {t(p.openCount === 1 ? '{{count}} open crop cycle' : '{{count}} open crop cycles', { count: p.openCount })}
+                  </AppText>
+                  <View style={{ flexDirection: 'row', height: 16, borderRadius: 8, overflow: 'hidden', backgroundColor: colors.bg, gap: 2 }}>
+                    {p.crops.filter((c: any) => c.ha > 0).map((c: any) => (
+                      <View key={c.name} style={{ width: `${(c.ha / (cropTotal || 1)) * 100}%`, minWidth: 4, backgroundColor: c.color }} />
+                    ))}
+                  </View>
+                  <View style={{ gap: 8 }}>
+                    {p.crops.map((c: any) => (
+                      <View key={c.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.color }} />
+                        <AppText weight="600" style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>{c.name === 'Other crops' ? t(c.name) : c.name}</AppText>
+                        <AppText style={{ fontSize: 11, color: colors.textLight }}>{t(c.cycles === 1 ? '{{count}} cycle' : '{{count}} cycles', { count: c.cycles })}</AppText>
+                        <AppText weight="700" style={{ fontSize: 12, minWidth: 64, textAlign: 'right' }}>{ha(c.ha)}</AppText>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <AppText variant="subtitle" style={{ fontSize: 13 }}>{t('No crop cycle is open. Add a crop cycle to see what is growing.')}</AppText>
+              )}
+            </View>
+          ) : null}
+
+          {/* crop cycle pipeline */}
+          {p.openCount > 0 ? (
+            <View>
+              <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                {t('Crop cycle pipeline')}
+              </AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {p.pipeline.map((st: any, i: number) => (
+                  <View key={st.key} style={{ flexBasis: '47%', flexGrow: 1, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, opacity: st.count ? 1 : 0.55 }}>
+                    <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: st.color, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontFamily: ff('700'), fontSize: 11, color: st.key === 'Ready for Harvest' ? '#1C2B1E' : '#FFFFFF' }}>{i + 1}</Text>
+                    </View>
+                    <Text style={{ fontFamily: ff('800'), fontSize: 26, color: colors.text, marginTop: 6 }}>{st.count}</Text>
+                    <Text style={{ fontFamily: ff('700'), fontSize: 12, color: colors.primaryDark }}>{t(st.label)}</Text>
+                    <Text style={{ fontFamily: ff('400'), fontSize: 11, color: colors.textLight }}>{ha(st.ha)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
           {/* farm at a glance — the dashboard's headline figures */}
           {kpis.length ? (
             <View>
@@ -260,34 +288,38 @@ export function FarmProfileCard({
             </View>
           ) : null}
 
-          {/* land by field */}
+          {/* fields: land and what is planted on each */}
           {shown.length ? (
             <View>
               <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                {t('Land by field')}
+                {t('Fields: land and crop')}
               </AppText>
-              <View style={{ gap: 12 }}>
-                {shown.map((f) => {
+              <View style={{ gap: 14 }}>
+                {shown.map((f: any) => {
                   const color = STATUS_COLOR[f.status] ?? STATUS_COLOR.Active;
-                  const w = Math.max(4, (n(f.area) / p.maxField) * 100);
                   return (
                     <View key={f.id}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5, gap: 8 }}>
                         <AppText weight="600" style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>
                           {f.name}
-                          {!selected && f.farms?.name ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{`  ·  ${f.farms.name}`}</AppText> : null}
+                          {!selected && f.farm ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{`  ·  ${f.farm}`}</AppText> : null}
                         </AppText>
-                        <AppText style={{ fontSize: 11, color }}>{t(f.status || 'Active')}</AppText>
-                        <AppText weight="700" style={{ fontSize: 12, minWidth: 64, textAlign: 'right' }}>{ha(n(f.area))}</AppText>
+                        <AppText style={{ fontSize: 11, color: f.status === 'Fallow' ? colors.textLight : color }}>{t(f.status)}</AppText>
+                        <AppText weight="700" style={{ fontSize: 12, minWidth: 64, textAlign: 'right' }}>{ha(f.area)}</AppText>
                       </View>
-                      <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.bg, overflow: 'hidden' }}>
-                        <View style={{ width: `${w}%`, height: '100%', borderRadius: 4, backgroundColor: color }} />
+                      <View style={{ height: 10, borderRadius: 5, backgroundColor: colors.bg, overflow: 'hidden' }}>
+                        <View style={{ width: `${f.pct}%`, height: '100%', borderRadius: 5, backgroundColor: color }} />
                       </View>
+                      <AppText style={{ fontSize: 12, color: colors.textLight, marginTop: 5 }}>
+                        {f.crops.length
+                          ? `${f.crops.join(', ')} · ${t(f.stage === 'Ready for Harvest' ? 'Ready to harvest' : f.stage)} · ${f.pct}% ${t('planted')}`
+                          : t('Nothing planted')}
+                      </AppText>
                     </View>
                   );
                 })}
-                {p.topFields.length > shown.length ? (
-                  <AppText variant="caption">+ {t(p.topFields.length - shown.length === 1 ? '{{count}} more field' : '{{count}} more fields', { count: p.topFields.length - shown.length })}</AppText>
+                {p.fieldRows.length > shown.length ? (
+                  <AppText variant="caption">+ {t(p.fieldRows.length - shown.length === 1 ? '{{count}} more field' : '{{count}} more fields', { count: p.fieldRows.length - shown.length })}</AppText>
                 ) : null}
               </View>
             </View>

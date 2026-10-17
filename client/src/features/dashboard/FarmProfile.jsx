@@ -1,23 +1,16 @@
 import { useMemo } from 'react';
 import { FitValue } from '../../components/ui.jsx';
+import { buildProfile, STATUS_COLOR } from './farmModel.js';
 import { t } from '../../i18n/index.js';
 
 /*
- * Farm Profile — the first section of the dashboard, identical to the mobile app's
- * (mobile/src/features/dashboard/FarmProfileCard.tsx): branded farm header, farm
- * chips (drive the dashboard's farm filter), land-utilization ring by field status,
- * "Farm at a glance" KPI tiles, and land-by-field bars. Styles: styles/index.css
- * (.farm-profile*).
+ * Farm Profile: the first section of the dashboard, the same as the mobile app's
+ * (mobile/src/features/dashboard/FarmProfileCard.tsx). It shows what is happening on the farm:
+ * land by field status, what is growing now (open crop cycles by crop), the crop cycle pipeline,
+ * the headline figures, and how much of each field is under crop. The numbers come from
+ * farmModel.js. Styles: styles/farm-profile.css.
  */
-const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 const ha = (v) => `${(Math.round(v * 10) / 10).toLocaleString('en-US')} ha`;
-
-const STATUS_COLOR = {
-  Active: '#2E7D32',
-  Preparing: '#1B5E20',
-  Maintenance: '#5B6B5D',
-  Fallow: '#F9A825',
-};
 
 /** Ring gauge: one arc per segment, utilization % in the middle. */
 function LandRing({ segments, total, pct, size = 170 }) {
@@ -61,45 +54,15 @@ function LandRing({ segments, total, pct, size = 170 }) {
   );
 }
 
-export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKpiClick, dark }) {
-  const p = useMemo(() => {
-    const scopeFarms = selected ? farms.filter((f) => f.id === selected) : farms;
-    const ids = new Set(scopeFarms.map((f) => f.id));
-    const scopeFields = fields.filter((f) => ids.has(f.farm_id));
-    const total = scopeFarms.reduce((s, f) => s + n(f.total_area), 0);
-    const byStatus = { Active: 0, Preparing: 0, Maintenance: 0, Fallow: 0 };
-    scopeFields.forEach((f) => {
-      const st = f.status in byStatus ? f.status : 'Active';
-      byStatus[st] += n(f.area);
-    });
-    const allocated = Object.values(byStatus).reduce((a, b) => a + b, 0);
-    const ringTotal = Math.max(total, allocated);
-    const segments = [
-      { key: 'Active', label: 'Planted', value: byStatus.Active, color: STATUS_COLOR.Active },
-      { key: 'Preparing', label: 'Preparing', value: byStatus.Preparing, color: STATUS_COLOR.Preparing },
-      { key: 'Maintenance', label: 'Maintenance', value: byStatus.Maintenance, color: STATUS_COLOR.Maintenance },
-      { key: 'Fallow', label: 'Fallow', value: byStatus.Fallow, color: STATUS_COLOR.Fallow },
-      { key: 'Unallocated', label: 'Unallocated', value: Math.max(0, total - allocated), color: dark ? '#3A3A3A' : '#D5E3D6' },
-    ];
-    const topFields = [...scopeFields].sort((a, b) => n(b.area) - n(a.area));
-    return {
-      farm: selected ? scopeFarms[0] : null,
-      scopeFarms,
-      scopeFields,
-      total,
-      ringTotal,
-      segments,
-      pct: ringTotal > 0 ? Math.round((byStatus.Active / ringTotal) * 100) : 0,
-      topFields,
-      maxField: Math.max(1, ...topFields.map((f) => n(f.area))),
-    };
-  }, [farms, fields, selected, dark]);
+export function FarmProfile({ farms, fields, cycles = [], selected, onSelect, kpis = [], onKpiClick, dark }) {
+  const p = useMemo(() => buildProfile({ farms, fields, cycles, selected, dark }), [farms, fields, cycles, selected, dark]);
 
   const place = p.farm
     ? [p.farm.location, p.farm.district, p.farm.province].filter(Boolean).join(', ')
     : t(p.scopeFarms.length === 1 ? '{{count}} farm in your portfolio' : '{{count}} farms in your portfolio', { count: p.scopeFarms.length });
   const hasLand = p.total > 0 || p.scopeFields.length > 0;
-  const shown = p.topFields.slice(0, 8);
+  const shown = p.fieldRows.slice(0, 8);
+  const cropTotal = p.crops.reduce((s, c) => s + c.ha, 0);
 
   return (
     <section className="farm-profile" aria-label={t('Farm profile')}>
@@ -136,21 +99,71 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
 
       <div className="farm-profile-body">
         {hasLand ? (
-          <div className="farm-profile-land">
-            <LandRing segments={p.segments} total={p.ringTotal} pct={p.pct} />
-            <ul className="farm-profile-legend">
-              {p.segments.map((s) => (
-                <li key={s.key} className={s.value > 0 ? '' : 'muted'}>
-                  <span className="dot" style={{ background: s.color }} />
-                  <span className="label">{t(s.label)}</span>
-                  <b>{ha(s.value)}</b>
-                </li>
-              ))}
-            </ul>
+          <div className="fp-grid">
+            <div className="fp-panel">
+              <div className="farm-profile-section">{t('Land use')}</div>
+              <div className="farm-profile-land">
+                <LandRing segments={p.segments} total={p.ringTotal} pct={p.pct} />
+                <ul className="farm-profile-legend">
+                  {p.segments.map((s) => (
+                    <li key={s.key} className={s.value > 0 ? '' : 'muted'}>
+                      <span className="dot" style={{ background: s.color }} />
+                      <span className="label">{t(s.label)}</span>
+                      <b>{ha(s.value)}</b>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="fp-panel">
+              <div className="farm-profile-section">{t('What is growing now')}</div>
+              {p.crops.length ? (
+                <>
+                  <div className="fp-headline">
+                    <b>{ha(p.underCrop)}</b> {t('under crop')} · {p.underCropPct}% {t('of the farm')} ·{' '}
+                    {t(p.openCount === 1 ? '{{count}} open crop cycle' : '{{count}} open crop cycles', { count: p.openCount })}
+                  </div>
+                  <div className="fp-stack" role="img" aria-label={t('Area under each crop')}>
+                    {p.crops.filter((c) => c.ha > 0).map((c) => (
+                      <span key={c.name} style={{ width: `${(c.ha / (cropTotal || 1)) * 100}%`, background: c.color }} title={`${c.name}: ${ha(c.ha)}`} />
+                    ))}
+                  </div>
+                  <ul className="fp-crops">
+                    {p.crops.map((c) => (
+                      <li key={c.name}>
+                        <span className="dot" style={{ background: c.color }} />
+                        <span className="label">{c.name === 'Other crops' ? t(c.name) : c.name}</span>
+                        <span className="muted">{t(c.cycles === 1 ? '{{count}} cycle' : '{{count}} cycles', { count: c.cycles })}</span>
+                        <b>{ha(c.ha)}</b>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="farm-profile-empty">{t('No crop cycle is open. Add a crop cycle to see what is growing.')}</p>
+              )}
+            </div>
           </div>
         ) : (
           <p className="farm-profile-empty">{t('Add a farm with its total area and fields to see land utilization.')}</p>
         )}
+
+        {p.openCount > 0 ? (
+          <div>
+            <div className="farm-profile-section">{t('Crop cycle pipeline')}</div>
+            <div className="fp-pipeline">
+              {p.pipeline.map((st, i) => (
+                <div key={st.key} className={`fp-stage ${st.count ? '' : 'empty'}`}>
+                  <span className="fp-stage-dot" style={{ background: st.color, color: st.key === 'Ready for Harvest' ? '#1C2B1E' : '#fff' }}>{i + 1}</span>
+                  <span className="fp-stage-count">{st.count}</span>
+                  <span className="fp-stage-label">{t(st.label)}</span>
+                  <span className="fp-stage-ha">{ha(st.ha)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {kpis.length ? (
           <div>
@@ -176,7 +189,7 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
 
         {shown.length ? (
           <div>
-            <div className="farm-profile-section">{t('Land by field')}</div>
+            <div className="farm-profile-section">{t('Fields: land and crop')}</div>
             <div className="farm-profile-fields">
               {shown.map((f) => {
                 const color = STATUS_COLOR[f.status] ?? STATUS_COLOR.Active;
@@ -185,20 +198,29 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
                     <div className="farm-profile-field-row">
                       <span className="name">
                         {f.name}
-                        {!selected && f.farms?.name ? <span className="farm"> · {f.farms.name}</span> : null}
+                        {!selected && f.farm ? <span className="farm"> · {f.farm}</span> : null}
                       </span>
-                      <span className="status" style={{ color }}>{t(f.status || 'Active')}</span>
-                      <b>{ha(n(f.area))}</b>
+                      <span className="status" style={{ color: f.status === 'Fallow' ? 'var(--text-light)' : color }}>{t(f.status)}</span>
+                      <b>{ha(f.area)}</b>
                     </div>
-                    <div className="farm-profile-bar">
-                      <span style={{ width: `${Math.max(4, (n(f.area) / p.maxField) * 100)}%`, background: color }} />
+                    <div className="fp-meter" title={`${ha(f.planted)} / ${ha(f.area)}`}>
+                      <span style={{ width: `${f.pct}%`, background: color }} />
+                    </div>
+                    <div className="fp-field-crop">
+                      {f.crops.length ? (
+                        <>
+                          <b>{f.crops.join(', ')}</b> · {t(f.stage === 'Ready for Harvest' ? 'Ready to harvest' : f.stage)} · {f.pct}% {t('planted')}
+                        </>
+                      ) : (
+                        <span className="muted">{t('Nothing planted')}</span>
+                      )}
                     </div>
                   </div>
                 );
               })}
-              {p.topFields.length > shown.length ? (
+              {p.fieldRows.length > shown.length ? (
                 <div className="farm-profile-more">
-                  + {t(p.topFields.length - shown.length === 1 ? '{{count}} more field' : '{{count}} more fields', { count: p.topFields.length - shown.length })}
+                  + {t(p.fieldRows.length - shown.length === 1 ? '{{count}} more field' : '{{count}} more fields', { count: p.fieldRows.length - shown.length })}
                 </div>
               ) : null}
             </div>

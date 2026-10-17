@@ -70,6 +70,7 @@ export function DashboardScreen({ navigation }: any) {
         <FarmProfileCard
           farms={d.farms || []}
           fields={d.fields || []}
+          cycles={d.cycles || []}
           selected={filters.farm}
           onSelect={set('farm')}
           kpis={agg.kpis}

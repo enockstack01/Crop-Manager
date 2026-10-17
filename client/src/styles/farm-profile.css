@@ -320,20 +320,17 @@
 
 /* desktop: ring + legend beside the headline figures, fields below */
 @media (min-width: 1024px) {
-  .farm-profile-body {
-    display: grid;
-    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
-    column-gap: 32px;
-    row-gap: 24px;
-    align-items: start;
-  }
-  .farm-profile-land {
-    align-self: center;
-  }
   .farm-profile-kpis {
     grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
   }
-  .farm-profile-body > :nth-child(3) {
+  /* fields sit in two columns on wide screens */
+  .farm-profile-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 32px;
+    row-gap: 16px;
+  }
+  .farm-profile-more {
     grid-column: 1 / -1;
   }
 }
@@ -346,5 +343,161 @@
     transform: scale(0.88);
     transform-origin: left center;
     margin-right: -20px;
+  }
+}
+
+/* ---- what is happening on the farm: land use, what is growing, pipeline, fields ---- */
+.fp-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+}
+.fp-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-width: 0;
+}
+.fp-headline {
+  font-size: 13px;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.fp-headline b {
+  color: var(--heading);
+  font-size: 18px;
+}
+/* one segmented bar: area under each crop, a white gap between crops */
+.fp-stack {
+  display: flex;
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+  gap: 2px;
+}
+.fp-stack span {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  transition: width 0.5s ease;
+}
+.fp-crops {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.fp-crops li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.fp-crops .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fp-crops .label {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fp-crops .muted {
+  font-size: 11px;
+  color: var(--text-light);
+}
+.fp-crops b {
+  min-width: 64px;
+  text-align: right;
+  font-size: 12px;
+}
+
+/* crop cycle pipeline: planned > planted > growing > ready to harvest */
+.fp-pipeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.fp-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.fp-stage.empty {
+  opacity: 0.55;
+}
+.fp-stage-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.fp-stage-count {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-top: 6px;
+  color: var(--text);
+}
+.fp-stage-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--heading);
+}
+.fp-stage-ha {
+  font-size: 11px;
+  color: var(--text-light);
+}
+
+/* each field: how much of it is under crop */
+.fp-meter {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.fp-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+.fp-field-crop {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 5px;
+}
+.fp-field-crop b {
+  color: var(--text);
+}
+.fp-field-crop .muted {
+  color: var(--text-light);
+}
+
+@media (max-width: 560px) {
+  .fp-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .farm-profile-land {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
