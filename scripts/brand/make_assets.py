@@ -65,6 +65,11 @@ for name in ('agricoders-logo-disc.png', 'agricoders-logo-navy.png', 'cropmanage
     shutil.copy(os.path.join(BRAND, name), dst)
     print('copied', os.path.relpath(dst, ROOT))
 save(crisp(glyph, 64), 'client', 'public', 'favicon.png')
+save(crisp(glyph, 32), 'client', 'public', 'favicon-32.png')
+save(crisp(glyph, 192), 'client', 'public', 'icon-192.png')
+save(on(WHITE, glyph, 180, 0.86).convert('RGB'), 'client', 'public', 'apple-touch-icon.png')
+# favicon.ico: browsers ask for /favicon.ico by default, whatever the <link> tags say
+crisp(glyph, 48).save(os.path.join(ROOT, 'client', 'public', 'favicon.ico'), sizes=[(16, 16), (32, 32), (48, 48)])
 
 # ---- mobile: in-app images
 for name in ('agricoders-logo-disc.png', 'cropmanager-glyph.png'):
