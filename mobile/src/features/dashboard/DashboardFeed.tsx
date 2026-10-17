@@ -48,7 +48,7 @@ function Row({ icon, tone, name, sub, end, onPress, last }: { icon: string; tone
 }
 
 function Count({ n, danger }: { n: number; danger?: boolean }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   return (
     <View style={{ minWidth: 24, height: 22, paddingHorizontal: 7, borderRadius: 11, alignItems: 'center', justifyContent: 'center',
       backgroundColor: danger ? colors.red : colors.primary }}>

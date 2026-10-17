@@ -245,7 +245,7 @@ function build(id: ReportId, f: any): Built {
         { label: 'Planted Area', value: round1(tot.area).toLocaleString(), sub: 'ha', color: '#1B5E20' },
         { label: 'Expected', value: formatNumber(Math.round(tot.expected)), sub: 'kg', color: '#5B6B5D' },
         { label: 'Harvested', value: formatNumber(Math.round(tot.harvested)), sub: 'kg', color: '#2E7D32' },
-        { label: 'Achievement', value: tot.expected ? `${Math.round((tot.harvested / tot.expected) * 100)}%` : '—', color: '#F9A825' },
+        { label: 'Achievement', value: tot.expected ? `${Math.round((tot.harvested / tot.expected) * 100)}%` : '—', color: '#1C2B1E' },
       ],
       chart: (
         <Bars
@@ -301,7 +301,7 @@ function build(id: ReportId, f: any): Built {
       tiles: [
         { label: 'Total Harvested', value: formatNumber(Math.round(totQty)), sub: 'kg', color: '#2E7D32' },
         { label: 'Harvested Area', value: round1(totArea).toLocaleString(), sub: 'ha', color: '#1B5E20' },
-        { label: 'Overall Yield', value: totArea ? formatNumber(Math.round(totQty / totArea)) : '—', sub: 'kg/ha', color: '#F9A825' },
+        { label: 'Overall Yield', value: totArea ? formatNumber(Math.round(totQty / totArea)) : '—', sub: 'kg/ha', color: '#1C2B1E' },
         { label: 'Harvest Records', value: formatNumber(f.harvests.length) },
       ],
       chart: (
@@ -406,7 +406,7 @@ function build(id: ReportId, f: any): Built {
       { label: 'Total Cycles', value: formatNumber(f.cycles.length) },
       { label: 'Active', value: formatNumber(active), color: '#2E7D32' },
       { label: 'Completed', value: formatNumber(completed), color: '#1B5E20' },
-      { label: 'Planted Area', value: round1(area).toLocaleString(), sub: 'ha', color: '#F9A825' },
+      { label: 'Planted Area', value: round1(area).toLocaleString(), sub: 'ha', color: '#1C2B1E' },
     ],
     chart: (
       <HBars

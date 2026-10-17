@@ -11,7 +11,7 @@ import { NumberField, SelectField } from '../components/fields';
 import { t } from '../i18n';
 
 export function CalculatorDetailScreen({ route }: any) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const toast = useToast();
   const type: string = route.params?.type;
   const reopen: Record<string, any> | undefined = route.params?.reopen;

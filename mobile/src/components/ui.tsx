@@ -277,11 +277,10 @@ export function KpiCard({
 }
 
 /** Centered label / value / unit tile (web Reports & dashboard tiles). */
-export function StatTile({ label, value, sub, color, tone }: { label: string; value: string | number; sub?: string; color?: string; tone?: 'green' | 'orange' | 'blue' }) {
-  const { colors, isDark } = useTheme();
-  const bg = colors.bg;
+export function StatTile({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
+  const { colors } = useTheme();
   return (
-    <View style={{ backgroundColor: bg, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center' }}>
+    <View style={{ backgroundColor: colors.bg, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center' }}>
       <AppText weight="600" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={2}>
         {t(label)}
       </AppText>
@@ -302,7 +301,7 @@ export function Badge({
   label: string;
   tone?: 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'neutral';
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const tones: Record<string, [string, string]> = {
     success: ['#1B5E20', '#FFFFFF'],
     warning: ['#F9A825', '#1C2B1E'],

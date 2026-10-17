@@ -289,7 +289,7 @@ export default function Dashboard() {
         <Card title={`${t('Sales Analytics')} · ${agg.chartCurrency}`} icon="fa-hand-holding-usd" iconColor="var(--leaf)">
           <div className="stat-grid" style={{ '--stat-min': '140px' }}>
             <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" max={16} />
-            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F9A825" max={16} />
+            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#1C2B1E" max={16} />
             <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1B5E20" max={16} />
           </div>
           <div className="stat-grid" style={{ marginTop: 16 }}>
@@ -306,7 +306,7 @@ export default function Dashboard() {
           ) : (
             <div className="stat-grid">
               <StatTile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
-              <StatTile label="Low Stock" value={agg.inv.low} color="#F9A825" />
+              <StatTile label="Low Stock" value={agg.inv.low} color="#1C2B1E" />
               <StatTile label="Out of Stock" value={agg.inv.out} color="#C62828" />
               <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1B5E20" />
             </div>
@@ -318,7 +318,7 @@ export default function Dashboard() {
           ) : (
             <div className="stat-grid" style={{ '--stat-min': '90px' }}>
               <StatTile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
-              <StatTile label="Observed" value={agg.health.observed} color="#F9A825" />
+              <StatTile label="Observed" value={agg.health.observed} color="#1C2B1E" />
               <StatTile label="At Risk" value={agg.health.atRisk} color="#C62828" />
             </div>
           )}

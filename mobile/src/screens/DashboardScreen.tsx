@@ -164,9 +164,9 @@ export function DashboardScreen({ navigation }: any) {
           </ChartCard>
           <ChartCard title={`${t('Sales Analytics')} · ${agg.chartCurrency}`} icon="hand-holding-dollar" iconColor={colors.green}>
             <Grid columns={isWide ? 3 : 1} gap={12}>
-              <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" />
-              <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F9A825" />
-              <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1B5E20" />
+              <StatTile label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" />
+              <StatTile label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#1C2B1E" />
+              <StatTile label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1B5E20" />
             </Grid>
             <View style={{ marginTop: 16 }}>
               <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={t('{{count}} records', { count: agg.salesInCurrency })} />
@@ -181,7 +181,7 @@ export function DashboardScreen({ navigation }: any) {
             ) : (
               <Grid columns={2} gap={12}>
                 <StatTile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
-                <StatTile label="Low Stock" value={agg.inv.low} color="#F9A825" />
+                <StatTile label="Low Stock" value={agg.inv.low} color="#1C2B1E" />
                 <StatTile label="Out of Stock" value={agg.inv.out} color="#C62828" />
                 <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1B5E20" />
               </Grid>
@@ -193,7 +193,7 @@ export function DashboardScreen({ navigation }: any) {
             ) : (
               <Grid columns={3} gap={10}>
                 <StatTile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
-                <StatTile label="Observed" value={agg.health.observed} color="#F9A825" />
+                <StatTile label="Observed" value={agg.health.observed} color="#1C2B1E" />
                 <StatTile label="At Risk" value={agg.health.atRisk} color="#C62828" />
               </Grid>
             )}

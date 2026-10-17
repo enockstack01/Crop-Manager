@@ -79,7 +79,7 @@ export function InsightTiles({ insights }) {
         {insights.map((ins) => {
           const tone = TONE[ins.tone];
           return (
-            <div key={ins.id} className="insight-tile" title={ins.sentence} aria-label={ins.sentence} role="group" style={{ '--tile-accent': tone.color }}>
+            <div key={ins.id} className="insight-tile" title={ins.sentence} aria-label={ins.sentence} role="group">
               <div className="insight-label">
                 <i className={`fas fa-${tone.icon}`} style={{ color: tone.color }} />
                 <span>{ins.label}</span>
