@@ -93,6 +93,10 @@ save(on(LEAF, leaf, 180, 0.60).convert('RGB'), 'client', 'public', 'apple-touch-
 # favicon.ico: browsers ask for /favicon.ico by default, whatever the <link> tags say
 tab(48).save(os.path.join(ROOT, 'client', 'public', 'favicon.ico'), sizes=[(16, 16), (32, 32), (48, 48)])
 
+# in-app product mark (sign-in panel, sidebar, drawer, PDFs): the app icon, rounded, at 256px
+save(tab(256, 0.62), 'client', 'public', 'brand', 'cropmanager-icon.png')
+save(tab(256, 0.62), 'mobile', 'assets', 'brand', 'cropmanager-icon.png')
+
 # ---- mobile: in-app images
 for name in ('agricoders-logo-disc.png', 'cropmanager-glyph.png'):
     dst = os.path.join(ROOT, 'mobile', 'assets', 'brand', name)

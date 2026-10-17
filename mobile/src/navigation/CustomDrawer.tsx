@@ -14,7 +14,7 @@ import { t } from '../i18n';
  * The web app's sidebar (layout.css .sidebar): flat Pine surface, the CropManager glyph with
  * "by Agricoders", uppercase section labels, 13px items with a highlighted background on the active page.
  */
-const GLYPH = require('../../assets/brand/cropmanager-glyph.png');
+const GLYPH = require('../../assets/brand/cropmanager-icon.png');
 const TEXT = 'rgba(255,255,255,0.78)';
 const TEXT_ACTIVE = '#FFFFFF';
 const ACTIVE_BG = 'rgba(255,255,255,0.12)';
@@ -68,7 +68,7 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
           borderBottomWidth: 1, borderBottomColor: DIVIDER,
         }}
       >
-        <Image source={GLYPH} style={{ width: 36, height: 36, borderRadius: 18 }} accessibilityLabel="CropManager" />
+        <Image source={GLYPH} style={{ width: 36, height: 36, borderRadius: 8 }} accessibilityLabel="CropManager" />
         <View>
           <Text style={{ fontSize: 18, fontFamily: ff('700'), color: '#FFFFFF' }}>CropManager</Text>
           <Text style={{ fontSize: 11, fontFamily: ff('400'), color: 'rgba(255,255,255,0.72)' }}>by Agricoders</Text>

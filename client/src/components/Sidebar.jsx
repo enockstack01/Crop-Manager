@@ -78,7 +78,7 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
       id="sidebar"
     >
       <div className="sidebar-header">
-        <img className="sidebar-glyph" src="/brand/cropmanager-glyph.png" alt="" width="36" height="36" />
+        <img className="sidebar-glyph" src="/brand/cropmanager-icon.png" alt="" width="36" height="36" />
         <div className="sidebar-logo-text">
           CropManager
           <small>by Agricoders</small>

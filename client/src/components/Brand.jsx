@@ -2,8 +2,8 @@ import { t } from '../i18n/index.js';
 
 /*
  * Agricoders brand lockups (Brand and Template Guidelines v1.0, sections 3 and 6).
- * Official master files only: the logo is never redrawn or recoloured. On the dark Pine panel the
- * master logo sits inside its white disc, and the wordmark is AGRICODERS in spaced capitals.
+ * The product leads with its own mark, the CropManager app icon (white leaf on Leaf Green), and is
+ * always signed "by Agricoders" in the footer line.
  */
 
 export const TAGLINE = 'Plan, track and grow: your whole farm in one place';
@@ -12,8 +12,7 @@ export const TAGLINE = 'Plan, track and grow: your whole farm in one place';
 export function BrandPanel() {
   return (
     <div className="auth-split-brand">
-      <img className="auth-brand-logo" src="/brand/agricoders-logo-disc.png" alt="Agricoders" width="112" height="112" />
-      <div className="auth-brand-wordmark">AGRICODERS</div>
+      <img className="auth-brand-logo" src="/brand/cropmanager-icon.png" alt="CropManager" width="112" height="112" />
       <h1>{t('CropManager')}</h1>
       <p className="auth-brand-tagline">{t(TAGLINE)}</p>
       <p>
@@ -28,7 +27,7 @@ export function BrandPanel() {
 export function MobileBrand() {
   return (
     <div className="auth-split-mobile-brand">
-      <img src="/brand/cropmanager-glyph.png" alt="" width="42" height="42" />
+      <img src="/brand/cropmanager-icon.png" alt="" width="42" height="42" />
       <span>
         {t('CropManager')}
         <small>by Agricoders</small>

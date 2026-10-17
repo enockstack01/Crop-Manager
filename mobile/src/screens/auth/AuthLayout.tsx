@@ -7,7 +7,7 @@ import { AppText, useLayout } from '../../components/ui';
 import { haptics } from '../../lib/haptics';
 import { t } from '../../i18n';
 
-const GLYPH = require('../../../assets/brand/cropmanager-glyph.png');
+const GLYPH = require('../../../assets/brand/cropmanager-icon.png');
 
 /**
  * The web app's sign-in page at phone width (client/src/components/AuthScreen.jsx):
@@ -63,7 +63,7 @@ export function AuthLayout({
           >
             {/* .auth-split-mobile-brand */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-              <Image source={GLYPH} style={{ width: 42, height: 42, borderRadius: 21 }} accessibilityLabel="CropManager" />
+              <Image source={GLYPH} style={{ width: 42, height: 42, borderRadius: 10 }} accessibilityLabel="CropManager" />
               <View>
                 <Text style={{ fontSize: 20, fontFamily: ff('700'), color: colors.primaryDark }}>CropManager</Text>
                 <Text style={{ fontSize: 11, fontFamily: ff('400'), color: colors.textLight }}>by Agricoders</Text>

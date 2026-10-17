@@ -59,7 +59,7 @@ function drawFooters(doc, W, H, M) {
   }
 }
 
-const loadLogos = () => Promise.all([loadImage('/brand/agricoders-logo-disc.png'), loadImage('/brand/cropmanager-glyph.png')]);
+const loadLogos = () => Promise.all([loadImage('/brand/agricoders-logo-disc.png'), loadImage('/brand/cropmanager-icon.png')]);
 
 /**
  * Disease analysis report: cause, treatment, medication and how to give it, with the photo,

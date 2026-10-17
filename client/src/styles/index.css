@@ -41,14 +41,6 @@
 .auth-brand-logo {
   width: 120px;
   height: 120px;
-  margin-bottom: 18px;
-}
-.auth-brand-wordmark {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: #fff;
   margin-bottom: 28px;
 }
 .auth-split-brand h1 {
@@ -114,7 +106,7 @@
 .auth-split-mobile-brand img {
   width: 42px;
   height: 42px;
-  border-radius: 50%;
+  border-radius: 10px;
 }
 .auth-split-mobile-brand small {
   display: block;
@@ -324,4 +316,27 @@
     min-width: 0;
     max-width: calc(100vw - 24px);
   }
+}
+
+/* Clerk form: flat Forest button, no gradient or shadow (brand rule) */
+.cl-formButtonPrimary {
+  background-image: none !important;
+  background-color: #1B5E20 !important;
+  box-shadow: none !important;
+}
+.cl-formButtonPrimary:hover {
+  background-color: #14532D !important;
+}
+.cl-card,
+.cl-rootBox .cl-cardBox {
+  box-shadow: none !important;
+  border: 1px solid #D5E3D6;
+}
+.cl-formButtonPrimary::before,
+.cl-formButtonPrimary::after {
+  background: none !important;
+  display: none !important;
+}
+.cl-formButtonPrimary {
+  background: #1B5E20 !important;
 }
