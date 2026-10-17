@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
-import { LeafMark } from './LeafMark.jsx';
 import { t } from '../i18n/index.js';
 
 const SECTIONS = [
@@ -43,7 +42,13 @@ const SECTIONS = [
       { to: '/sales', icon: 'fa-hand-holding-usd', label: 'Sales' },
     ],
   },
-  { label: 'Tools', items: [{ to: '/calculators', icon: 'fa-calculator', label: 'Agricultural Calculators' }] },
+  {
+    label: 'Tools',
+    items: [
+      { to: '/assistant', icon: 'fa-wand-magic-sparkles', label: 'AI Assistant' },
+      { to: '/calculators', icon: 'fa-calculator', label: 'Agricultural Calculators' },
+    ],
+  },
   {
     label: 'Analytics',
     items: [
@@ -73,11 +78,10 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
       id="sidebar"
     >
       <div className="sidebar-header">
-        <div className="sidebar-logo-icon">
-          <LeafMark size={24} color="#fff" />
-        </div>
+        <img className="sidebar-glyph" src="/brand/cropmanager-glyph.png" alt="" width="36" height="36" />
         <div className="sidebar-logo-text">
-          Crop<span>Manager</span>
+          CropManager
+          <small>by Agricoders</small>
         </div>
       </div>
 

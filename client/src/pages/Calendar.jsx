@@ -10,7 +10,7 @@ export default function Calendar() {
     if (c.expected_harvest_date && ['Planned', 'Planted', 'Growing', 'Ready for Harvest'].includes(c.status)) {
       events.push({
         date: c.expected_harvest_date,
-        title: `Expected harvest — ${c.crops?.name || ''}`,
+        title: `Expected harvest: ${c.crops?.name || ''}`,
         meta: `${c.farms?.name || ''} / ${c.fields?.name || ''}`,
       });
     }

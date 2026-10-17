@@ -77,7 +77,7 @@ const inputStyle = (colors: any) => ({
   color: colors.text,
 });
 /** web .form-control:focus — primary border + 3px soft green ring */
-const focusRing = (colors: any) => ({ borderColor: colors.primary, boxShadow: '0 0 0 3px rgba(46,125,50,0.12)' as any });
+const focusRing = (colors: any) => ({ borderColor: colors.primary, boxShadow: '0 0 0 2px #2E7D32' as any });
 
 /* ------------------------------------------------------------- TextField */
 export function TextField({

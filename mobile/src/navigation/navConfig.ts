@@ -52,7 +52,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     label: 'Tools',
-    items: [{ route: 'calculators', label: 'Agricultural Calculators', icon: 'calculator' }],
+    items: [
+      { route: 'assistant', label: 'AI Assistant', icon: 'wand-magic-sparkles' },
+      { route: 'calculators', label: 'Agricultural Calculators', icon: 'calculator' },
+    ],
   },
   {
     label: 'Analytics',

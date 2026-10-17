@@ -27,8 +27,8 @@ export const CURRENCIES = [
   { code: 'INR', name: 'Indian Rupee' },
 ];
 
-/** SelectField options: "USD — US Dollar". */
-export const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} — ${c.name}` }));
+/** SelectField options: "USD · US Dollar". */
+export const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }));
 
 // account types a new user can request (Administrator is granted, never requested)
 export const REQUESTABLE_ACCOUNT_TYPES = ['Farmer', 'Farm Manager', 'Agronomist', 'Cooperative Manager'];

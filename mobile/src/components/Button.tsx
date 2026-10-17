@@ -10,7 +10,7 @@ type Kind = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 /**
  * web .btn / .btn-primary / .btn-secondary / .btn-danger / .btn-sm:
- * 8px radius, Inter 600 13px, icon before the label. Touch height is kept at 44px
+ * 8px radius, Carlito bold 13px, icon before the label. Touch height is kept at 44px
  * (web buttons are ~40px) so they stay comfortable to tap.
  */
 export function Button({
@@ -36,7 +36,7 @@ export function Button({
   const isDisabled = disabled || loading;
 
   const bg: Record<Kind, string> = {
-    primary: colors.primary,
+    primary: colors.primaryDark,
     secondary: colors.card,
     danger: colors.red,
     ghost: 'transparent',
@@ -48,7 +48,7 @@ export function Button({
     ghost: colors.primary,
   };
   const border: Record<Kind, string> = {
-    primary: colors.primary,
+    primary: colors.primaryDark,
     secondary: colors.border,
     danger: colors.red,
     ghost: 'transparent',

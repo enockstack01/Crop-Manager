@@ -15,6 +15,7 @@
 @import './farm-profile.css';
 @import './account-gate.css';
 @import './insights.css';
+@import './ai.css';
 @import './language.css';
 
 /* --- small additions for the React port (no visual change to existing classes) --- */
@@ -28,56 +29,48 @@
 }
 .auth-split-brand {
   flex: 1;
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  background: var(--pine);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40px;
   color: #fff;
-  position: relative;
-  overflow: hidden;
+  text-align: center;
 }
-.auth-split-brand::before,
-.auth-split-brand::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
+.auth-brand-logo {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 18px;
 }
-.auth-split-brand::before {
-  width: 500px;
-  height: 500px;
-  background: rgba(255, 255, 255, 0.05);
-  top: -100px;
-  right: -100px;
-}
-.auth-split-brand::after {
-  width: 300px;
-  height: 300px;
-  background: rgba(255, 255, 255, 0.04);
-  bottom: -50px;
-  left: -50px;
-}
-.auth-split-brand-icon,
-.auth-split-brand h1,
-.auth-split-brand p {
-  position: relative;
-  z-index: 1;
-}
-.auth-split-brand-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
+.auth-brand-wordmark {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 28px;
 }
 .auth-split-brand h1 {
-  font-size: 32px;
-  font-weight: 800;
-  margin-bottom: 12px;
+  font-size: 34px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.auth-brand-tagline {
+  font-size: 17px;
+  font-weight: 700;
+  max-width: 380px;
+  margin-bottom: 14px;
 }
 .auth-split-brand p {
-  font-size: 16px;
+  font-size: 15px;
   opacity: 0.85;
-  max-width: 360px;
-  text-align: center;
+  max-width: 380px;
+}
+.auth-split-brand p.auth-brand-footer {
+  margin-top: 36px;
+  font-size: 12px;
+  opacity: 0.72;
 }
 .auth-split-form {
   flex: 1;
@@ -118,18 +111,16 @@
   color: var(--text);
   margin-bottom: 24px;
 }
-.auth-split-mobile-logo {
+.auth-split-mobile-brand img {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #43A047 0%, #1B5E20 100%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+  border-radius: 50%;
 }
-.auth-split-brand-icon svg {
-  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.18));
+.auth-split-mobile-brand small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-light);
 }
 
 @media (max-width: 768px) {
@@ -235,15 +226,12 @@
   font-size: 11px;
   color: var(--text-light);
 }
-.stat-tile.tone-green { background: #E8F5E9; }
-.stat-tile.tone-orange { background: #FFF8E1; }
-.stat-tile.tone-blue { background: #E3F2FD; }
-.dark-mode .stat-tile.tone-green { background: #1A3D1E; }
-.dark-mode .stat-tile.tone-orange { background: #3D3420; }
-.dark-mode .stat-tile.tone-blue { background: #1A3A5C; }
-.stat-tile.tone-green .stat-tile-label { color: #2E7D32; }
-.stat-tile.tone-orange .stat-tile-label { color: #F57F17; }
-.stat-tile.tone-blue .stat-tile-label { color: #1565C0; }
+.stat-tile.tone-green,
+.stat-tile.tone-orange,
+.stat-tile.tone-blue { background: var(--bg); border: 1px solid var(--border); }
+.stat-tile.tone-green .stat-tile-label,
+.stat-tile.tone-blue .stat-tile-label { color: var(--primary-ink); }
+.stat-tile.tone-orange .stat-tile-label { color: var(--text); }
 
 /* label / value rows: long values wrap under the label instead of colliding */
 .calc-result-item {

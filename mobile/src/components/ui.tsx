@@ -136,7 +136,7 @@ export function AppText({
   };
   const v = map[variant];
   const w = weight ?? v.weight;
-  // explicit style fontWeight still selects the matching Inter face
+  // explicit style fontWeight still selects the matching Carlito face
   const flat = StyleSheet.flatten(style) as any;
   const family = ff(flat?.fontWeight ?? w);
   return (
@@ -263,7 +263,7 @@ export function KpiCard({
         paddingVertical: 18, paddingHorizontal: 20, ...shadow(1),
       }}
     >
-      <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={icon} size={17} color={fg} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -279,7 +279,7 @@ export function KpiCard({
 /** Centered label / value / unit tile (web Reports & dashboard tiles). */
 export function StatTile({ label, value, sub, color, tone }: { label: string; value: string | number; sub?: string; color?: string; tone?: 'green' | 'orange' | 'blue' }) {
   const { colors, isDark } = useTheme();
-  const bg = tone ? (isDark ? KPI_TONES[tone][1] : KPI_TONES[tone][0]) : colors.bg;
+  const bg = colors.bg;
   return (
     <View style={{ backgroundColor: bg, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center' }}>
       <AppText weight="600" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={2}>
@@ -294,7 +294,7 @@ export function StatTile({ label, value, sub, color, tone }: { label: string; va
 }
 
 /* ----------------------------------------------------------------- Badge */
-/** web .badge-*: 11/600, radius 6, tinted background */
+/** web .badge-*: fully rounded pills — white on Forest, Ink on Amber, white on Alert Red (guide 6.4) */
 export function Badge({
   label,
   tone = 'neutral',
@@ -304,17 +304,17 @@ export function Badge({
 }) {
   const { colors, isDark } = useTheme();
   const tones: Record<string, [string, string]> = {
-    success: [isDark ? '#1A3D1E' : '#E8F5E9', isDark ? '#81C784' : '#2E7D32'],
-    warning: [isDark ? '#3D3420' : '#FFF8E1', isDark ? '#FFD54F' : '#F57F17'],
-    danger: [isDark ? '#3D1A1A' : '#FFEBEE', isDark ? '#EF9A9A' : '#D32F2F'],
-    info: [isDark ? '#1A3A5C' : '#E3F2FD', isDark ? '#90CAF9' : '#1565C0'],
-    primary: [colors.primaryLight, isDark ? '#81C784' : colors.primary],
-    neutral: [colors.bg, colors.textLight],
+    success: ['#1B5E20', '#FFFFFF'],
+    warning: ['#F9A825', '#1C2B1E'],
+    danger: ['#C62828', '#FFFFFF'],
+    info: [colors.primaryLight, colors.primaryDark],
+    primary: ['#1B5E20', '#FFFFFF'],
+    neutral: [colors.primaryLight, colors.textLight],
   };
   const [bg, fg] = tones[tone] ?? tones.neutral;
   return (
-    <View style={{ alignSelf: 'flex-start', backgroundColor: bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm }}>
-      <Text style={{ color: fg, fontSize: 11, fontFamily: ff('600') }}>{t(label)}</Text>
+    <View style={{ alignSelf: 'flex-start', backgroundColor: bg, paddingHorizontal: 11, paddingVertical: 4, borderRadius: radius.pill, borderWidth: tone === 'info' || tone === 'neutral' ? 1 : 0, borderColor: colors.border }}>
+      <Text style={{ color: fg, fontSize: 12, fontFamily: ff('700') }}>{t(label)}</Text>
     </View>
   );
 }

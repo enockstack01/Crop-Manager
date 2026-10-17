@@ -110,7 +110,7 @@ export default function AdminUserDetail() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-user-shield" style={{ color: 'var(--purple)', marginRight: 8 }} />{t('Access control')}</h3>
+            <h3><i className="fas fa-user-shield" style={{ color: 'var(--pine)', marginRight: 8 }} />{t('Access control')}</h3>
           </div>
           <div className="card-body">
             <div className="form-group">
@@ -171,7 +171,7 @@ export default function AdminUserDetail() {
       {u.access_request && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-header">
-            <h3><i className="fas fa-file-signature" style={{ color: 'var(--orange)', marginRight: 8 }} />{t('Account request')}</h3>
+            <h3><i className="fas fa-file-signature" style={{ color: 'var(--amber)', marginRight: 8 }} />{t('Account request')}</h3>
           </div>
           <div className="card-body">
             <ViewGrid
@@ -194,7 +194,7 @@ export default function AdminUserDetail() {
       <div className="chart-grid">
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-layer-group" style={{ color: 'var(--blue)', marginRight: 8 }} />{t('Data breakdown')}</h3>
+            <h3><i className="fas fa-layer-group" style={{ color: 'var(--forest)', marginRight: 8 }} />{t('Data breakdown')}</h3>
           </div>
           <div className="card-body">
             {totalRecords === 0 ? (
@@ -214,7 +214,7 @@ export default function AdminUserDetail() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-clock-rotate-left" style={{ color: 'var(--purple)', marginRight: 8 }} />{t('Recent activity')}</h3>
+            <h3><i className="fas fa-clock-rotate-left" style={{ color: 'var(--pine)', marginRight: 8 }} />{t('Recent activity')}</h3>
           </div>
           <div className="card-body" style={{ maxHeight: 340, overflowY: 'auto' }}>
             {(u.recent_harvests || []).map((h) => (
@@ -225,7 +225,7 @@ export default function AdminUserDetail() {
             ))}
             {(u.recent_activities || []).map((a) => (
               <div key={a.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
-                <i className="fas fa-tasks" style={{ color: 'var(--blue)', marginRight: 8 }} />
+                <i className="fas fa-tasks" style={{ color: 'var(--forest)', marginRight: 8 }} />
                 {a.activity_type} · {formatDate(a.activity_date)}
               </div>
             ))}

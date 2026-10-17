@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import { useDashboard } from '../features/dashboard/useDashboard.js';
-import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
+import { baseOptions, breakdownOptions, LEAF, AMBER, INK, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
@@ -16,7 +16,6 @@ const REPORTS = [
 ];
 
 const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
-const STATUS_COLORS = ['#1976D2', '#2E7D32', '#66BB6A', '#F9A825', '#FF8F00', '#43A047', '#9E9E9E'];
 
 const monthLabel = (key) => {
   const [y, m] = key.split('-');
@@ -180,8 +179,8 @@ function buildProduction({ cycles, harvests }, dark) {
         data={{
           labels: rows.map((r) => r.crop),
           datasets: [
-            { label: t('Expected (kg)'), data: rows.map((r) => Math.round(r.expected)), backgroundColor: 'rgba(25,118,210,0.55)', borderRadius: 6 },
-            { label: t('Harvested (kg)'), data: rows.map((r) => Math.round(r.harvested)), backgroundColor: 'rgba(46,125,50,0.75)', borderRadius: 6 },
+            { label: t('Expected (kg)'), data: rows.map((r) => Math.round(r.expected)), backgroundColor: AMBER, borderRadius: 6 },
+            { label: t('Harvested (kg)'), data: rows.map((r) => Math.round(r.harvested)), backgroundColor: LEAF, borderRadius: 6 },
           ],
         }}
         options={baseOptions()}
@@ -193,10 +192,10 @@ function buildProduction({ cycles, harvests }, dark) {
     empty: rows.length === 0,
     tiles: [
       { label: 'Crop Cycles', value: formatNumber(tot.cycles) },
-      { label: 'Planted Area', value: round1(tot.area).toLocaleString(), sub: 'ha', color: 'var(--blue)' },
-      { label: 'Expected', value: formatNumber(Math.round(tot.expected)), sub: 'kg', color: 'var(--purple)' },
+      { label: 'Planted Area', value: round1(tot.area).toLocaleString(), sub: 'ha', color: 'var(--forest)' },
+      { label: 'Expected', value: formatNumber(Math.round(tot.expected)), sub: 'kg', color: 'var(--pine)' },
       { label: 'Harvested', value: formatNumber(Math.round(tot.harvested)), sub: 'kg', color: 'var(--primary)' },
-      { label: 'Achievement', value: tot.expected ? `${Math.round((tot.harvested / tot.expected) * 100)}%` : '—', color: 'var(--orange)' },
+      { label: 'Achievement', value: tot.expected ? `${Math.round((tot.harvested / tot.expected) * 100)}%` : '—', color: 'var(--amber)' },
     ],
     chart,
     columns,
@@ -254,7 +253,7 @@ function buildYield({ harvests }, dark) {
         {rows.length ? (
           <Bar
             key={`yc-${dark}`}
-            data={{ labels: rows.map((r) => r.crop), datasets: [{ label: t('Yield (kg/ha)'), data: rows.map((r) => Math.round(r.yield)), backgroundColor: PALETTE, borderRadius: 6 }] }}
+            data={{ labels: rows.map((r) => r.crop), datasets: [{ label: t('Yield (kg/ha)'), data: rows.map((r) => Math.round(r.yield)), backgroundColor: LEAF, borderRadius: 6 }] }}
             options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, legend: { display: false } } }}
           />
         ) : null}
@@ -265,7 +264,7 @@ function buildYield({ harvests }, dark) {
             key={`yt-${dark}`}
             data={{
               labels: mKeys.map(monthLabel),
-              datasets: [{ label: t('Harvest (kg)'), data: mKeys.map((k) => Math.round(monthMap[k])), borderColor: '#2E7D32', backgroundColor: 'rgba(46,125,50,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 3 }],
+              datasets: [{ label: t('Harvest (kg)'), data: mKeys.map((k) => Math.round(monthMap[k])), borderColor: LEAF, backgroundColor: LEAF, fill: false, tension: 0.4, pointRadius: 4, borderWidth: 3 }],
             }}
             options={baseOptions()}
           />
@@ -278,8 +277,8 @@ function buildYield({ harvests }, dark) {
     empty: rows.length === 0,
     tiles: [
       { label: 'Total Harvested', value: formatNumber(Math.round(totQty)), sub: 'kg', color: 'var(--primary)' },
-      { label: 'Harvested Area', value: round1(totArea).toLocaleString(), sub: 'ha', color: 'var(--blue)' },
-      { label: 'Overall Yield', value: totArea ? formatNumber(Math.round(totQty / totArea)) : '—', sub: 'kg/ha', color: 'var(--orange)' },
+      { label: 'Harvested Area', value: round1(totArea).toLocaleString(), sub: 'ha', color: 'var(--forest)' },
+      { label: 'Overall Yield', value: totArea ? formatNumber(Math.round(totQty / totArea)) : '—', sub: 'kg/ha', color: 'var(--amber)' },
       { label: 'Harvest Records', value: formatNumber(harvests.length) },
     ],
     chart,
@@ -315,7 +314,7 @@ function buildFinancial({ expenses, sales, currency }, dark) {
     { key: 'month', label: 'Month', render: (r) => monthLabel(r.month) },
     { key: 'revenue', label: 'Revenue', align: 'right', render: (r) => money(r.revenue) },
     { key: 'expenses', label: 'Expenses', align: 'right', render: (r) => money(r.expenses) },
-    { key: 'net', label: 'Net', align: 'right', render: (r) => <span style={{ color: r.net >= 0 ? '#2E7D32' : '#D32F2F' }}>{money(r.net)}</span> },
+    { key: 'net', label: 'Net', align: 'right', render: (r) => <span style={{ color: r.net >= 0 ? '#2E7D32' : '#C62828' }}>{money(r.net)}</span> },
     { key: 'margin', label: 'Margin', align: 'right', render: (r) => (r.revenue ? `${Math.round(r.margin)}%` : '—') },
   ];
   const tableRows = [
@@ -337,9 +336,9 @@ function buildFinancial({ expenses, sales, currency }, dark) {
             data={{
               labels: months.map((r) => monthLabel(r.month)),
               datasets: [
-                { label: t('Revenue'), data: months.map((r) => Math.round(r.revenue)), backgroundColor: 'rgba(46,125,50,0.7)', borderRadius: 4, order: 2 },
-                { label: t('Expenses'), data: months.map((r) => Math.round(r.expenses)), backgroundColor: 'rgba(211,47,47,0.7)', borderRadius: 4, order: 3 },
-                { label: t('Net'), data: months.map((r) => Math.round(r.net)), type: 'line', borderColor: '#1976D2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
+                { label: t('Revenue'), data: months.map((r) => Math.round(r.revenue)), backgroundColor: LEAF, borderRadius: 4, order: 2 },
+                { label: t('Expenses'), data: months.map((r) => Math.round(r.expenses)), backgroundColor: AMBER, borderRadius: 4, order: 3 },
+                { label: t('Net'), data: months.map((r) => Math.round(r.net)), type: 'line', borderColor: INK, backgroundColor: INK, fill: false, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
               ],
             }}
             options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, valueLabels: { lines: false } } }}
@@ -348,10 +347,10 @@ function buildFinancial({ expenses, sales, currency }, dark) {
       </div>
       <div style={{ height: 300 }}>
         {cats.length ? (
-          <Doughnut
+          <Bar
             key={`finc-${dark}`}
-            data={{ labels: cats.map((c) => t(c.category)), datasets: [{ data: cats.map((c) => Math.round(c.amount)), backgroundColor: PALETTE, borderWidth: 2, borderColor: chartBg() }] }}
-            options={doughnutOptions()}
+            data={{ labels: cats.map((c) => t(c.category)), datasets: [{ data: cats.map((c) => Math.round(c.amount)), backgroundColor: LEAF, borderRadius: 4 }] }}
+            options={breakdownOptions()}
           />
         ) : null}
       </div>
@@ -362,16 +361,16 @@ function buildFinancial({ expenses, sales, currency }, dark) {
     empty: months.length === 0,
     tiles: [
       { label: 'Total Revenue', value: money(totRev), color: '#2E7D32' },
-      { label: 'Total Expenses', value: money(totExp), color: '#D32F2F' },
-      { label: 'Net Profit', value: money(net), color: net >= 0 ? '#2E7D32' : '#D32F2F' },
-      { label: 'Profit Margin', value: totRev ? `${Math.round((net / totRev) * 100)}%` : '—', color: 'var(--blue)' },
+      { label: 'Total Expenses', value: money(totExp), color: '#C62828' },
+      { label: 'Net Profit', value: money(net), color: net >= 0 ? '#2E7D32' : '#C62828' },
+      { label: 'Profit Margin', value: totRev ? `${Math.round((net / totRev) * 100)}%` : '—', color: 'var(--forest)' },
     ],
     chart,
     columns,
     tableRows,
     extra:
       cats.length > 0 ? (
-        <ReportCard title={`${t('Expense Breakdown')} · ${currency}`} icon="fa-receipt" iconColor="var(--red)">
+        <ReportCard title={`${t('Expense Breakdown')} · ${currency}`} icon="fa-receipt" iconColor="var(--alert)">
           <ReportTable
             columns={[
               { key: 'category', label: 'Category' },
@@ -411,10 +410,10 @@ function buildCycles({ cycles }, dark) {
 
   const chart = cycles.length ? (
     <div style={{ height: 280 }}>
-      <Doughnut
+      <Bar
         key={`cyc-${dark}`}
-        data={{ labels: CYCLE_STATUSES.map((s) => t(s)), datasets: [{ data: statusCounts, backgroundColor: STATUS_COLORS, borderWidth: 2, borderColor: chartBg() }] }}
-        options={doughnutOptions()}
+        data={{ labels: CYCLE_STATUSES.map((s) => t(s)), datasets: [{ data: statusCounts, backgroundColor: LEAF, borderRadius: 4 }] }}
+        options={breakdownOptions()}
       />
     </div>
   ) : null;
@@ -424,8 +423,8 @@ function buildCycles({ cycles }, dark) {
     tiles: [
       { label: 'Total Cycles', value: formatNumber(cycles.length) },
       { label: 'Active', value: formatNumber(active), color: 'var(--primary)' },
-      { label: 'Completed', value: formatNumber(completed), color: 'var(--blue)' },
-      { label: 'Planted Area', value: round1(area).toLocaleString(), sub: 'ha', color: 'var(--orange)' },
+      { label: 'Completed', value: formatNumber(completed), color: 'var(--forest)' },
+      { label: 'Planted Area', value: round1(area).toLocaleString(), sub: 'ha', color: 'var(--amber)' },
     ],
     chart,
     columns,

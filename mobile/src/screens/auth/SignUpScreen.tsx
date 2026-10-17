@@ -66,7 +66,7 @@ export function SignUpScreen({ navigation }: any) {
         haptics.success();
         await setActive({ session: attempt.createdSessionId });
       } else {
-        setError('Verification incomplete — check the code and try again.');
+        setError('Verification incomplete: check the code and try again.');
       }
     } catch (e: any) {
       haptics.error();

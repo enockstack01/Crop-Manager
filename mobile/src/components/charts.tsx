@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
-import Svg, { Circle, G, Line, Path, Polygon, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../theme/ThemeProvider';
 import { CHART_PALETTE } from '../theme/theme';
 import { AppText } from './ui';
@@ -8,12 +8,11 @@ import { t } from '../i18n';
 
 /*
  * Lightweight SVG charts styled after the web app's Chart.js setup
- * (client/src/features/dashboard/charts.jsx): same palette, 58% doughnut cutout with
- * the legend below on narrow screens, rounded bars, compact axis numbers (1.2M), and
+ * (client/src/features/dashboard/charts.jsx): same brand palette, rounded bars, compact axis numbers (1.2M), and
  * charts that size themselves to their card instead of scrolling sideways.
  * Every chart prints the numbers it draws (as on the web and in LivestockPro): values on
- * top of bars, above line points and on doughnut slices, and "label: value (pct%)" in
- * doughnut legends. Values are shortened (12.4K) so they fit.
+ * top of bars, above line points and beside breakdown bars (with their share). Values are
+ * shortened (12.4K) so they fit.
  */
 
 const compact = (v: number) => {
@@ -31,7 +30,7 @@ const short = (v: number) => {
   if (a >= 1e3) return `${+(v / 1e3).toFixed(1)}K`;
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 };
-/** rough text width of an SVG label in Inter at fontSize px */
+/** rough text width of an SVG label in Carlito at fontSize px */
 const textW = (t: string, fontSize: number) => t.length * fontSize * 0.58;
 /** headroom above the highest value so its printed number fits (web: grace 15%), rounded
  * up to a tidy axis top (1, 1.2, 1.6, 2, 2.4, 3.2, 4, 6, 8 or 10 × 10ⁿ) whose quarter ticks are round numbers */
@@ -51,11 +50,6 @@ function ValueText({ halo, children, ...props }: React.ComponentProps<typeof Svg
   );
 }
 const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
-const polar = (cx: number, cy: number, r: number, angle: number) => ({
-  x: cx + r * Math.cos(angle - Math.PI / 2),
-  y: cy + r * Math.sin(angle - Math.PI / 2),
-});
-
 /** measures the available width so charts fill their card */
 function useWidth(fallback = 300) {
   const [w, setW] = useState(0);
@@ -83,84 +77,36 @@ function ChartEmpty({ label = 'No data to display' }: { label?: string }) {
   );
 }
 
-/* ------------------------------------------------------------- Donut */
-export function Donut({
+/* ------------------------------------------------------------- HBars */
+/** Horizontal breakdown bars in Leaf Green with the value and share on each row (the brand avoids pies over four slices). */
+export function HBars({
   data,
-  size = 190,
   emptyLabel,
+  unit = '',
 }: {
   data: { label: string; value: number; color?: string }[];
-  size?: number;
   emptyLabel?: string;
+  unit?: string;
 }) {
   const { colors } = useTheme();
   const total = data.reduce((s, d) => s + Math.max(0, d.value), 0);
   if (total <= 0) return <ChartEmpty label={emptyLabel} />;
-
-  const cx = size / 2;
-  const cy = size / 2;
-  const outer = size / 2 - 2;
-  const inner = outer * 0.58; // Chart.js cutout: '58%'
-  const r = (outer + inner) / 2;
-  const thickness = outer - inner;
-
-  let acc = 0;
-  const arcs = data
-    .filter((d) => d.value > 0)
-    .map((d, i) => {
-      const frac = d.value / total;
-      const start = acc * 2 * Math.PI;
-      // a full circle can't be drawn as one arc; stop just short of 360°
-      const end = Math.min((acc + frac) * 2 * Math.PI, start + 2 * Math.PI - 0.0001);
-      acc += frac;
-      const p1 = polar(cx, cy, r, start);
-      const p2 = polar(cx, cy, r, end);
-      const large = end - start > Math.PI ? 1 : 0;
-      return {
-        d: `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y}`,
-        color: d.color ?? CHART_PALETTE[i % CHART_PALETTE.length],
-        label: d.label,
-        value: d.value,
-        mid: (start + end) / 2,
-        sweep: end - start,
-      };
-    });
-
+  const max = Math.max(...data.map((d) => d.value));
   return (
-    <View style={{ alignItems: 'center', gap: 14 }}>
-      <Svg width={size} height={size}>
-        {arcs.map((a, i) => (
-          <Path key={i} d={a.d} stroke={a.color} strokeWidth={thickness} fill="none" />
-        ))}
-        {/* 2px separators like Chart.js borderColor = card background */}
-        {arcs.length > 1
-          ? arcs.map((_, i) => {
-              let s = 0;
-              for (let k = 0; k < i; k++) s += arcs[k].value / total;
-              const a = s * 2 * Math.PI;
-              const p1 = polar(cx, cy, inner, a);
-              const p2 = polar(cx, cy, outer, a);
-              return <Line key={`sep${i}`} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={colors.card} strokeWidth={2} />;
-            })
-          : null}
-        {/* the value on each slice that has room for it; the legend lists every one */}
-        {arcs.map((a, i) => {
-          const text = short(a.value);
-          if (a.sweep * r < textW(text, 10) + 6 || thickness < 14) return null;
-          const p = polar(cx, cy, r, a.mid);
-          return (
-            <SvgText key={`v${i}`} x={p.x} y={p.y + 3.5} fontSize={10} fontFamily="Inter_600SemiBold" textAnchor="middle"
-              fill="#FFFFFF">
-              {text}
-            </SvgText>
-          );
-        })}
-      </Svg>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 12, rowGap: 6 }}>
-        {arcs.map((a, i) => (
-          <LegendDot key={i} color={a.color} label={`${t(a.label)}: ${short(a.value)} (${Math.round((a.value / total) * 100)}%)`} />
-        ))}
-      </View>
+    <View style={{ gap: 10 }}>
+      {data.map((d, i) => (
+        <View key={i} style={{ gap: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+            <AppText style={{ fontSize: 12, flexShrink: 1 }} numberOfLines={1}>{t(d.label)}</AppText>
+            <AppText weight="700" style={{ fontSize: 12 }}>
+              {short(d.value)}{unit} <AppText variant="caption" style={{ fontSize: 11 }}>({Math.round((d.value / total) * 100)}%)</AppText>
+            </AppText>
+          </View>
+          <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' }}>
+            <View style={{ width: `${Math.max(2, (d.value / max) * 100)}%`, height: 8, borderRadius: 4, backgroundColor: d.color ?? CHART_PALETTE[0] }} />
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -170,14 +116,11 @@ export function Bars({
   labels,
   datasets,
   height = 240,
-  colorEach,
   emptyLabel,
 }: {
   labels: string[];
   datasets: { label: string; data: number[]; color?: string }[];
   height?: number;
-  /** one palette colour per bar (web: single-dataset bars use PALETTE) */
-  colorEach?: boolean;
   emptyLabel?: string;
 }) {
   const { colors } = useTheme();
@@ -190,7 +133,6 @@ export function Bars({
   const groupW = (width - pad.l - pad.r) / labels.length;
   const barW = Math.max(4, Math.min(26, (groupW * 0.7) / datasets.length));
   const labelEvery = Math.max(1, Math.ceil((labels.length * 46) / (width - pad.l)));
-  const single = datasets.length === 1;
 
   return (
     <View onLayout={onLayout}>
@@ -200,7 +142,7 @@ export function Bars({
           return (
             <G key={t}>
               <Line x1={pad.l} x2={width - pad.r} y1={y} y2={y} stroke={colors.border} strokeWidth={1} />
-              <SvgText x={pad.l - 6} y={y + 3} fontSize={9} fill={colors.textLight} fontFamily="Inter_400Regular" textAnchor="end">
+              <SvgText x={pad.l - 6} y={y + 3} fontSize={9} fill={colors.textLight} fontFamily="Carlito_400Regular" textAnchor="end">
                 {compact(max * t)}
               </SvgText>
             </G>
@@ -214,7 +156,7 @@ export function Bars({
                 const v = Math.max(0, ds.data[i] ?? 0);
                 const h = (v / max) * chartH;
                 const x = gx - (barW * datasets.length) / 2 + di * barW;
-                const fill = single && colorEach ? CHART_PALETTE[i % CHART_PALETTE.length] : ds.color ?? CHART_PALETTE[di % CHART_PALETTE.length];
+                const fill = ds.color ?? CHART_PALETTE[di % CHART_PALETTE.length];
                 const text = short(v);
                 const top = pad.t + chartH - h;
                 // an empty month in a long series has no bar to label
@@ -226,12 +168,12 @@ export function Bars({
                     <Rect x={x + 1} y={top} width={barW - 2} height={Math.max(0, h)} rx={4} fill={fill} />
                     {showValue ? (
                       upright ? (
-                        <ValueText halo={colors.card} x={x + barW / 2 + 3} y={top - 4} fontSize={9} fontFamily="Inter_600SemiBold" fill={colors.text}
+                        <ValueText halo={colors.card} x={x + barW / 2 + 3} y={top - 4} fontSize={9} fontFamily="Carlito_700Bold" fill={colors.text}
                           transform={`rotate(-90 ${x + barW / 2 + 3} ${top - 4})`}>
                           {text}
                         </ValueText>
                       ) : (
-                        <ValueText halo={colors.card} x={x + barW / 2} y={top - 4} fontSize={9} fontFamily="Inter_600SemiBold" fill={colors.text} textAnchor="middle">
+                        <ValueText halo={colors.card} x={x + barW / 2} y={top - 4} fontSize={9} fontFamily="Carlito_700Bold" fill={colors.text} textAnchor="middle">
                           {text}
                         </ValueText>
                       )
@@ -240,7 +182,7 @@ export function Bars({
                 );
               })}
               {i % labelEvery === 0 ? (
-                <SvgText x={gx} y={height - pad.b + 16} fontSize={9.5} fill={colors.textLight} fontFamily="Inter_400Regular" textAnchor="middle">
+                <SvgText x={gx} y={height - pad.b + 16} fontSize={9.5} fill={colors.textLight} fontFamily="Carlito_400Regular" textAnchor="middle">
                   {truncate(lab, 9)}
                 </SvgText>
               ) : null}
@@ -285,7 +227,6 @@ export function LineChart({
   const x = (i: number) => (labels.length > 1 ? pad.l + step * i : (pad.l + width - pad.r) / 2);
   const y = (v: number) => pad.t + chartH - (Math.max(0, v) / max) * chartH;
   const pts = data.map((v, i) => `${x(i)},${y(v)}`).join(' ');
-  const area = `${x(0)},${pad.t + chartH} ${pts} ${x(data.length - 1)},${pad.t + chartH}`;
   const labelEvery = Math.max(1, Math.ceil((labels.length * 48) / (width - pad.l)));
 
   return (
@@ -301,27 +242,25 @@ export function LineChart({
           return (
             <G key={t}>
               <Line x1={pad.l} x2={width - pad.r} y1={yy} y2={yy} stroke={colors.border} strokeWidth={1} />
-              <SvgText x={pad.l - 6} y={yy + 3} fontSize={9} fill={colors.textLight} fontFamily="Inter_400Regular" textAnchor="end">
+              <SvgText x={pad.l - 6} y={yy + 3} fontSize={9} fill={colors.textLight} fontFamily="Carlito_400Regular" textAnchor="end">
                 {compact(max * t)}
               </SvgText>
             </G>
           );
         })}
-        {/* web: fill: true, backgroundColor rgba(46,125,50,0.1) */}
-        <Polygon points={area} fill={stroke} fillOpacity={0.1} />
         <Polyline points={pts} fill="none" stroke={stroke} strokeWidth={3} strokeLinejoin="round" />
         {data.map((v, i) => (
           <Circle key={i} cx={x(i)} cy={y(v)} r={4} fill={stroke} stroke={colors.card} strokeWidth={1.5} />
         ))}
         {/* the value above each point (with a halo so the line doesn't cross it) */}
         {data.map((v, i) => (
-          <ValueText halo={colors.card} key={`v${i}`} x={x(i)} y={y(v) - 8} fontSize={9} fontFamily="Inter_600SemiBold" fill={colors.text} textAnchor="middle">
+          <ValueText halo={colors.card} key={`v${i}`} x={x(i)} y={y(v) - 8} fontSize={9} fontFamily="Carlito_700Bold" fill={colors.text} textAnchor="middle">
             {short(v)}
           </ValueText>
         ))}
         {labels.map((lab, i) =>
           i % labelEvery === 0 ? (
-            <SvgText key={i} x={x(i)} y={height - pad.b + 16} fontSize={9.5} fill={colors.textLight} fontFamily="Inter_400Regular" textAnchor="middle">
+            <SvgText key={i} x={x(i)} y={height - pad.b + 16} fontSize={9.5} fill={colors.textLight} fontFamily="Carlito_400Regular" textAnchor="middle">
               {truncate(lab, 8)}
             </SvgText>
           ) : null,

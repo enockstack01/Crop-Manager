@@ -70,7 +70,7 @@ export default function AdminSettings() {
 
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-database" style={{ color: 'var(--blue)', marginRight: 8 }} />{t('Database')}</h3>
+            <h3><i className="fas fa-database" style={{ color: 'var(--forest)', marginRight: 8 }} />{t('Database')}</h3>
           </div>
           <div className="card-body">
             <ViewGrid
@@ -90,7 +90,7 @@ export default function AdminSettings() {
       <div className="chart-grid">
         <div className="card">
           <div className="card-header">
-            <h3><i className="fas fa-user-shield" style={{ color: 'var(--purple)', marginRight: 8 }} />{t('Administrator allowlist')}</h3>
+            <h3><i className="fas fa-user-shield" style={{ color: 'var(--pine)', marginRight: 8 }} />{t('Administrator allowlist')}</h3>
           </div>
           <div className="card-body">
             <p style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 12 }}>

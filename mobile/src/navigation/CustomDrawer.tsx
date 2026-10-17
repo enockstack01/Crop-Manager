@@ -1,30 +1,28 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/clerk-expo';
 import { ff } from '../theme/theme';
 import { Icon } from '../components/Icon';
-import { LeafLogo } from '../components/LeafLogo';
 import { useConfirm } from '../components/Confirm';
 import { haptics } from '../lib/haptics';
 import { NAV_SECTIONS } from './navConfig';
 import { t } from '../i18n';
 
 /*
- * The web app's sidebar (layout.css .sidebar): dark green gradient, logo row with a
- * translucent tile and two-tone "CropManager", uppercase section labels, 13px items
- * with a highlighted background and #66BB6A left accent on the active page.
+ * The web app's sidebar (layout.css .sidebar): flat Pine surface, the CropManager glyph with
+ * "by Agricoders", uppercase section labels, 13px items with a highlighted background on the active page.
  */
-const TEXT = 'rgba(255,255,255,0.7)';
+const GLYPH = require('../../assets/brand/cropmanager-glyph.png');
+const TEXT = 'rgba(255,255,255,0.78)';
 const TEXT_ACTIVE = '#FFFFFF';
 const ACTIVE_BG = 'rgba(255,255,255,0.12)';
 const PRESSED_BG = 'rgba(255,255,255,0.08)';
 const DIVIDER = 'rgba(255,255,255,0.1)';
 
 function NavItem({ icon, label, active, onPress, danger }: { icon: string; label: string; active?: boolean; onPress: () => void; danger?: boolean }) {
-  const color = danger ? '#FFCDD2' : active ? TEXT_ACTIVE : TEXT;
+  const color = danger ? '#FFFFFF' : active ? TEXT_ACTIVE : TEXT;
   return (
     <Pressable
       onPress={onPress}
@@ -32,8 +30,7 @@ function NavItem({ icon, label, active, onPress, danger }: { icon: string; label
       accessibilityState={{ selected: !!active }}
       style={({ pressed }) => ({
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingVertical: 11, paddingLeft: 17, paddingRight: 20,
-        borderLeftWidth: 3, borderLeftColor: active ? '#66BB6A' : 'transparent',
+        paddingVertical: 11, paddingLeft: 20, paddingRight: 20,
         backgroundColor: active ? ACTIVE_BG : pressed ? PRESSED_BG : 'transparent',
       })}
     >
@@ -62,7 +59,7 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
   };
 
   return (
-    <LinearGradient colors={['#1B5E20', '#0D3B12']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#14532D' }}>
       {/* .sidebar-header */}
       <View
         style={{
@@ -71,12 +68,11 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
           borderBottomWidth: 1, borderBottomColor: DIVIDER,
         }}
       >
-        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-          <LeafLogo size={24} scale={1.05} />
+        <Image source={GLYPH} style={{ width: 36, height: 36, borderRadius: 18 }} accessibilityLabel="CropManager" />
+        <View>
+          <Text style={{ fontSize: 18, fontFamily: ff('700'), color: '#FFFFFF' }}>CropManager</Text>
+          <Text style={{ fontSize: 11, fontFamily: ff('400'), color: 'rgba(255,255,255,0.72)' }}>by Agricoders</Text>
         </View>
-        <Text style={{ fontSize: 17, fontFamily: ff('700'), color: '#FFFFFF' }}>
-          Crop<Text style={{ color: '#81C784' }}>Manager</Text>
-        </Text>
       </View>
 
       {/* .sidebar-nav */}
@@ -87,7 +83,7 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
               <Text
                 style={{
                   fontSize: 10, fontFamily: ff('700'), textTransform: 'uppercase', letterSpacing: 1.2,
-                  color: 'rgba(255,255,255,0.35)', paddingTop: 16, paddingBottom: 6, paddingHorizontal: 20,
+                  color: 'rgba(255,255,255,0.62)', paddingTop: 16, paddingBottom: 6, paddingHorizontal: 20,
                 }}
               >
                 {t(section.label)}
@@ -104,6 +100,6 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
       <View style={{ borderTopWidth: 1, borderTopColor: DIVIDER, paddingTop: 6, paddingBottom: insets.bottom + 8 }}>
         <NavItem icon="logout" label="Sign out" onPress={onSignOut} danger />
       </View>
-    </LinearGradient>
+    </View>
   );
 }

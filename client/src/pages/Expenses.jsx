@@ -83,7 +83,7 @@ export default function Expenses() {
         { key: 'category', label: 'Category', render: (r) => <span className="badge badge-primary">{r.category || 'Other'}</span> },
         { key: 'description', label: 'Description', className: 'text-truncate', render: (r) => r.description || '—' },
         { key: 'farm', label: 'Farm', render: (r) => r.farms?.name || '—' },
-        { key: 'amount', label: 'Amount', render: (r) => <strong style={{ color: 'var(--red)' }}>{formatCurrency(r.amount, r.currency)}</strong> },
+        { key: 'amount', label: 'Amount', render: (r) => <strong style={{ color: 'var(--alert)' }}>{formatCurrency(r.amount, r.currency)}</strong> },
         { key: 'supplier', label: 'Supplier', render: (r) => r.supplier || '—' },
       ]}
       viewFields={(r) => [

@@ -17,7 +17,7 @@ import {
   useLayout,
 } from '../components/ui';
 import { Icon } from '../components/Icon';
-import { Bars, Donut, LineChart } from '../components/charts';
+import { Bars, HBars, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';
 import { FarmProfileCard } from '../features/dashboard/FarmProfileCard';
 import { InsightTiles } from '../features/dashboard/InsightTiles';
@@ -100,16 +100,16 @@ export function DashboardScreen({ navigation }: any) {
 
         <Grid columns={1} gap={20}>
           <ChartCard title="Crop Distribution" icon="chart-pie">
-            <Donut data={agg.cropDist} emptyLabel="No planted crops to display" />
+            <HBars data={agg.cropDist} emptyLabel="No planted crops to display" />
           </ChartCard>
         </Grid>
 
         <Grid columns={pairCols} gap={20}>
           <ChartCard title="Cycle Status" icon="rotate">
-            <Donut data={agg.cycleStatus} />
+            <HBars data={agg.cycleStatus} />
           </ChartCard>
           <ChartCard title="Harvest by Crop" icon="chart-column" iconColor={colors.blue}>
-            <Bars labels={agg.harvestByCrop.labels} datasets={[{ label: 'Quantity (kg)', data: agg.harvestByCrop.values }]} colorEach emptyLabel="No harvest data" />
+            <Bars labels={agg.harvestByCrop.labels} datasets={[{ label: 'Quantity (kg)', data: agg.harvestByCrop.values }]} emptyLabel="No harvest data" />
           </ChartCard>
         </Grid>
 
@@ -119,7 +119,7 @@ export function DashboardScreen({ navigation }: any) {
 
         <Grid columns={pairCols} gap={20}>
           <ChartCard title="Crop Performance" icon="seedling">
-            <Bars labels={agg.cropPerf.labels} datasets={[{ label: 'Area (ha)', data: agg.cropPerf.values }]} colorEach />
+            <Bars labels={agg.cropPerf.labels} datasets={[{ label: 'Area (ha)', data: agg.cropPerf.values }]} />
           </ChartCard>
           <ChartCard title="Harvest Analytics" icon="wheat-awn" iconColor={colors.orange}>
             <Grid columns={2} gap={spacing.lg}>
@@ -151,8 +151,8 @@ export function DashboardScreen({ navigation }: any) {
           <Bars
             labels={agg.finance.labels}
             datasets={[
-              { label: 'Revenue', data: agg.finance.sales, color: 'rgba(46,125,50,0.75)' },
-              { label: 'Expenses', data: agg.finance.expenses, color: 'rgba(211,47,47,0.75)' },
+              { label: 'Revenue', data: agg.finance.sales, color: '#2E7D32' },
+              { label: 'Expenses', data: agg.finance.expenses, color: '#F9A825' },
             ]}
             emptyLabel="No financial data yet"
           />
@@ -160,13 +160,13 @@ export function DashboardScreen({ navigation }: any) {
 
         <Grid columns={pairCols} gap={20}>
           <ChartCard title={`${t('Expense Breakdown')} · ${agg.chartCurrency}`} icon="receipt" iconColor={colors.red}>
-            <Donut data={agg.expenseBreakdown} emptyLabel="No expense data" />
+            <HBars data={agg.expenseBreakdown} emptyLabel="No expense data" />
           </ChartCard>
           <ChartCard title={`${t('Sales Analytics')} · ${agg.chartCurrency}`} icon="hand-holding-dollar" iconColor={colors.green}>
             <Grid columns={isWide ? 3 : 1} gap={12}>
               <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" />
-              <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F57F17" />
-              <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1565C0" />
+              <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F9A825" />
+              <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1B5E20" />
             </Grid>
             <View style={{ marginTop: 16 }}>
               <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={t('{{count}} records', { count: agg.salesInCurrency })} />
@@ -181,9 +181,9 @@ export function DashboardScreen({ navigation }: any) {
             ) : (
               <Grid columns={2} gap={12}>
                 <StatTile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
-                <StatTile label="Low Stock" value={agg.inv.low} color="#F57F17" />
-                <StatTile label="Out of Stock" value={agg.inv.out} color="#D32F2F" />
-                <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1565C0" />
+                <StatTile label="Low Stock" value={agg.inv.low} color="#F9A825" />
+                <StatTile label="Out of Stock" value={agg.inv.out} color="#C62828" />
+                <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1B5E20" />
               </Grid>
             )}
           </ChartCard>
@@ -193,8 +193,8 @@ export function DashboardScreen({ navigation }: any) {
             ) : (
               <Grid columns={3} gap={10}>
                 <StatTile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
-                <StatTile label="Observed" value={agg.health.observed} color="#F57F17" />
-                <StatTile label="At Risk" value={agg.health.atRisk} color="#D32F2F" />
+                <StatTile label="Observed" value={agg.health.observed} color="#F9A825" />
+                <StatTile label="At Risk" value={agg.health.atRisk} color="#C62828" />
               </Grid>
             )}
           </ChartCard>

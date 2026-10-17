@@ -75,17 +75,17 @@ export function CalculatorDetailScreen({ route }: any) {
         {result ? (
           <View
             style={{
-              backgroundColor: isDark ? '#1A3D1E' : colors.primaryLight, borderWidth: 1, borderColor: isDark ? '#2E5A32' : '#C8E6C9',
+              backgroundColor: colors.card, borderWidth: 1, borderColor: colors.primary,
               borderRadius: radius.lg, padding: 20,
             }}
           >
-            <AppText weight="600" style={{ fontSize: 13, color: isDark ? '#A5D6A7' : colors.primaryDark, marginBottom: 12 }}>{t('Result')}</AppText>
+            <AppText weight="600" style={{ fontSize: 13, color: colors.primaryDark, marginBottom: 12 }}>{t('Result')}</AppText>
             {result.map((r, i) => (
               <View
                 key={r.label}
                 style={{
                   flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, gap: spacing.md,
-                  borderBottomWidth: i === result.length - 1 ? 0 : 1, borderBottomColor: 'rgba(46,125,50,0.1)',
+                  borderBottomWidth: i === result.length - 1 ? 0 : 1, borderBottomColor: colors.border,
                 }}
               >
                 <AppText style={{ fontSize: 13, color: colors.textLight, flex: 1 }}>{t(r.label)}</AppText>
@@ -104,8 +104,8 @@ export function CalculatorDetailScreen({ route }: any) {
         {/* .calc-disclaimer */}
         <View
           style={{
-            backgroundColor: isDark ? '#3D3420' : '#FFF8E1', borderRadius: radius.md, borderWidth: 1,
-            borderColor: isDark ? '#5D4A20' : '#FFE082', padding: 12,
+            backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
+            borderColor: colors.orange, padding: 12,
           }}
         >
           <AppText style={{ fontSize: 11, lineHeight: 17, color: colors.textLight }}>

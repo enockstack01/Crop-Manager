@@ -71,7 +71,7 @@ T = {
     'All Severities': ('Toutes les gravités', "Uburemere bwose", 'Viwango vyote vya ukali'),
     'All Statuses': ('Tous les statuts', 'Imiterere yose', 'Hali zote'),
     'All Types': ('Tous les types', 'Amoko yose', 'Aina zote'),
-    'All clear — no alerts': ('Tout va bien — aucune alerte', "Byose ni byiza — nta menyesha", 'Kila kitu kiko sawa — hakuna tahadhari'),
+    'All clear: no alerts': ('Tout va bien: aucune alerte', "Byose ni byiza: nta menyesha", 'Kila kitu kiko sawa: hakuna tahadhari'),
     'All currencies (charts in {{currency}})': ('Toutes les devises (graphiques en {{currency}})', 'Amafaranga yose (ibishushanyo muri {{currency}})', 'Sarafu zote (chati kwa {{currency}})'),
     'All farms · all time': ('Toutes les fermes · toute la période', 'Imirima yose · igihe cyose', 'Mashamba yote · muda wote'),
     'All notifications marked as read': ('Toutes les notifications marquées comme lues', 'Imenyesha ryose ryasomwe', 'Arifa zote zimewekwa kuwa zimesomwa'),

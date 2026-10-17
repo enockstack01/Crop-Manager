@@ -1,16 +1,17 @@
 import { Link } from 'react-router-dom';
 import { SignIn, SignUp } from '@clerk/clerk-react';
-import { LeafMark } from './LeafMark.jsx';
+import { BrandPanel, MobileBrand } from './Brand.jsx';
 import { t } from '../i18n/index.js';
 
 // brand the Clerk form; our own sign-in / sign-up switch link replaces Clerk's card footer
 const appearance = {
   layout: { socialButtonsVariant: 'blockButton', socialButtonsPlacement: 'top' },
-  variables: { colorPrimary: '#2E7D32', borderRadius: '10px', fontFamily: 'Inter, system-ui, sans-serif' },
+  variables: { colorPrimary: '#1B5E20', colorText: '#1C2B1E', borderRadius: '10px', fontFamily: 'Calibri, Carlito, Arial, sans-serif' },
   elements: {
     footerAction: { display: 'none' },
     socialButtonsBlockButton: { minHeight: '46px', fontWeight: 600 },
-    formButtonPrimary: { minHeight: '44px', fontWeight: 700 },
+    formButtonPrimary: { minHeight: '44px', fontWeight: 700, backgroundImage: 'none', backgroundColor: '#1B5E20', boxShadow: 'none', '&:hover': { backgroundColor: '#14532D' } },
+    card: { boxShadow: 'none', border: '1px solid #D5E3D6' },
   },
 };
 
@@ -22,25 +23,11 @@ export function AuthScreen({ mode = 'sign-in' }) {
   const isSignUp = mode === 'sign-up';
   return (
     <div className="auth-split">
-      <div className="auth-split-brand">
-        <div className="auth-split-brand-icon">
-          <LeafMark size={96} color="#fff" />
-        </div>
-        <h1>{t('CropManager')}</h1>
-        <p>
-          Streamline your crop production. Track farms, fields, crop cycles, activities, harvests,
-          inventory, and finances — all in one place.
-        </p>
-      </div>
+      <BrandPanel />
 
       <div className="auth-split-form">
         <div className="auth-split-form-wrapper">
-          <div className="auth-split-mobile-brand" aria-hidden="true">
-            <span className="auth-split-mobile-logo">
-              <LeafMark size={26} color="#fff" />
-            </span>
-            {t('CropManager')}
-          </div>
+          <MobileBrand />
           <h2>{isSignUp ? 'Create your account' : 'Welcome'}</h2>
           <p className="subtitle">
             {isSignUp ? 'Start managing your crop production today' : 'Sign in to your farm management dashboard'}

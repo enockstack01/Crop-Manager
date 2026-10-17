@@ -110,7 +110,7 @@ export function GoogleButton({ onError, label = 'Continue with Google' }: { onEr
 
   const onPress = async () => {
     if (!signInLoaded || !signUpLoaded || !signIn || !signUp) {
-      onError('Sign-in is still starting up — please try again in a moment.');
+      onError('Sign-in is still starting up. Please try again in a moment.');
       return;
     }
     setBusy(true);

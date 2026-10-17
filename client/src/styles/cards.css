@@ -68,24 +68,19 @@
     width: 44px;
     height: 44px;
     min-width: 44px;
-    border-radius: 10px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
 }
 
-.kpi-icon.green { background: #E8F5E9; color: #2E7D32; }
-.kpi-icon.blue { background: #E3F2FD; color: #1976D2; }
-.kpi-icon.orange { background: #FFF8E1; color: #F9A825; }
-.kpi-icon.red { background: #FFEBEE; color: #D32F2F; }
-.kpi-icon.purple { background: #F3E5F5; color: #7B1FA2; }
-
-.dark-mode .kpi-icon.green { background: #1A3D1E; }
-.dark-mode .kpi-icon.blue { background: #1A3A5C; }
-.dark-mode .kpi-icon.orange { background: #3D3420; }
-.dark-mode .kpi-icon.red { background: #3D1A1A; }
-.dark-mode .kpi-icon.purple { background: #2D1A3D; }
+/* icon circles: white glyph on Leaf Green, Harvest Amber or Alert Red (guide section 6.5) */
+.kpi-icon.green,
+.kpi-icon.blue,
+.kpi-icon.purple { background: var(--leaf); color: #fff; }
+.kpi-icon.orange { background: var(--amber); color: #fff; }
+.kpi-icon.red { background: var(--alert); color: #fff; }
 
 .kpi-info {
     flex: 1;
@@ -115,8 +110,8 @@
     margin-top: 4px;
 }
 
-.kpi-trend.up { color: #2E7D32; }
-.kpi-trend.down { color: #D32F2F; }
+.kpi-trend.up { color: var(--leaf); }
+.kpi-trend.down { color: var(--alert); }
 .kpi-trend.neutral { color: var(--text-light); }
 
 /* ---- Chart Cards ---- */

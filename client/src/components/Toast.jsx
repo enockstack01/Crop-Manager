@@ -11,7 +11,7 @@ const ICONS = {
   warning: 'fa-exclamation-triangle',
   info: 'fa-info-circle',
 };
-const COLORS = { success: '#2E7D32', error: '#D32F2F', warning: '#F9A825', info: '#1976D2' };
+const COLORS = { success: '#2E7D32', error: '#C62828', warning: '#F9A825', info: '#1B5E20' };
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);

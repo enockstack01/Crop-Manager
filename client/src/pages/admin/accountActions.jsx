@@ -21,12 +21,12 @@ export function StatusPill({ status }) {
 }
 
 export const ACTIONS = {
-  approve: { status: 'active', label: 'Approve', icon: 'fa-circle-check', color: 'var(--green)', btn: 'btn-primary', done: 'Account approved' },
-  reject: { status: 'rejected', label: 'Reject', icon: 'fa-circle-xmark', color: 'var(--red)', btn: 'btn-danger', reason: true, done: 'Request rejected' },
-  hold: { status: 'on_hold', label: 'Put on hold', icon: 'fa-circle-pause', color: 'var(--orange)', btn: 'btn-secondary', reason: true, done: 'Account put on hold' },
-  activate: { status: 'active', label: 'Activate', icon: 'fa-user-check', color: 'var(--green)', btn: 'btn-primary', done: 'Account activated' },
-  reactivate: { status: 'active', label: 'Re-activate', icon: 'fa-rotate-left', color: 'var(--green)', btn: 'btn-primary', done: 'Account re-activated' },
-  deactivate: { status: 'deactivated', label: 'Deactivate', icon: 'fa-user-slash', color: 'var(--red)', btn: 'btn-secondary', reason: true, done: 'Account deactivated' },
+  approve: { status: 'active', label: 'Approve', icon: 'fa-circle-check', color: 'var(--leaf)', btn: 'btn-primary', done: 'Account approved' },
+  reject: { status: 'rejected', label: 'Reject', icon: 'fa-circle-xmark', color: 'var(--alert)', btn: 'btn-danger', reason: true, done: 'Request rejected' },
+  hold: { status: 'on_hold', label: 'Put on hold', icon: 'fa-circle-pause', color: 'var(--amber)', btn: 'btn-secondary', reason: true, done: 'Account put on hold' },
+  activate: { status: 'active', label: 'Activate', icon: 'fa-user-check', color: 'var(--leaf)', btn: 'btn-primary', done: 'Account activated' },
+  reactivate: { status: 'active', label: 'Re-activate', icon: 'fa-rotate-left', color: 'var(--leaf)', btn: 'btn-primary', done: 'Account re-activated' },
+  deactivate: { status: 'deactivated', label: 'Deactivate', icon: 'fa-user-slash', color: 'var(--alert)', btn: 'btn-secondary', reason: true, done: 'Account deactivated' },
 };
 
 /** Which actions make sense for an account in each status. */

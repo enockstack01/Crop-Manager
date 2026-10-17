@@ -83,7 +83,7 @@ export function computeInsights(d: any, scope: Scope, currency?: string): Insigh
       id: 'margin',
       tone: margin >= 20 ? 'good' : margin >= 0 ? 'warn' : 'bad',
       label: t('Profit margin'),
-      sentence: t(net >= 0 ? 'Net profit is {{net}} on {{sales}} of sales — a {{margin}}% margin.' : 'Net loss is {{net}} on {{sales}} of sales — a {{margin}}% margin.',
+      sentence: t(net >= 0 ? 'Net profit is {{net}} on {{sales}} of sales, a {{margin}}% margin.' : 'Net loss is {{net}} on {{sales}} of sales, a {{margin}}% margin.',
         { net: money(Math.abs(net), cur), sales: money(revenue, cur), margin }),
       viz: { kind: 'ring', pct: Math.max(0, margin), figure: `${margin}%`, sub: t('{{amount}} net', { amount: `${net >= 0 ? '' : '−'}${money(Math.abs(net), cur)}` }) },
     });
@@ -226,7 +226,7 @@ export function computeActivity(d: any, scope: Scope) {
       icon,
       color,
       name: t(a.activity_type || 'Activity'),
-      sub: [a.description, [a.farms?.name, a.fields?.name].filter(Boolean).join(' / ')].filter(Boolean).join(' · '),
+      sub: [a.description, [a.farms?.name, a.fields?.name].filter(Boolean).join(' · ')].filter(Boolean).join(' · '),
       date: a.activity_date,
       cost: num(a.total_cost) ? `${a.currency || getCurrency()} ${formatCompact(a.total_cost)}` : null,
     };
@@ -250,7 +250,7 @@ export function computeUpcoming(d: any, scope: Scope) {
         day: date.getDate(),
         month: date.toLocaleString('en', { month: 'short' }),
         name: t('{{crop}} harvest', { crop: c.crops?.name || t('Crop') }),
-        sub: [c.farms?.name, c.fields?.name].filter(Boolean).join(' / '),
+        sub: [c.farms?.name, c.fields?.name].filter(Boolean).join(' · '),
         ready: c.status === 'Ready for Harvest',
       };
     })

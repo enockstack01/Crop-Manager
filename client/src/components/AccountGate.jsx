@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api.js';
 import { formatDateTime } from '../lib/format.js';
 import { CURRENCY_OPTIONS, REQUESTABLE_ACCOUNT_TYPES } from '../lib/currencies.js';
-import { LeafMark } from './LeafMark.jsx';
+import { BrandPanel, MobileBrand } from './Brand.jsx';
 import { LanguageMenu } from './LanguageMenu.jsx';
 import { FormRow, NumberField, SelectField, TextArea, TextField } from './form.jsx';
 import { t } from '../i18n/index.js';
@@ -28,28 +28,14 @@ export function AccountGate({ profile, onRefresh, refreshing }) {
 
   return (
     <div className="auth-split">
-      <div className="auth-split-brand">
-        <div className="auth-split-brand-icon">
-          <LeafMark size={96} color="#fff" />
-        </div>
-        <h1>{t('CropManager')}</h1>
-        <p>
-          Streamline your crop production. Track farms, fields, crop cycles, activities, harvests,
-          inventory, and finances — all in one place.
-        </p>
-      </div>
+      <BrandPanel />
 
       <div className="auth-split-form">
         <div className={`auth-split-form-wrapper${showForm ? ' account-gate-wide' : ''}`}>
           <div className="account-gate-lang">
             <LanguageMenu className="lang-btn" />
           </div>
-          <div className="auth-split-mobile-brand" aria-hidden="true">
-            <span className="auth-split-mobile-logo">
-              <LeafMark size={26} color="#fff" />
-            </span>
-            {t('CropManager')}
-          </div>
+          <MobileBrand />
           {showForm ? (
             <RequestForm profile={profile} onCancel={status === 'rejected' ? () => setResubmit(false) : null} />
           ) : (
@@ -165,7 +151,7 @@ const NOTICES = {
     icon: 'fa-paper-plane',
     tone: 'success',
     title: 'Your request has been sent',
-    body: 'Thank you! Your account request has been received and is being reviewed. Look forward to hearing from us soon — your dashboard opens as soon as an administrator approves it.',
+    body: 'Thank you! Your account request has been received and is being reviewed. Look forward to hearing from us soon: your dashboard opens as soon as an administrator approves it.',
   },
   on_hold: {
     icon: 'fa-circle-pause',

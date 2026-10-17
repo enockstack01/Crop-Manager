@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ff, KPI_TONES, radius, shadow } from '../../theme/theme';
 import { AppText, useLayout } from '../../components/ui';
@@ -57,8 +56,8 @@ type Segment = { key: string; label: string; value: number; color: string };
 
 const STATUS_COLOR: Record<string, string> = {
   Active: '#2E7D32',
-  Preparing: '#1976D2',
-  Maintenance: '#7B1FA2',
+  Preparing: '#1B5E20',
+  Maintenance: '#5B6B5D',
   Fallow: '#F9A825',
 };
 
@@ -147,7 +146,7 @@ export function FarmProfileCard({
       { key: 'Preparing', label: 'Preparing', value: byStatus.Preparing, color: STATUS_COLOR.Preparing },
       { key: 'Maintenance', label: 'Maintenance', value: byStatus.Maintenance, color: STATUS_COLOR.Maintenance },
       { key: 'Fallow', label: 'Fallow', value: byStatus.Fallow, color: STATUS_COLOR.Fallow },
-      { key: 'Unallocated', label: 'Unallocated', value: unallocated, color: isDark ? '#455A64' : '#CFD8DC' },
+      { key: 'Unallocated', label: 'Unallocated', value: unallocated, color: isDark ? '#3A3A3A' : '#D5E3D6' },
     ];
     const pct = ringTotal > 0 ? Math.round((byStatus.Active / ringTotal) * 100) : 0;
     const soils = [...new Set(scopeFields.map((f) => f.soil_type).filter(Boolean))];
@@ -165,7 +164,7 @@ export function FarmProfileCard({
   return (
     <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadow(2) }}>
       {/* profile banner */}
-      <LinearGradient colors={['#1B5E20', '#2E7D32']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 16 }}>
+      <View style={{ backgroundColor: '#1B5E20', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 16 }}>
         <View style={{ position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.06)', top: -70, right: -50 }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Icon name="map-location-dot" size={13} color="rgba(255,255,255,0.85)" />
@@ -189,7 +188,7 @@ export function FarmProfileCard({
             </Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* farm switcher */}
       {p.scopeFarms.length > 0 || farms.length > 1 ? (

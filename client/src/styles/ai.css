@@ -1,0 +1,96 @@
+/* ============================================================
+   AI ASSISTANT: diagnosis reports, chat, insights, plans
+   Flat Agricoders styling: Forest headings, Leaf accents, Fern borders, no tints.
+   ============================================================ */
+
+.ai-panel { padding: 20px; }
+.ai-lead { color: var(--text-light); margin-bottom: 14px; max-width: 70ch; }
+.ai-headline { font-weight: 700; color: var(--heading); font-size: 16px; margin: 16px 0 12px; }
+.ai-result { margin-top: 16px; }
+.ai-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.ai-missing { color: var(--text-light); font-size: 12px; margin-top: 12px; }
+.ai-when { color: var(--text-light); font-size: 12px; margin-left: 6px; }
+
+.ai-disclaimer {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.5;
+}
+.ai-disclaimer i { color: var(--primary-ink); }
+
+.ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 12px;
+}
+.ai-status i { color: var(--primary-ink); }
+.ai-status-off { border-color: var(--amber); color: var(--text); }
+.ai-status-off i { color: var(--amber); }
+
+.ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 4px;
+  color: var(--text-light);
+  font-size: 13px;
+}
+.ai-thinking .spinner { width: 18px; height: 18px; border-width: 2px; }
+
+.ai-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* diagnosis report */
+.ai-report { margin-top: 16px; display: grid; gap: 14px; }
+.ai-report-head { display: flex; gap: 14px; align-items: flex-start; }
+.ai-report-head h3 { color: var(--heading); font-size: 18px; margin-bottom: 8px; }
+.ai-report-photo { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); flex-shrink: 0; }
+.ai-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.ai-section { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.ai-section h4 { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--heading); margin-bottom: 6px; }
+.ai-section h4 i { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--leaf); color: #fff; font-size: 12px; }
+.ai-section p { font-size: 13px; line-height: 1.6; white-space: pre-line; }
+.ai-followup { font-size: 13px; color: var(--text-light); }
+.ai-followup i { color: var(--primary-ink); }
+
+/* chat */
+.ai-chat-log { min-height: 220px; max-height: 52vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 12px; }
+.ai-chat-empty { color: var(--text-light); font-size: 13px; padding: 12px 0; }
+.ai-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ai-bubble { max-width: min(640px, 88%); padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+.ai-bubble-user { align-self: flex-end; background: var(--forest); color: #fff; border-bottom-right-radius: 4px; }
+.ai-bubble-assistant { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.ai-chat-form { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ai-chat-form .form-control { flex: 1; min-width: 200px; }
+
+/* insights and plans */
+.ai-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+.ai-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--card-bg); }
+.ai-card h4 { color: var(--heading); font-size: 14px; }
+.ai-card p { font-size: 13px; line-height: 1.55; flex: 1; }
+.ai-card .btn { align-self: flex-start; }
+.ai-card-top { display: flex; justify-content: space-between; align-items: center; }
+.ai-area { font-size: 11px; color: var(--text-light); }
+.ai-steps { padding-left: 20px; display: grid; gap: 10px; font-size: 13px; line-height: 1.55; margin-bottom: 14px; }
+.ai-summary h3 { color: var(--heading); margin-bottom: 8px; }
+.ai-summary h4 { color: var(--heading); margin: 14px 0 4px; font-size: 14px; }
+.ai-summary p, .ai-summary li { font-size: 13px; line-height: 1.6; white-space: pre-line; }
+.ai-summary ul { padding-left: 20px; margin: 8px 0; }
+
+@media (max-width: 600px) {
+  .ai-report-head { flex-direction: column; }
+  .ai-panel { padding: 14px; }
+}

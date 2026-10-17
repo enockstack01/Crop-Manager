@@ -92,7 +92,7 @@ export function MoneyField({ label, required, hint, full, bind, name, currencyNa
   return (
     <Wrap label={label} required={required} hint={hint} full={full}>
       <div className="money-input">
-        <select className="form-control form-select money-currency" aria-label={`${t(label)} — ${t('Currency')}`} {...bind(currencyName)}>
+        <select className="form-control form-select money-currency" aria-label={`${t(label)}: ${t('Currency')}`} {...bind(currencyName)}>
           {CURRENCIES.map((c) => (
             <option key={c.code} value={c.code} title={c.name}>{c.code}</option>
           ))}

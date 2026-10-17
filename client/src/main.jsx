@@ -15,7 +15,7 @@ import { ConfirmProvider } from './components/Confirm.jsx';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 if (!PUBLISHABLE_KEY) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY — set it in client/.env');
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY: set it in client/.env');
 }
 
 const queryClient = new QueryClient({

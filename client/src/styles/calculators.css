@@ -67,7 +67,7 @@
 
 .calc-result {
     background: var(--primary-light);
-    border: 1px solid #C8E6C9;
+    border: 1px solid #D5E3D6;
     border-radius: var(--radius);
     padding: 20px;
     margin-top: 20px;
@@ -106,16 +106,12 @@
     color: var(--text-light);
     margin-top: 16px;
     padding: 12px;
-    background: #FFF8E1;
+    background: var(--card-bg);
     border-radius: 8px;
     line-height: 1.5;
-    border: 1px solid #FFE082;
+    border: 1px solid var(--amber);
 }
 
-.dark-mode .calc-disclaimer {
-    background: #3D3420;
-    border-color: #5D4A20;
-}
 
 .dark-mode .calc-result {
     background: #1A3D1E;

@@ -126,8 +126,8 @@ export default function Inventory() {
         filters={[{ key: 'category', placeholder: 'All Categories', options: INVENTORY_CATEGORIES }]}
         extraActions={(row) => (
           <>
-            <IconButton icon="fa-arrow-up" title="Stock In" color="var(--green)" onClick={() => setStockFor({ item: row, type: 'in' })} />
-            <IconButton icon="fa-arrow-down" title="Stock Out" color="var(--red)" onClick={() => setStockFor({ item: row, type: 'out' })} />
+            <IconButton icon="fa-arrow-up" title="Stock In" color="var(--leaf)" onClick={() => setStockFor({ item: row, type: 'in' })} />
+            <IconButton icon="fa-arrow-down" title="Stock Out" color="var(--alert)" onClick={() => setStockFor({ item: row, type: 'out' })} />
           </>
         )}
         columns={[

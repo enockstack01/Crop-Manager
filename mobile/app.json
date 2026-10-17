@@ -21,7 +21,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundImage": "./assets/adaptive-icon-bg.png",
         "monochromeImage": "./assets/adaptive-icon-mono.png",
-        "backgroundColor": "#2E7D32"
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "CAMERA"
@@ -35,10 +35,10 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#2E7D32",
+          "backgroundColor": "#14532D",
           "dark": {
             "image": "./assets/splash-icon-dark.png",
-            "backgroundColor": "#0F1A10"
+            "backgroundColor": "#0F1F14"
           }
         }
       ],

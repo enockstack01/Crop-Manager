@@ -21,7 +21,7 @@ export async function connectDB() {
   } catch (err) {
     const srvFailure = err?.syscall === 'querySrv' || /querySrv|ENOTFOUND|ECONNREFUSED/.test(err?.message || '');
     if (srvFailure && env.mongoUri.startsWith('mongodb+srv://')) {
-      console.warn('[db] SRV lookup failed via system DNS — retrying with public resolvers (1.1.1.1, 8.8.8.8)');
+      console.warn('[db] SRV lookup failed via system DNS, retrying with public resolvers (1.1.1.1, 8.8.8.8)');
       dns.setServers(['1.1.1.1', '8.8.8.8']);
       await mongoose.connect(env.mongoUri, CONNECT_OPTS);
     } else {

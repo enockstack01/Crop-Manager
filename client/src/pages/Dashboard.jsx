@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Doughnut, Bar, Line } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import { useDashboard } from '../features/dashboard/useDashboard.js';
-import { PALETTE, baseOptions, doughnutOptions, chartBg, useIsDark } from '../features/dashboard/charts.jsx';
+import { baseOptions, breakdownOptions, LEAF, AMBER, INK, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, getGreeting, displayName, formatTotals, sumByCurrency, currenciesUsed, getCurrency } from '../lib/format.js';
@@ -136,13 +136,13 @@ export default function Dashboard() {
       <div className="chart-grid">
         <Card title="Crop Distribution" icon="fa-chart-pie" className="full-width" bodyStyle={{ height: 260 }}>
           {agg.cropDist.labels.length ? (
-            <Doughnut
+            <Bar
               key={`cd-${dark}`}
               data={{
                 labels: agg.cropDist.labels,
-                datasets: [{ data: agg.cropDist.values, backgroundColor: PALETTE, borderWidth: 2, borderColor: chartBg() }],
+                datasets: [{ data: agg.cropDist.values, backgroundColor: LEAF, borderRadius: 4 }],
               }}
-              options={{ ...doughnutOptions(), plugins: { ...doughnutOptions().plugins, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toFixed(1)} ha` } } } }}
+              options={breakdownOptions((v) => `${v.toFixed(1)} ha`)}
             />
           ) : (
             <NoData label="No planted crops to display" />
@@ -153,27 +153,22 @@ export default function Dashboard() {
       {/* Cycle status + harvest by crop */}
       <div className="chart-grid">
         <Card title="Cycle Status" icon="fa-sync-alt" bodyStyle={{ height: 260 }}>
-          <Doughnut
+          <Bar
             key={`cs-${dark}`}
             data={{
               labels: CYCLE_STATUSES.map((s) => t(s)),
-              datasets: [{
-                data: CYCLE_STATUSES.map((s) => agg.cycles.filter((c) => c.status === s).length),
-                backgroundColor: ['#1976D2', '#2E7D32', '#66BB6A', '#F9A825', '#FF8F00', '#43A047', '#9E9E9E'],
-                borderWidth: 2,
-                borderColor: chartBg(),
-              }],
+              datasets: [{ data: CYCLE_STATUSES.map((s) => agg.cycles.filter((c) => c.status === s).length), backgroundColor: LEAF, borderRadius: 4 }],
             }}
-            options={doughnutOptions()}
+            options={breakdownOptions()}
           />
         </Card>
-        <Card title="Harvest by Crop" icon="fa-chart-bar" iconColor="var(--blue)" bodyStyle={{ height: 260 }}>
+        <Card title="Harvest by Crop" icon="fa-chart-bar" iconColor="var(--forest)" bodyStyle={{ height: 260 }}>
           {agg.harvestByCrop.labels.length ? (
             <Bar
               key={`hbc-${dark}`}
               data={{
                 labels: agg.harvestByCrop.labels,
-                datasets: [{ label: t('Quantity (kg)'), data: agg.harvestByCrop.values, backgroundColor: PALETTE, borderRadius: 6 }],
+                datasets: [{ label: t('Quantity (kg)'), data: agg.harvestByCrop.values, backgroundColor: LEAF, borderRadius: 6 }],
               }}
               options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, legend: { display: false } } }}
             />
@@ -197,9 +192,9 @@ export default function Dashboard() {
                 datasets: [{
                   label: t('Harvest (kg)'),
                   data: agg.trend.values,
-                  borderColor: '#2E7D32',
-                  backgroundColor: 'rgba(46,125,50,0.1)',
-                  fill: true,
+                  borderColor: LEAF,
+                  backgroundColor: LEAF,
+                  fill: false,
                   tension: 0.4,
                   pointRadius: 4,
                   borderWidth: 3,
@@ -221,7 +216,7 @@ export default function Dashboard() {
               key={`cp-${dark}`}
               data={{
                 labels: agg.cropPerf.labels,
-                datasets: [{ label: t('Area (ha)'), data: agg.cropPerf.area, backgroundColor: PALETTE, borderRadius: 6 }],
+                datasets: [{ label: t('Area (ha)'), data: agg.cropPerf.area, backgroundColor: LEAF, borderRadius: 6 }],
               }}
               options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, legend: { display: false } } }}
             />
@@ -229,12 +224,12 @@ export default function Dashboard() {
             <NoData />
           )}
         </Card>
-        <Card title="Harvest Analytics" icon="fa-wheat-awn" iconColor="var(--orange)">
+        <Card title="Harvest Analytics" icon="fa-wheat-awn" iconColor="var(--amber)">
           <div className="stat-grid">
             <StatTile label="Total Harvested" value={formatNumber(Math.round(agg.harvest.totalQty))} sub="kg" />
             <StatTile label="Avg Yield" value={agg.harvest.avgYield.toFixed(0)} sub="kg/ha" color="var(--primary)" />
-            <StatTile label="Harvest Records" value={agg.harvest.count} sub="records" color="var(--blue)" />
-            <StatTile label="Harvest Costs" value={agg.harvest.costText} sub="total" color="var(--red)" />
+            <StatTile label="Harvest Records" value={agg.harvest.count} sub="records" color="var(--forest)" />
+            <StatTile label="Harvest Costs" value={agg.harvest.costText} sub="total" color="var(--alert)" />
           </div>
         </Card>
       </div>
@@ -244,13 +239,13 @@ export default function Dashboard() {
         <div className="chart-card-header">
           <h3><i className="fas fa-chart-area" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Revenue vs Expenses')} · {agg.chartCurrency}</h3>
           <div className="wrap-row" style={{ fontSize: 12 }}>
-            <span style={{ color: 'var(--green)', fontWeight: 600 }}>
+            <span style={{ color: 'var(--leaf)', fontWeight: 600 }}>
               <i className="fas fa-arrow-up" /> {formatCurrency(agg.finance.totalSales, agg.chartCurrency)} {t('Revenue')}
             </span>
-            <span style={{ color: 'var(--red)', fontWeight: 600 }}>
+            <span style={{ color: 'var(--alert)', fontWeight: 600 }}>
               <i className="fas fa-arrow-down" /> {formatCurrency(agg.finance.totalExpenses, agg.chartCurrency)} {t('Expenses')}
             </span>
-            <span style={{ color: 'var(--blue)', fontWeight: 600 }}>
+            <span style={{ color: 'var(--forest)', fontWeight: 600 }}>
               {t('Net')}: {formatCurrency(agg.finance.totalSales - agg.finance.totalExpenses, agg.chartCurrency)}
             </span>
           </div>
@@ -262,9 +257,9 @@ export default function Dashboard() {
               data={{
                 labels: agg.finance.labels,
                 datasets: [
-                  { label: t('Revenue'), data: agg.finance.sales, backgroundColor: 'rgba(46,125,50,0.7)', borderRadius: 4, order: 2 },
-                  { label: t('Expenses'), data: agg.finance.expenses, backgroundColor: 'rgba(211,47,47,0.7)', borderRadius: 4, order: 3 },
-                  { label: t('Balance'), data: agg.finance.balance, type: 'line', borderColor: '#1976D2', backgroundColor: 'rgba(25,118,210,0.1)', fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
+                  { label: t('Revenue'), data: agg.finance.sales, backgroundColor: LEAF, borderRadius: 4, order: 2 },
+                  { label: t('Expenses'), data: agg.finance.expenses, backgroundColor: AMBER, borderRadius: 4, order: 3 },
+                  { label: t('Balance'), data: agg.finance.balance, type: 'line', borderColor: INK, backgroundColor: INK, fill: false, tension: 0.4, pointRadius: 4, borderWidth: 2, order: 1 },
                 ],
               }}
               options={{ ...baseOptions(), plugins: { ...baseOptions().plugins, valueLabels: { lines: false } } }}
@@ -277,25 +272,25 @@ export default function Dashboard() {
 
       {/* Expense breakdown + sales analytics */}
       <div className="chart-grid">
-        <Card title={`${t('Expense Breakdown')} · ${agg.chartCurrency}`} icon="fa-receipt" iconColor="var(--red)" bodyStyle={{ height: 260 }}>
+        <Card title={`${t('Expense Breakdown')} · ${agg.chartCurrency}`} icon="fa-receipt" iconColor="var(--alert)" bodyStyle={{ height: 260 }}>
           {agg.expenseBreakdown.labels.length ? (
-            <Doughnut
+            <Bar
               key={`eb-${dark}`}
               data={{
                 labels: agg.expenseBreakdown.labels.map((c) => t(c)),
-                datasets: [{ data: agg.expenseBreakdown.values, backgroundColor: PALETTE, borderWidth: 2, borderColor: chartBg() }],
+                datasets: [{ data: agg.expenseBreakdown.values, backgroundColor: LEAF, borderRadius: 4 }],
               }}
-              options={doughnutOptions()}
+              options={breakdownOptions()}
             />
           ) : (
             <NoData label="No expense data" />
           )}
         </Card>
-        <Card title={`${t('Sales Analytics')} · ${agg.chartCurrency}`} icon="fa-hand-holding-usd" iconColor="var(--green)">
+        <Card title={`${t('Sales Analytics')} · ${agg.chartCurrency}`} icon="fa-hand-holding-usd" iconColor="var(--leaf)">
           <div className="stat-grid" style={{ '--stat-min': '140px' }}>
             <StatTile tone="green" label="Paid" value={formatCurrency(agg.salesByStatus.Paid, agg.chartCurrency)} color="#2E7D32" max={16} />
-            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F57F17" max={16} />
-            <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1565C0" max={16} />
+            <StatTile tone="orange" label="Pending" value={formatCurrency(agg.salesByStatus.Pending, agg.chartCurrency)} color="#F9A825" max={16} />
+            <StatTile tone="blue" label="Partial" value={formatCurrency(agg.salesByStatus['Partially Paid'], agg.chartCurrency)} color="#1B5E20" max={16} />
           </div>
           <div className="stat-grid" style={{ marginTop: 16 }}>
             <StatTile label="Total Sales" value={formatCurrency(agg.finance.totalSales, agg.chartCurrency)} sub={t('{{count}} records', { count: agg.salesInCurrency })} max={20} />
@@ -305,26 +300,26 @@ export default function Dashboard() {
 
       {/* Inventory health + crop health */}
       <div className="chart-grid">
-        <Card title="Inventory Health" icon="fa-boxes" iconColor="var(--blue)">
+        <Card title="Inventory Health" icon="fa-boxes" iconColor="var(--forest)">
           {(d.inventory || []).length === 0 ? (
             <NoData label="No inventory items yet" />
           ) : (
             <div className="stat-grid">
               <StatTile label="Healthy Stock" value={agg.inv.healthy} color="#2E7D32" />
-              <StatTile label="Low Stock" value={agg.inv.low} color="#F57F17" />
-              <StatTile label="Out of Stock" value={agg.inv.out} color="#D32F2F" />
-              <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1565C0" />
+              <StatTile label="Low Stock" value={agg.inv.low} color="#F9A825" />
+              <StatTile label="Out of Stock" value={agg.inv.out} color="#C62828" />
+              <StatTile label="Expiring Soon" value={agg.inv.expiring} color="#1B5E20" />
             </div>
           )}
         </Card>
-        <Card title="Crop Health" icon="fa-heartbeat" iconColor="var(--red)">
+        <Card title="Crop Health" icon="fa-heartbeat" iconColor="var(--alert)">
           {(d.scouting || []).length === 0 ? (
             <NoData label="No scouting data" />
           ) : (
             <div className="stat-grid" style={{ '--stat-min': '90px' }}>
               <StatTile label="Healthy" value={agg.health.healthy} color="#2E7D32" />
-              <StatTile label="Observed" value={agg.health.observed} color="#F57F17" />
-              <StatTile label="At Risk" value={agg.health.atRisk} color="#D32F2F" />
+              <StatTile label="Observed" value={agg.health.observed} color="#F9A825" />
+              <StatTile label="At Risk" value={agg.health.atRisk} color="#C62828" />
             </div>
           )}
         </Card>

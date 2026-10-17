@@ -6,6 +6,8 @@ import { Image } from 'react-native';
 import { STATUS_TONES } from '../theme/theme';
 import { FormApi, DateField, NumberField, SelectField, TextAreaField, TextField, MoneyField } from '../components/fields';
 import { PhotoField } from '../components/PhotoField';
+import { Button } from '../components/Button';
+import { DiagnoseSheet } from '../features/ai/DiagnoseSheet';
 import { CycleSelect, FarmFieldRow } from '../components/relationFields';
 import {
   ACTIVITY_TYPES, AREA_UNITS, CYCLE_STATUS, EQUIPMENT_STATUS, EXPENSE_CATEGORIES,
@@ -55,7 +57,7 @@ export type ModuleConfig = {
 const tone = (s?: string): Tone => (s ? STATUS_TONES[s] ?? 'neutral' : 'neutral');
 const numOrNull = (v: any) => (v === '' || v == null ? null : Number(v));
 const n0 = (v: any) => Number(v) || 0;
-const farmField = (r: any) => [r.farms?.name || '—', r.fields?.name].filter(Boolean).join(' / ');
+const farmField = (r: any) => [r.farms?.name || '—', r.fields?.name].filter(Boolean).join(' · ');
 
 /* ============================================================ FARM MGMT */
 const farms: ModuleConfig = {
@@ -213,7 +215,7 @@ const seasons: ModuleConfig = {
   emptyIcon: 'calendar-range', emptyTitle: 'No Seasons Yet',
   emptyDescription: 'Define your growing seasons to organize crop production by period.',
   useFilters: () => [{ key: 'status', placeholder: 'All Statuses', options: SEASON_STATUS.map((s) => ({ value: s, label: s })) }],
-  row: (r) => ({ title: r.name, subtitle: `${formatDate(r.start_date)} – ${formatDate(r.end_date)}`, badge: r.status ? { label: r.status, tone: tone(r.status) } : null }),
+  row: (r) => ({ title: r.name, subtitle: `${formatDate(r.start_date)} to ${formatDate(r.end_date)}`, badge: r.status ? { label: r.status, tone: tone(r.status) } : null }),
   detail: (r) => [
     ['Season Name', r.name], ['Status', r.status], ['Start Date', formatDate(r.start_date)],
     ['End Date', formatDate(r.end_date)], ['Description', r.description], ['Notes', r.notes],
@@ -253,7 +255,7 @@ const cropCycles: ModuleConfig = {
   },
   row: (r) => ({
     title: `${r.crops?.name || '—'}${r.crop_varieties?.name ? ` · ${r.crop_varieties.name}` : ''}`,
-    subtitle: `${farmField(r)}${r.seasons?.name ? ` — ${r.seasons.name}` : ''}`,
+    subtitle: `${farmField(r)}${r.seasons?.name ? ` · ${r.seasons.name}` : ''}`,
     badge: r.status ? { label: r.status, tone: tone(r.status) } : null,
     right: r.area_planted ? `${formatNumber(r.area_planted)} ${r.area_unit || 'ha'}` : '',
   }),
@@ -382,7 +384,7 @@ const activities: ModuleConfig = {
     ];
   },
   row: (r) => ({
-    title: r.activity_type, subtitle: `${farmField(r)}${r.description ? ` — ${r.description}` : ''}`,
+    title: r.activity_type, subtitle: `${farmField(r)}${r.description ? ` · ${r.description}` : ''}`,
     right: formatDate(r.activity_date),
     badge: r.total_cost ? { label: formatCurrency(r.total_cost, r.currency), tone: 'neutral' } : null,
   }),
@@ -627,8 +629,13 @@ const scouting: ModuleConfig = {
     ...v, farm_id: v.farm_id || null, field_id: v.field_id || null, crop_id: v.crop_id || null,
     crop_cycle_id: v.crop_cycle_id || null,
   }),
-  Form: (f) => {
+  Form: (f) => <ScoutingForm f={f} />,
+};
+
+function ScoutingForm({ f }: { f: FormApi }) {
     const { items: cr } = useAll('crops');
+    const [diagnosing, setDiagnosing] = React.useState(false);
+    const v = f.values;
     return (
       <>
         <FarmFieldRow form={f} />
@@ -645,11 +652,23 @@ const scouting: ModuleConfig = {
         <TextField label="Moisture Observation" {...f.bind('moisture_observation')} />
         <TextAreaField label="Recommendation" {...f.bind('recommendation')} />
         <PhotoField value={f.values.photo_url} onChange={(url) => f.set('photo_url', url)} />
+        <Button title="Diagnose with AI" icon="wand-magic-sparkles" kind="secondary" onPress={() => setDiagnosing(true)} />
         <TextAreaField label="Notes" {...f.bind('notes')} />
+        {diagnosing ? (
+          <DiagnoseSheet
+            visible
+            onClose={() => setDiagnosing(false)}
+            input={{
+              crop: cr.find((c: any) => c.id === v.crop_id)?.name || '', growth_stage: v.growth_stage, plant_health: v.plant_health,
+              pest_observation: v.pest_observation, disease_observation: v.disease_observation, weed_observation: v.weed_observation,
+              soil_observation: v.soil_observation, moisture_observation: v.moisture_observation, notes: v.notes, photo_url: v.photo_url,
+            }}
+            onUse={(text) => f.set('recommendation', text)}
+          />
+        ) : null}
       </>
     );
-  },
-};
+}
 
 const harvest: ModuleConfig = {
   key: 'harvest', resource: 'harvest-records', section: 'Production',
@@ -667,7 +686,7 @@ const harvest: ModuleConfig = {
     ];
   },
   row: (r) => ({
-    title: `${r.crops?.name || '—'} — ${formatNumber(r.quantity)} ${r.unit || 'kg'}`,
+    title: `${r.crops?.name || '—'} · ${formatNumber(r.quantity)} ${r.unit || 'kg'}`,
     subtitle: farmField(r), right: formatDate(r.harvest_date),
     badge: r.quality ? { label: r.quality, tone: tone(r.quality) } : null,
   }),
@@ -824,7 +843,7 @@ const maintenance: ModuleConfig = {
     return [{ key: 'equipment_id', placeholder: 'All Equipment', options: eq.map((e: any) => ({ value: e.id, label: e.name })) }];
   },
   row: (r) => ({
-    title: r.equipment?.name || 'Maintenance', subtitle: [r.type, r.description].filter(Boolean).join(' — ') || '—',
+    title: r.equipment?.name || 'Maintenance', subtitle: [r.type, r.description].filter(Boolean).join(' · ') || '—',
     right: formatDate(r.maintenance_date), badge: r.cost ? { label: formatCurrency(r.cost, r.currency), tone: 'neutral' } : null,
   }),
   detail: (r) => [
@@ -923,7 +942,7 @@ const sales: ModuleConfig = {
     ];
   },
   row: (r) => ({
-    title: `${r.crops?.name || '—'} — ${formatCurrency(r.total_amount, r.currency)}`,
+    title: `${r.crops?.name || '—'} · ${formatCurrency(r.total_amount, r.currency)}`,
     subtitle: [r.buyer, r.market].filter(Boolean).join(' · ') || `${formatNumber(r.quantity)} ${r.unit || 'kg'}`,
     right: formatDate(r.sale_date), badge: r.payment_status ? { label: r.payment_status, tone: tone(r.payment_status) } : null,
   }),

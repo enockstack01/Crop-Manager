@@ -60,7 +60,7 @@ export default function AdminOverview() {
       {/* account requests waiting for approval */}
       <div className="chart-card full-width" style={{ marginBottom: 20 }}>
         <div className="chart-card-header">
-          <h3><i className="fas fa-user-clock" style={{ color: 'var(--orange)', marginRight: 8 }} />{t('Account requests')}</h3>
+          <h3><i className="fas fa-user-clock" style={{ color: 'var(--amber)', marginRight: 8 }} />{t('Account requests')}</h3>
           {users.pending > requests.length && <Link to="/admin/users?status=pending" style={{ fontSize: 13 }}>View all {users.pending}</Link>}
         </div>
         <div className="chart-card-body" style={{ height: 'auto', minHeight: 0, maxHeight: 420, overflowY: 'auto' }}>
@@ -112,7 +112,7 @@ export default function AdminOverview() {
 
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3><i className="fas fa-user-clock" style={{ color: 'var(--blue)', marginRight: 8 }} />{t('Recent sign-ups')}</h3>
+            <h3><i className="fas fa-user-clock" style={{ color: 'var(--forest)', marginRight: 8 }} />{t('Recent sign-ups')}</h3>
           </div>
           <div className="chart-card-body" style={{ maxHeight: 380, overflowY: 'auto' }}>
             {recent.length === 0 ? (

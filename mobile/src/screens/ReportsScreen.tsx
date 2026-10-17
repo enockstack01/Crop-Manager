@@ -4,7 +4,7 @@ import { useDashboard } from '../lib/useResource';
 import { currenciesUsed, formatCurrency, formatDate, formatNumber, getCurrency } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText, Badge, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen, StatTile, useLayout } from '../components/ui';
-import { Bars, Donut, LineChart } from '../components/charts';
+import { Bars, HBars, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
@@ -242,8 +242,8 @@ function build(id: ReportId, f: any): Built {
       empty: rows.length === 0,
       tiles: [
         { label: 'Crop Cycles', value: formatNumber(tot.cycles) },
-        { label: 'Planted Area', value: round1(tot.area).toLocaleString(), sub: 'ha', color: '#1976D2' },
-        { label: 'Expected', value: formatNumber(Math.round(tot.expected)), sub: 'kg', color: '#7B1FA2' },
+        { label: 'Planted Area', value: round1(tot.area).toLocaleString(), sub: 'ha', color: '#1B5E20' },
+        { label: 'Expected', value: formatNumber(Math.round(tot.expected)), sub: 'kg', color: '#5B6B5D' },
         { label: 'Harvested', value: formatNumber(Math.round(tot.harvested)), sub: 'kg', color: '#2E7D32' },
         { label: 'Achievement', value: tot.expected ? `${Math.round((tot.harvested / tot.expected) * 100)}%` : '—', color: '#F9A825' },
       ],
@@ -251,8 +251,8 @@ function build(id: ReportId, f: any): Built {
         <Bars
           labels={rows.map((r: any) => r.crop)}
           datasets={[
-            { label: 'Expected (kg)', data: rows.map((r: any) => Math.round(r.expected)), color: 'rgba(25,118,210,0.55)' },
-            { label: 'Harvested (kg)', data: rows.map((r: any) => Math.round(r.harvested)), color: 'rgba(46,125,50,0.75)' },
+            { label: 'Expected (kg)', data: rows.map((r: any) => Math.round(r.expected)), color: '#F9A825' },
+            { label: 'Harvested (kg)', data: rows.map((r: any) => Math.round(r.harvested)), color: '#2E7D32' },
           ]}
         />
       ),
@@ -300,13 +300,13 @@ function build(id: ReportId, f: any): Built {
       empty: rows.length === 0,
       tiles: [
         { label: 'Total Harvested', value: formatNumber(Math.round(totQty)), sub: 'kg', color: '#2E7D32' },
-        { label: 'Harvested Area', value: round1(totArea).toLocaleString(), sub: 'ha', color: '#1976D2' },
+        { label: 'Harvested Area', value: round1(totArea).toLocaleString(), sub: 'ha', color: '#1B5E20' },
         { label: 'Overall Yield', value: totArea ? formatNumber(Math.round(totQty / totArea)) : '—', sub: 'kg/ha', color: '#F9A825' },
         { label: 'Harvest Records', value: formatNumber(f.harvests.length) },
       ],
       chart: (
         <View style={{ gap: 20 }}>
-          <Bars labels={rows.map((r: any) => r.crop)} datasets={[{ label: 'Yield (kg/ha)', data: rows.map((r: any) => Math.round(r.yield)) }]} colorEach />
+          <Bars labels={rows.map((r: any) => r.crop)} datasets={[{ label: 'Yield (kg/ha)', data: rows.map((r: any) => Math.round(r.yield)) }]} />
           <LineChart labels={mKeys.map(monthLabel)} data={mKeys.map((k) => Math.round(monthMap[k]))} label="Harvest (kg)" />
         </View>
       ),
@@ -345,25 +345,25 @@ function build(id: ReportId, f: any): Built {
     const catMap: Record<string, number> = {};
     f.expenses.forEach((e: any) => { catMap[e.category || 'Other'] = (catMap[e.category || 'Other'] || 0) + n(e.amount); });
     const cats = Object.entries(catMap).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
-    const netColor = (v: number) => (v >= 0 ? '#2E7D32' : '#D32F2F');
+    const netColor = (v: number) => (v >= 0 ? '#2E7D32' : '#C62828');
     return {
       empty: months.length === 0,
       tiles: [
         { label: 'Total Revenue', value: money(totRev), color: '#2E7D32' },
-        { label: 'Total Expenses', value: money(totExp), color: '#D32F2F' },
+        { label: 'Total Expenses', value: money(totExp), color: '#C62828' },
         { label: 'Net Profit', value: money(net), color: netColor(net) },
-        { label: 'Profit Margin', value: totRev ? `${Math.round((net / totRev) * 100)}%` : '—', color: '#1976D2' },
+        { label: 'Profit Margin', value: totRev ? `${Math.round((net / totRev) * 100)}%` : '—', color: '#1B5E20' },
       ],
       chart: (
         <View style={{ gap: 20 }}>
           <Bars
             labels={months.map((r: any) => monthLabel(r.month))}
             datasets={[
-              { label: 'Revenue', data: months.map((r: any) => Math.round(r.revenue)), color: 'rgba(46,125,50,0.75)' },
-              { label: 'Expenses', data: months.map((r: any) => Math.round(r.expenses)), color: 'rgba(211,47,47,0.75)' },
+              { label: 'Revenue', data: months.map((r: any) => Math.round(r.revenue)), color: '#2E7D32' },
+              { label: 'Expenses', data: months.map((r: any) => Math.round(r.expenses)), color: '#F9A825' },
             ]}
           />
-          {cats.length ? <Donut data={cats.map((c) => ({ label: c.category, value: Math.round(c.amount) }))} /> : null}
+          {cats.length ? <HBars data={cats.map((c) => ({ label: c.category, value: Math.round(c.amount) }))} /> : null}
         </View>
       ),
       columns: [
@@ -405,11 +405,11 @@ function build(id: ReportId, f: any): Built {
     tiles: [
       { label: 'Total Cycles', value: formatNumber(f.cycles.length) },
       { label: 'Active', value: formatNumber(active), color: '#2E7D32' },
-      { label: 'Completed', value: formatNumber(completed), color: '#1976D2' },
+      { label: 'Completed', value: formatNumber(completed), color: '#1B5E20' },
       { label: 'Planted Area', value: round1(area).toLocaleString(), sub: 'ha', color: '#F9A825' },
     ],
     chart: (
-      <Donut
+      <HBars
         data={CYCLE_STATUSES.map((s, i) => ({ label: s, value: f.cycles.filter((c: any) => c.status === s).length, color: STATUS_COLORS[i] }))}
       />
     ),

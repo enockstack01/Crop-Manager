@@ -14,8 +14,8 @@ const ha = (v) => `${(Math.round(v * 10) / 10).toLocaleString('en-US')} ha`;
 
 const STATUS_COLOR = {
   Active: '#2E7D32',
-  Preparing: '#1976D2',
-  Maintenance: '#7B1FA2',
+  Preparing: '#1B5E20',
+  Maintenance: '#5B6B5D',
   Fallow: '#F9A825',
 };
 
@@ -79,7 +79,7 @@ export function FarmProfile({ farms, fields, selected, onSelect, kpis = [], onKp
       { key: 'Preparing', label: 'Preparing', value: byStatus.Preparing, color: STATUS_COLOR.Preparing },
       { key: 'Maintenance', label: 'Maintenance', value: byStatus.Maintenance, color: STATUS_COLOR.Maintenance },
       { key: 'Fallow', label: 'Fallow', value: byStatus.Fallow, color: STATUS_COLOR.Fallow },
-      { key: 'Unallocated', label: 'Unallocated', value: Math.max(0, total - allocated), color: dark ? '#455A64' : '#CFD8DC' },
+      { key: 'Unallocated', label: 'Unallocated', value: Math.max(0, total - allocated), color: dark ? '#3A3A3A' : '#D5E3D6' },
     ];
     const topFields = [...scopeFields].sort((a, b) => n(b.area) - n(a.area));
     return {

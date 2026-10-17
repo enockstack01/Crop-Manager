@@ -113,7 +113,7 @@ const NOTICES: Record<string, { icon: string; tone: keyof typeof KPI_TONES; titl
     icon: 'paper-plane',
     tone: 'green',
     title: 'Your request has been sent',
-    body: 'Thank you! Your account request has been received and is being reviewed. Look forward to hearing from us soon — the app opens as soon as an administrator approves it.',
+    body: 'Thank you! Your account request has been received and is being reviewed. Look forward to hearing from us soon: the app opens as soon as an administrator approves it.',
   },
   on_hold: {
     icon: 'circle-pause',
@@ -144,12 +144,12 @@ function StatusNotice({ profile, onRefresh, refreshing, onResubmit }: { profile:
   return (
     <AuthLayout heading={n.title} intro={n.body} title="Account status" subtitle={profile.email || ''} footer={<SignOutButton />}>
       <View style={{ gap: spacing.md, alignItems: 'stretch' }}>
-        <View style={{ alignSelf: 'center', width: 72, height: 72, borderRadius: 20, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ alignSelf: 'center', width: 72, height: 72, borderRadius: 36, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name={n.icon} size={30} color={fg} />
         </View>
 
         {profile.status_reason && profile.account_status !== 'pending' ? (
-          <View style={{ padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#F9A825', backgroundColor: isDark ? '#3D3420' : '#FFF8E1' }}>
+          <View style={{ padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#F9A825', backgroundColor: colors.card }}>
             <AppText style={{ fontSize: 13, lineHeight: 19 }}>
               <AppText weight="600" style={{ fontSize: 13 }}>{t('Note from the administrator:')} </AppText>
               {profile.status_reason}

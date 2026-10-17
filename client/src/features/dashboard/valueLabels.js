@@ -45,7 +45,7 @@ export const valueLabelsPlugin = {
   afterDatasetsDraw(chart, _args, opts) {
     if (opts.display === false) return;
     const { ctx } = chart;
-    const ink = opts.color || (isDark() ? '#E0E0E0' : '#37474F');
+    const ink = opts.color || (isDark() ? '#FFFFFF' : '#1C2B1E');
     const surface = opts.surface || (isDark() ? '#1E1E1E' : '#FFFFFF');
     ctx.save();
     ctx.font = FONT(chart.width < 440 ? 9.5 : 11);

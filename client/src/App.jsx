@@ -26,6 +26,7 @@ import Calculators from './pages/Calculators.jsx';
 import CalculatorDetail from './pages/CalculatorDetail.jsx';
 import Reports from './pages/Reports.jsx';
 import Calendar from './pages/Calendar.jsx';
+import Assistant from './pages/Assistant.jsx';
 import Settings from './pages/Settings.jsx';
 import { AdminGuard } from './components/AdminGuard.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -73,6 +74,7 @@ export function App() {
         <Route path="sales" element={<Sales />} />
         <Route path="calculators" element={<Calculators />} />
         <Route path="calculators/:type" element={<CalculatorDetail />} />
+        <Route path="assistant" element={<Assistant />} />
         <Route path="reports" element={<Reports />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="settings" element={<Settings />} />

@@ -20,11 +20,11 @@ export function OfflineBanner() {
 
   const text = !online
     ? pending
-      ? t('Offline — {{count}} change(s) saved on this phone', { count: pending })
-      : t('Offline — showing saved data')
+      ? t('Offline: {{count}} change(s) saved on this phone', { count: pending })
+      : t('Offline: showing saved data')
     : syncing
       ? t('Syncing {{count}} change(s)…', { count: pending })
-      : t('{{count}} change(s) waiting to sync — tap to retry', { count: pending });
+      : t('{{count}} change(s) waiting to sync: tap to retry', { count: pending });
 
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 12, alignItems: 'center' }}>
@@ -35,7 +35,7 @@ export function OfflineBanner() {
         style={{
           flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '92%',
           paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999,
-          backgroundColor: online ? '#1565C0' : '#37474F',
+          backgroundColor: online ? '#1B5E20' : '#5B6B5D',
           shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4,
         }}
       >

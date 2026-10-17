@@ -53,7 +53,7 @@ export function ResourceFormSheet({
       const saved: any = isEdit ? await update.mutateAsync({ id: editing.id, ...payload }) : await create.mutateAsync(payload);
       onSaved(
         saved?._offline
-          ? t('{{name}} saved on this phone — it will sync when you are back online', { name: t(config.formTitle) })
+          ? t('{{name}} saved on this phone: it will sync when you are back online', { name: t(config.formTitle) })
           : t(isEdit ? '{{name}} updated successfully' : '{{name}} added successfully', { name: t(config.formTitle) }),
       );
     } catch (e: any) {
@@ -75,7 +75,7 @@ export function ResourceFormSheet({
       }
     >
       {err ? (
-        <View style={{ backgroundColor: '#FFEBEE', borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: '#D32F2F' }}>
+        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#C62828' }}>
           <AppText style={{ color: '#C62828', fontSize: 13 }}>{err}</AppText>
         </View>
       ) : null}

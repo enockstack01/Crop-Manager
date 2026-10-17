@@ -20,6 +20,6 @@ export function mediaUrl(url?: string | null): string | undefined {
 if (!CLERK_PUBLISHABLE_KEY) {
   // eslint-disable-next-line no-console
   console.warn(
-    '[CropManager] EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is not set — copy mobile/.env.example to mobile/.env',
+    '[CropManager] EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is not set: copy mobile/.env.example to mobile/.env',
   );
 }

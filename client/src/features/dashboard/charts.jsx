@@ -59,12 +59,14 @@ for (const type of ['doughnut', 'pie']) {
 }
 
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
-const tickFont = (ctx) => ({ family: 'Inter', size: ctx.chart.width < NARROW ? 9 : 11 });
+const tickFont = (ctx) => ({ family: 'Carlito, Calibri, Arial', size: ctx.chart.width < NARROW ? 9 : 11 });
 
 export const PALETTE = [
-  '#2E7D32', '#1976D2', '#F9A825', '#D32F2F', '#7B1FA2',
-  '#00897B', '#E65100', '#5D4037', '#37474F', '#C2185B',
+  '#2E7D32', '#F9A825', '#1B5E20', '#5B6B5D', '#14532D', '#1C2B1E',
 ];
+export const LEAF = '#2E7D32';
+export const AMBER = '#F9A825';
+export const INK = '#1C2B1E';
 
 export const isDark = () => document.documentElement.classList.contains('dark-mode');
 
@@ -78,7 +80,7 @@ export function useIsDark() {
   }, []);
   return dark;
 }
-const textColor = () => (isDark() ? '#BDBDBD' : '#546E7A');
+const textColor = () => (isDark() ? '#FFFFFF' : '#5B6B5D');
 const gridColor = () => (isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)');
 export const chartBg = () => (isDark() ? '#1E1E1E' : '#FFFFFF');
 
@@ -90,13 +92,13 @@ export function baseOptions() {
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
-        labels: { color: textColor(), font: { family: 'Inter', size: 12 }, padding: 16, usePointStyle: true, pointStyleWidth: 10 },
+        labels: { color: textColor(), font: { family: 'Carlito, Calibri, Arial', size: 12 }, padding: 16, usePointStyle: true, pointStyleWidth: 10 },
       },
       tooltip: {
-        backgroundColor: isDark() ? '#2A2A2A' : '#fff',
-        titleColor: isDark() ? '#E0E0E0' : '#263238',
-        bodyColor: isDark() ? '#BDBDBD' : '#546E7A',
-        borderColor: isDark() ? '#444' : '#E0E0E0',
+        backgroundColor: isDark() ? '#1E1E1E' : '#fff',
+        titleColor: isDark() ? '#FFFFFF' : '#1C2B1E',
+        bodyColor: isDark() ? '#FFFFFF' : '#5B6B5D',
+        borderColor: isDark() ? '#3A3A3A' : '#D5E3D6',
         borderWidth: 1,
         cornerRadius: 8,
         padding: 12,
@@ -125,6 +127,25 @@ export function baseOptions() {
   };
 }
 
+/** Horizontal bars in Leaf Green: the brand's answer to pies with many slices. */
+export function breakdownOptions(format = (v) => v) {
+  const base = baseOptions();
+  return {
+    ...base,
+    indexAxis: 'y',
+    interaction: { mode: 'nearest', intersect: true },
+    plugins: {
+      ...base.plugins,
+      legend: { display: false },
+      tooltip: { ...base.plugins.tooltip, callbacks: { label: (c) => ` ${c.label}: ${format(c.parsed.x)}` } },
+    },
+    scales: {
+      x: { ...base.scales.y, beginAtZero: true },
+      y: { ...base.scales.x, ticks: { ...base.scales.x.ticks, maxRotation: 0, autoSkip: false } },
+    },
+  };
+}
+
 export function doughnutOptions() {
   return {
     responsive: true,
@@ -133,7 +154,7 @@ export function doughnutOptions() {
     plugins: {
       legend: {
         position: 'right',
-        labels: { color: textColor(), font: { family: 'Inter', size: 11 }, padding: 10, usePointStyle: true, pointStyleWidth: 8 },
+        labels: { color: textColor(), font: { family: 'Carlito, Calibri, Arial', size: 11 }, padding: 10, usePointStyle: true, pointStyleWidth: 8 },
       },
     },
   };

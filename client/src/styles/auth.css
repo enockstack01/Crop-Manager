@@ -7,34 +7,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1B5E20 0%, #0D3B12 50%, #0A2E0D 100%);
+    background: var(--pine);
     padding: 20px;
     position: relative;
     overflow: hidden;
 }
 
-/* Subtle background pattern */
-.auth-page::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(ellipse at 30% 50%, rgba(46,125,50,0.15) 0%, transparent 60%),
-                radial-gradient(ellipse at 70% 30%, rgba(249,168,37,0.08) 0%, transparent 50%);
-    animation: authBgShift 20s ease-in-out infinite alternate;
-}
-
-@keyframes authBgShift {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    100% { transform: translate(-3%, 2%) rotate(3deg); }
-}
-
 .auth-card {
     background: var(--white);
     border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 440px;
     padding: 40px 36px;
@@ -56,15 +38,14 @@
 .auth-logo-icon {
     width: 56px;
     height: 56px;
-    background: linear-gradient(135deg, #2E7D32, #1B5E20);
-    border-radius: 14px;
+    background: var(--leaf);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 12px;
     font-size: 24px;
     color: #fff;
-    box-shadow: 0 4px 16px rgba(46,125,50,0.35);
 }
 
 .auth-logo h1 {
@@ -174,13 +155,13 @@
 }
 
 .auth-message.success {
-    background: #E8F5E9;
-    color: #2E7D32;
-    border: 1px solid #C8E6C9;
+    background: var(--card-bg);
+    color: var(--primary-ink);
+    border: 1px solid var(--leaf);
 }
 
 .auth-message.error {
-    background: #FFEBEE;
-    color: #D32F2F;
-    border: 1px solid #FFCDD2;
+    background: var(--card-bg);
+    color: var(--alert);
+    border: 1px solid var(--alert);
 }

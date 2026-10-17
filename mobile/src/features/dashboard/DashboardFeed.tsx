@@ -19,7 +19,7 @@ function Chip({ icon, tone }: { icon: string; tone: string }) {
   const { isDark } = useTheme();
   const [bgLight, bgDark, fg] = KPI_TONES[(tone in KPI_TONES ? tone : 'green') as Tone];
   return (
-    <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
       <Icon name={icon} size={13} color={fg} />
     </View>
   );
@@ -51,8 +51,8 @@ function Count({ n, danger }: { n: number; danger?: boolean }) {
   const { colors, isDark } = useTheme();
   return (
     <View style={{ minWidth: 24, height: 22, paddingHorizontal: 7, borderRadius: 11, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: danger ? (isDark ? '#3D1A1A' : '#FFEBEE') : colors.primaryLight }}>
-      <Text style={{ fontSize: 12, fontFamily: ff('700'), color: danger ? colors.red : colors.primary }}>{n}</Text>
+      backgroundColor: danger ? colors.red : colors.primary }}>
+      <Text style={{ fontSize: 12, fontFamily: ff('700'), color: '#FFFFFF' }}>{n}</Text>
     </View>
   );
 }
@@ -124,7 +124,7 @@ export function UpcomingHarvests({ items, onOpen }: { items: any[]; onOpen: (rou
                 <View key={s.daysLeft} style={{ position: 'absolute', bottom: -9, left: (s.daysLeft / UPCOMING_DAYS) * trackW - 10, width: 20, alignItems: 'center', gap: 2 }}>
                   <Text style={{ fontSize: 10, fontFamily: ff('700'), color: colors.textLight }}>{s.day}</Text>
                   <View style={{ minWidth: 16, height: 16, paddingHorizontal: 3, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: s.ready ? colors.primary : colors.blue, borderWidth: 3, borderColor: colors.card }}>
+                    backgroundColor: s.ready ? colors.primary : colors.primaryDark, borderWidth: 3, borderColor: colors.card }}>
                     {s.count > 1 ? <Text style={{ fontSize: 9, fontFamily: ff('700'), color: '#fff' }}>{s.count}</Text> : null}
                   </View>
                 </View>
@@ -144,7 +144,7 @@ export function UpcomingHarvests({ items, onOpen }: { items: any[]; onOpen: (rou
                 accessibilityRole="button"
                 style={({ pressed }) => ({
                   flexGrow: 1, flexBasis: 140, padding: 10, gap: 3, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-                  borderLeftWidth: 3, borderLeftColor: e.ready ? colors.primary : colors.blue, backgroundColor: colors.card, opacity: pressed ? 0.7 : 1,
+                  backgroundColor: colors.card, opacity: pressed ? 0.7 : 1,
                 })}
               >
                 <Text style={{ fontSize: 18, fontFamily: ff('800'), color: colors.text }}>
@@ -152,7 +152,7 @@ export function UpcomingHarvests({ items, onOpen }: { items: any[]; onOpen: (rou
                 </Text>
                 <Text style={{ fontSize: 13, fontFamily: ff('600'), color: colors.text }} numberOfLines={1}>{e.name}</Text>
                 <Text style={{ fontSize: 11.5, fontFamily: ff('400'), color: colors.textLight }} numberOfLines={1}>{e.sub || '—'}</Text>
-                <Text style={{ fontSize: 11.5, fontFamily: ff('700'), color: e.ready ? colors.primary : colors.blue }}>{e.ready ? t('Ready now') : countdown(e.daysLeft)}</Text>
+                <Text style={{ fontSize: 11.5, fontFamily: ff('700'), color: e.ready ? colors.primary : colors.primaryDark }}>{e.ready ? t('Ready now') : countdown(e.daysLeft)}</Text>
               </Pressable>
             ))}
           </View>
@@ -173,8 +173,8 @@ export function AlertsCard({ items, onOpen }: { items: any[]; onOpen: (route: st
     if (a.days == null) return null;
     const late = a.days < 0;
     return (
-      <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: late ? 'rgba(211,47,47,0.12)' : 'rgba(25,118,210,0.12)' }}>
-        <Text style={{ fontSize: 11, fontFamily: ff('700'), color: late ? colors.red : colors.blue }}>
+      <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: late ? colors.red : colors.primaryLight, borderWidth: late ? 0 : 1, borderColor: colors.border }}>
+        <Text style={{ fontSize: 11, fontFamily: ff('700'), color: late ? '#FFFFFF' : colors.primaryDark }}>
           {late ? t('{{count}} days late', { count: -a.days }) : a.days === 0 ? t('Today') : t('in {{count}} days', { count: a.days })}
         </Text>
       </View>
@@ -182,7 +182,7 @@ export function AlertsCard({ items, onOpen }: { items: any[]; onOpen: (route: st
   };
   return (
     <ChartCard title="Alerts" icon="bell" iconColor={colors.orange} right={items.length ? <Count n={items.length} danger /> : null}>
-      {items.length === 0 ? <Empty icon="circle-check" color={colors.primary} text="All clear — no alerts" /> : (
+      {items.length === 0 ? <Empty icon="circle-check" color={colors.primary} text="All clear: no alerts" /> : (
         <View style={{ gap: 6 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
             {kinds.map((k) => {

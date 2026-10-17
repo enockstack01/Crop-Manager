@@ -128,7 +128,7 @@ export default function Settings() {
       <div className="card" style={{ maxWidth: 720, marginBottom: 20 }}>
         <div className="card-header">
           <h3>
-            <i className="fas fa-globe" style={{ color: 'var(--blue)', marginRight: 8 }} /> {t('Language')}
+            <i className="fas fa-globe" style={{ color: 'var(--forest)', marginRight: 8 }} /> {t('Language')}
           </h3>
         </div>
         <div className="card-body">

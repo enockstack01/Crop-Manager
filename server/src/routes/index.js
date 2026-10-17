@@ -8,6 +8,7 @@ import { getMe, updateMe, submitAccessRequest } from '../controllers/profile.con
 import { adjustStock } from '../controllers/inventory.controller.js';
 import uploadsRouter from './uploads.routes.js';
 import adminRouter from './admin.routes.js';
+import aiRouter from './ai.routes.js';
 
 const api = Router();
 
@@ -31,6 +32,9 @@ api.use(requireActiveAccount);
 api.get('/dashboard', getDashboard);
 
 api.use('/uploads', uploadsRouter);
+
+// AI assistant (Anthropic): diagnosis reports, insights, advice, summaries, chat
+api.use('/ai', aiRouter);
 
 // resource-specific extras
 api.post('/inventory-items/:id/stock', adjustStock);

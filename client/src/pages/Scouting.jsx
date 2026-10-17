@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { CrudPage } from '../components/CrudPage.jsx';
 import { ResourceForm } from '../components/ResourceForm.jsx';
 import { FormRow, TextField, DateField, SelectField, TextArea } from '../components/form.jsx';
 import { FarmFieldRow, CycleSelect } from '../components/relationFields.jsx';
 import { PhotoUpload } from '../components/PhotoUpload.jsx';
-import { StatusBadge } from '../components/ui.jsx';
-import { useAll } from '../lib/useResource.js';
+import { StatusBadge, IconButton } from '../components/ui.jsx';
+import { DiagnoseModal } from '../features/ai/DiagnoseModal.jsx';
+import { useAll, useResourceMutations } from '../lib/useResource.js';
+import { t } from '../i18n/index.js';
 import { formatDate } from '../lib/format.js';
 import { PLANT_HEALTH } from '../lib/options.js';
 
@@ -18,6 +21,8 @@ const INITIAL = {
 function Body(form) {
   const { bind, values, set } = form;
   const { items: crops } = useAll('crops');
+  const [diagnosing, setDiagnosing] = useState(false);
+  const cropName = crops.find((c) => c.id === values.crop_id)?.name || '';
   return (
     <>
       <FarmFieldRow {...form} />
@@ -47,6 +52,25 @@ function Body(form) {
       </FormRow>
       <TextArea label="Recommendation" {...bind('recommendation')} />
       <PhotoUpload value={values.photo_url} onChange={(url) => set('photo_url', url)} />
+      <div className="form-group">
+        <button type="button" className="btn btn-outline" onClick={() => setDiagnosing(true)}>
+          <i className="fas fa-wand-magic-sparkles" /> {t('Diagnose with AI')}
+        </button>
+        <div className="form-hint">{t('Get the cause, treatment, medication and how to give it from the photo and your notes.')}</div>
+      </div>
+      {diagnosing && (
+        <DiagnoseModal
+          open
+          onClose={() => setDiagnosing(false)}
+          input={{
+            crop: cropName, growth_stage: values.growth_stage, plant_health: values.plant_health,
+            pest_observation: values.pest_observation, disease_observation: values.disease_observation,
+            weed_observation: values.weed_observation, soil_observation: values.soil_observation,
+            moisture_observation: values.moisture_observation, notes: values.notes, photo_url: values.photo_url,
+          }}
+          onUse={(text) => set('recommendation', text)}
+        />
+      )}
       <TextArea label="Notes" {...bind('notes')} />
     </>
   );
@@ -78,8 +102,12 @@ function ScoutForm(props) {
 
 export default function Scouting() {
   const { items: farms } = useAll('farms');
+  const { update } = useResourceMutations('crop-scouting-records');
+  const [diagnosing, setDiagnosing] = useState(null);
   return (
+    <>
     <CrudPage
+      extraActions={(r) => <IconButton icon="fa-wand-magic-sparkles" title="Diagnose with AI" onClick={() => setDiagnosing(r)} />}
       resource="crop-scouting-records"
       title="Crop Scouting"
       subtitle="Monitor crop health with field observations."
@@ -139,5 +167,14 @@ export default function Scouting() {
         ['Notes', r.notes, true],
       ]}
     />
+    {diagnosing && (
+      <DiagnoseModal
+        open
+        onClose={() => setDiagnosing(null)}
+        input={{ scouting_id: diagnosing.id, crop: diagnosing.crops?.name || '', photo_url: diagnosing.photo_url }}
+        onUse={(text) => update.mutateAsync({ id: diagnosing.id, recommendation: text })}
+      />
+    )}
+    </>
   );
 }

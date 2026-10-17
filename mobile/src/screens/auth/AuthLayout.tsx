@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, KeyboardAvoidingView, Pressable, ScrollView, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Animated, Image, KeyboardAvoidingView, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ff, radius, shadow, spacing } from '../../theme/theme';
 import { AppText, useLayout } from '../../components/ui';
-import { LeafLogo } from '../../components/LeafLogo';
 import { haptics } from '../../lib/haptics';
 import { t } from '../../i18n';
+
+const GLYPH = require('../../../assets/brand/cropmanager-glyph.png');
 
 /**
  * The web app's sign-in page at phone width (client/src/components/AuthScreen.jsx):
@@ -63,15 +63,11 @@ export function AuthLayout({
           >
             {/* .auth-split-mobile-brand */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-              <LinearGradient
-                colors={['#43A047', '#1B5E20']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...shadow(2) }}
-              >
-                <LeafLogo size={30} scale={1.05} />
-              </LinearGradient>
-              <Text style={{ fontSize: 20, fontFamily: ff('800'), color: colors.text }}>CropManager</Text>
+              <Image source={GLYPH} style={{ width: 42, height: 42, borderRadius: 21 }} accessibilityLabel="CropManager" />
+              <View>
+                <Text style={{ fontSize: 20, fontFamily: ff('700'), color: colors.primaryDark }}>CropManager</Text>
+                <Text style={{ fontSize: 11, fontFamily: ff('400'), color: colors.textLight }}>by Agricoders</Text>
+              </View>
             </View>
 
             <AppText weight="700" style={{ fontSize: isTablet ? 28 : 26, lineHeight: 34 }}>{t(heading)}</AppText>
@@ -148,11 +144,11 @@ export function AuthError({ message }: { message: string }) {
     <View
       accessibilityRole="alert"
       style={{
-        backgroundColor: isDark ? '#3D1A1A' : '#FFEBEE', borderRadius: radius.md, padding: spacing.md,
-        borderLeftWidth: 3, borderLeftColor: '#D32F2F',
+        backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderRadius: radius.md, padding: spacing.md,
+        borderWidth: 1, borderColor: '#C62828',
       }}
     >
-      <AppText style={{ fontSize: 13, color: isDark ? '#FFCDD2' : '#C62828' }}>{message}</AppText>
+      <AppText style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#C62828' }}>{message}</AppText>
     </View>
   );
 }

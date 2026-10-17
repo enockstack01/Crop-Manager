@@ -34,7 +34,7 @@
     left: 0;
     width: var(--sidebar-w);
     height: 100vh;
-    background: linear-gradient(180deg, #1B5E20 0%, #0D3B12 100%);
+    background: var(--pine);
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -57,32 +57,32 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
     min-height: 64px;
 }
 
-.sidebar-logo-icon {
+/* official CropManager glyph (white sprout in a Leaf Green disc) */
+.sidebar-glyph {
     width: 36px;
     height: 36px;
     min-width: 36px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: #fff;
+    border-radius: 50%;
 }
 
 .sidebar-logo-text {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 700;
+    line-height: 1.15;
     color: #fff;
     white-space: nowrap;
 }
 
-.sidebar-logo-text span {
-    color: #81C784;
+/* the product is always signed by Agricoders */
+.sidebar-logo-text small {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.72);
 }
 
 .sidebar-nav {
@@ -96,7 +96,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.62);
     padding: 16px 20px 6px;
     white-space: nowrap;
 }
@@ -110,7 +110,6 @@
     font-size: 13px;
     font-weight: 500;
     transition: all var(--transition);
-    border-left: 3px solid transparent;
     white-space: nowrap;
 }
 
@@ -129,12 +128,12 @@
 .sidebar-nav a.nav-active {
     background: var(--sidebar-active-bg);
     color: var(--sidebar-text-active);
-    border-left-color: #66BB6A;
+    font-weight: 700;
 }
 
 .sidebar-footer {
     padding: 16px 18px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255,255,255,0.12);
 }
 
 .sidebar-toggle {
@@ -251,11 +250,11 @@
 .topbar-search input:focus {
     border-color: var(--primary);
     background: var(--white);
-    box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
+    box-shadow: 0 0 0 2px var(--leaf);
 }
 
 .topbar-search input::placeholder {
-    color: #9E9E9E;
+    color: var(--text-light);
 }
 
 .topbar-search i {
@@ -263,7 +262,7 @@
     left: 13px;
     top: 50%;
     transform: translateY(-50%);
-    color: #9E9E9E;
+    color: var(--text-light);
     font-size: 13px;
 }
 
@@ -292,7 +291,7 @@
     right: 4px;
     width: 18px;
     height: 18px;
-    background: var(--red);
+    background: var(--alert);
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -424,11 +423,11 @@
 }
 
 .dropdown-item.danger {
-    color: var(--red);
+    color: var(--alert);
 }
 
 .dropdown-item.danger i {
-    color: var(--red);
+    color: var(--alert);
 }
 
 .dropdown-divider {
@@ -479,15 +478,10 @@
     font-size: 14px;
 }
 
-.notif-icon.info { background: #E3F2FD; color: #1976D2; }
-.notif-icon.warning { background: #FFF8E1; color: #F9A825; }
-.notif-icon.danger { background: #FFEBEE; color: #D32F2F; }
-.notif-icon.success { background: #E8F5E9; color: #2E7D32; }
-
-.dark-mode .notif-icon.info { background: #1A3A5C; }
-.dark-mode .notif-icon.warning { background: #3D3420; }
-.dark-mode .notif-icon.danger { background: #3D1A1A; }
-.dark-mode .notif-icon.success { background: #1A3D1E; }
+.notif-icon.info { background: var(--forest); color: #fff; }
+.notif-icon.warning { background: var(--amber); color: #fff; }
+.notif-icon.danger { background: var(--alert); color: #fff; }
+.notif-icon.success { background: var(--leaf); color: #fff; }
 
 .notif-content {
     flex: 1;

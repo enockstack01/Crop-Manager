@@ -14,6 +14,7 @@ import { CalculatorDetailScreen } from '../screens/CalculatorDetailScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { AssistantScreen } from '../screens/AssistantScreen';
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -47,8 +48,8 @@ export function AppNavigator() {
       screenOptions={({ navigation }) => ({
         header: () => <TopBar navigation={navigation} showMenu={!isTablet} />,
         drawerType: isTablet ? 'permanent' : 'front',
-        drawerStyle: { width: 260, backgroundColor: '#1B5E20', borderRightWidth: 0 },
-        overlayColor: 'rgba(0,0,0,0.5)',
+        drawerStyle: { width: 260, backgroundColor: '#14532D', borderRightWidth: 0 },
+        overlayColor: 'rgba(15,31,20,0.55)',
         sceneStyle: { backgroundColor: colors.bg },
         swipeEdgeWidth: 40,
       })}
@@ -61,6 +62,7 @@ export function AppNavigator() {
         </Drawer.Screen>
       ))}
 
+      <Drawer.Screen name="assistant" component={AssistantScreen} options={{ title: 'AI Assistant' }} />
       <Drawer.Screen name="calculators" component={CalculatorsStack} options={{ title: 'Calculators' }} />
       <Drawer.Screen name="reports" component={ReportsScreen} options={{ title: 'Reports' }} />
       <Drawer.Screen name="calendar" component={CalendarScreen} options={{ title: 'Calendar' }} />

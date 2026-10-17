@@ -13,7 +13,7 @@ export type DashFilters = { farm: string; season: string; from: string; to: stri
 export type KpiTone = 'green' | 'blue' | 'orange' | 'red' | 'purple';
 
 export const CYCLE_STATUSES = ['Planned', 'Planted', 'Growing', 'Ready for Harvest', 'Harvested', 'Completed', 'Cancelled'];
-export const STATUS_COLORS = ['#1976D2', '#2E7D32', '#66BB6A', '#F9A825', '#FF8F00', '#43A047', '#9E9E9E'];
+export const STATUS_COLORS = ['#5B6B5D', '#1B5E20', '#2E7D32', '#F9A825', '#14532D', '#2E7D32', '#5B6B5D'];
 
 export function computeDashboard(d: any, filters: DashFilters) {
   const inRange = (date?: string) => {

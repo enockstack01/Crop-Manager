@@ -14,9 +14,9 @@ import type { Insight } from './insights';
 
 export const TONE = {
   good: { color: '#2E7D32', icon: 'circle-check' },
-  warn: { color: '#F57F17', icon: 'triangle-exclamation' },
-  bad: { color: '#D32F2F', icon: 'circle-exclamation' },
-  info: { color: '#1976D2', icon: 'circle-info' },
+  warn: { color: '#F9A825', icon: 'triangle-exclamation' },
+  bad: { color: '#C62828', icon: 'circle-exclamation' },
+  info: { color: '#1B5E20', icon: 'circle-info' },
 } as const;
 
 function Viz({ viz: v, color }: { viz: any; color: string }) {

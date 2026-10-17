@@ -21,7 +21,7 @@ export function useCycleOptions() {
   const { items } = useAll('crop-cycles');
   return items.map((c: any) => ({
     value: c.id,
-    label: `${c.farms?.name || '?'} / ${c.crops?.name || '?'}${c.seasons?.name ? ` — ${c.seasons.name}` : ''}`,
+    label: `${c.farms?.name || '?'} · ${c.crops?.name || '?'}${c.seasons?.name ? ` · ${c.seasons.name}` : ''}`,
   }));
 }
 

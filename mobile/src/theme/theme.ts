@@ -1,6 +1,7 @@
 /**
- * Design tokens ported 1:1 from the web app's CSS custom properties
- * (client/src/styles/style.css :root and .dark-mode) so both apps look the same.
+ * Agricoders brand tokens (Brand and Template Guidelines v1.0, section 4), mirroring the web app's
+ * CSS custom properties (client/src/styles/style.css :root and .dark-mode) so both apps look the same.
+ * No light greens anywhere: Mist is the only tint, and only as a page background.
  */
 export type Palette = {
   primary: string;
@@ -26,42 +27,43 @@ export type Palette = {
 };
 
 export const light: Palette = {
-  primary: '#2E7D32',
-  primaryLight: '#E8F5E9',
-  primaryDark: '#1B5E20',
-  bg: '#F5F7FA',
+  primary: '#2E7D32',       // Leaf Green: icon circles, links, main chart series
+  primaryLight: '#F3F8F3',  // Mist
+  primaryDark: '#1B5E20',   // Forest Green: titles, headers, primary buttons
+  bg: '#F3F8F3',
   card: '#FFFFFF',
   surface: '#FFFFFF',
   input: '#FFFFFF',
-  text: '#263238',
-  textLight: '#546E7A',
-  placeholder: '#9E9E9E',
-  border: '#E0E0E0',
-  orange: '#F9A825',
-  red: '#D32F2F',
-  blue: '#1976D2',
-  purple: '#7B1FA2',
+  text: '#1C2B1E',          // Ink
+  textLight: '#5B6B5D',     // Slate
+  placeholder: '#5B6B5D',
+  border: '#D5E3D6',        // Fern
+  orange: '#F9A825',        // Harvest Amber: one highlight per view
+  red: '#C62828',           // Alert Red: critical only
+  blue: '#1B5E20',          // legacy accent keys now map to the brand greens and Slate
+  purple: '#5B6B5D',
   green: '#2E7D32',
-  overlay: 'rgba(0,0,0,0.5)',
-  stripe: '#F9FAFB',
-  tableHover: '#F0F4F0',
+  overlay: 'rgba(15,31,20,0.55)',
+  stripe: '#F3F8F3',
+  tableHover: 'rgba(213,227,214,0.5)',
   headerText: '#FFFFFF',
 };
 
 // the web's .dark-mode only overrides surfaces and text; brand colours stay the same
 export const dark: Palette = {
   ...light,
-  primaryLight: '#1B3A1D',
-  bg: '#121212',
+  primaryLight: '#2A2A2A',
+  bg: '#0F1F14',            // Night Field
   card: '#1E1E1E',
   surface: '#1E1E1E',
   input: '#2A2A2A',
-  text: '#E0E0E0',
-  textLight: '#9E9E9E',
-  border: '#333333',
+  text: '#FFFFFF',
+  textLight: 'rgba(255,255,255,0.72)',
+  placeholder: 'rgba(255,255,255,0.5)',
+  border: '#3A3A3A',
   overlay: 'rgba(0,0,0,0.7)',
   stripe: '#252525',
-  tableHover: '#2E3A2E',
+  tableHover: 'rgba(255,255,255,0.06)',
 };
 
 export const spacing = {
@@ -105,25 +107,25 @@ export const font = {
   huge: 34,
 };
 
-/** Inter, as on the web (loaded in App.tsx via @expo-google-fonts/inter) */
+/** Carlito, the metric-compatible Calibri (loaded in App.tsx via @expo-google-fonts/carlito); Regular and Bold only */
 export const FONTS = {
-  '400': 'Inter_400Regular',
-  '500': 'Inter_500Medium',
-  '600': 'Inter_600SemiBold',
-  '700': 'Inter_700Bold',
-  '800': 'Inter_800ExtraBold',
+  '400': 'Carlito_400Regular',
+  '500': 'Carlito_400Regular',
+  '600': 'Carlito_700Bold',
+  '700': 'Carlito_700Bold',
+  '800': 'Carlito_700Bold',
 } as const;
 export type Weight = keyof typeof FONTS;
 /** fontFamily for a weight (Android needs a distinct family per weight) */
 export const ff = (weight: Weight | string = '400') => FONTS[(String(weight) in FONTS ? String(weight) : '400') as Weight];
 
-/** web .kpi-icon.{green|blue|orange|red|purple} — [light bg, dark bg, icon colour] */
+/** web .kpi-icon.*: solid circle with a white glyph — [light bg, dark bg, glyph colour]. Leaf Green, Harvest Amber, Alert Red only. */
 export const KPI_TONES: Record<'green' | 'blue' | 'orange' | 'red' | 'purple', [string, string, string]> = {
-  green: ['#E8F5E9', '#1A3D1E', '#2E7D32'],
-  blue: ['#E3F2FD', '#1A3A5C', '#1976D2'],
-  orange: ['#FFF8E1', '#3D3420', '#F9A825'],
-  red: ['#FFEBEE', '#3D1A1A', '#D32F2F'],
-  purple: ['#F3E5F5', '#2D1A3D', '#7B1FA2'],
+  green: ['#2E7D32', '#2E7D32', '#FFFFFF'],
+  blue: ['#2E7D32', '#2E7D32', '#FFFFFF'],
+  orange: ['#F9A825', '#F9A825', '#FFFFFF'],
+  red: ['#C62828', '#C62828', '#FFFFFF'],
+  purple: ['#2E7D32', '#2E7D32', '#FFFFFF'],
 };
 
 /** Status → chip colours, mirrors format.js:badgeClass. */
@@ -139,7 +141,4 @@ export const STATUS_TONES: Record<string, 'success' | 'warning' | 'danger' | 'in
   Excellent: 'success', Good: 'success', Average: 'warning', Poor: 'danger', Rejected: 'danger',
 };
 
-export const CHART_PALETTE = [
-  '#2E7D32', '#1976D2', '#F9A825', '#D32F2F', '#7B1FA2',
-  '#00897B', '#E65100', '#5D4037', '#37474F', '#C2185B',
-];
+export const CHART_PALETTE = ['#2E7D32', '#F9A825', '#1B5E20', '#5B6B5D', '#14532D', '#1C2B1E'];

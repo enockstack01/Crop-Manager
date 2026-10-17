@@ -1,5 +1,8 @@
 """Build the interface translations for the web and mobile apps.
 
+English: brand_en.py turns every English UI string into Agricoders house style
+(sentence case, British spelling) -> locales/en.json.
+
 The dictionaries (dict_*.py) map English UI text to (French, Kinyarwanda, Swahili).
 This script merges them, checks every {{placeholder}} is kept, and writes
 client/src/i18n/locales/{fr,rw,sw}.json and mobile/src/i18n/locales/{fr,rw,sw}.json.
@@ -12,6 +15,10 @@ import json
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import brand_en
+import extract
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -46,6 +53,15 @@ for i, lang in enumerate(LANGS):
             json.dump(data, f, ensure_ascii=False, indent=2, sort_keys=True)
             f.write('\n')
 print(f'{len(merged)} strings -> {", ".join(LANGS)} (client + mobile)')
+
+# English house style: derived from the strings found in the source
+en = brand_en.overrides(extract.collect() + [k for k in merged])
+for app in ('client', 'mobile'):
+    path = os.path.join(ROOT, app, 'src', 'i18n', 'locales', 'en.json')
+    with open(path, 'w', encoding='utf8', newline='\n') as f:
+        json.dump(en, f, ensure_ascii=False, indent=2, sort_keys=True)
+        f.write('\n')
+print(f'{len(en)} English strings in house style -> en.json (client + mobile)')
 
 if len(sys.argv) > 1:
     keys = json.load(open(sys.argv[1], encoding='utf8'))

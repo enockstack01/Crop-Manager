@@ -30,7 +30,7 @@ export function RecentActivity({ activity }) {
   const { items, weeks } = activity;
   const total = weeks.reduce((s, w) => s + w.count, 0);
   return (
-    <FeedCard title="Recent Activity" icon="clock-rotate-left" iconColor="var(--purple)">
+    <FeedCard title="Recent Activity" icon="clock-rotate-left" iconColor="var(--pine)">
       {total > 0 && (
         <div className="activity-chart">
           <div className="activity-chart-head"><span>{t('Activities · last 12 weeks')}</span><b>{total}</b></div>
@@ -72,7 +72,7 @@ export function UpcomingHarvests({ items }) {
     <FeedCard
       title="Upcoming Harvests"
       icon="calendar-days"
-      iconColor="var(--blue)"
+      iconColor="var(--forest)"
       right={items.length > 0 && <span className="feed-count">{items.length}</span>}
     >
       {items.length === 0 ? <Empty icon="calendar" text={t('No harvests in the next {{count}} days', { count: UPCOMING_DAYS })} /> : (
@@ -121,10 +121,10 @@ export function AlertsCard({ items, className }) {
       title="Alerts"
       className={className}
       icon="bell"
-      iconColor="var(--orange)"
+      iconColor="var(--amber)"
       right={items.length > 0 && <span className="feed-count danger">{items.length}</span>}
     >
-      {items.length === 0 ? <Empty icon="circle-check" color="var(--primary)" text="All clear — no alerts" /> : (
+      {items.length === 0 ? <Empty icon="circle-check" color="var(--primary)" text="All clear: no alerts" /> : (
         <>
           <div className="alert-kinds" role="tablist">
             {kinds.map((k) => (
@@ -142,7 +142,7 @@ export function AlertsCard({ items, className }) {
           </div>
           <div className="feed-rows">
             {shown.map((a) => (
-              <button key={a.id} type="button" className="feed-row" onClick={() => navigate(a.link)} title={`${a.name} — ${a.sub}`}>
+              <button key={a.id} type="button" className="feed-row" onClick={() => navigate(a.link)} title={`${a.name} · ${a.sub}`}>
                 <span className={`feed-chip tone-${a.tone}`}><i className={`fas fa-${a.icon}`} /></span>
                 <span className="feed-row-main">
                   <span className="feed-row-name">{a.name}</span>

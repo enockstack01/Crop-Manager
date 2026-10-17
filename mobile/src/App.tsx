@@ -11,12 +11,9 @@ import { resourceCache } from '@clerk/clerk-expo/resource-cache';
 import { ClerkProvider, SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
 import {
   useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-} from '@expo-google-fonts/inter';
+  Carlito_400Regular,
+  Carlito_700Bold,
+} from '@expo-google-fonts/carlito';
 
 import { useTranslation } from 'react-i18next';
 import { CLERK_PUBLISHABLE_KEY } from './env';
@@ -141,8 +138,8 @@ function AppShell() {
 }
 
 export default function App() {
-  // Inter, the web app's typeface; the splash covers the moment it takes to load
-  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
+  // Carlito (Calibri-compatible), the Agricoders typeface; the splash covers the moment it takes to load
+  const [fontsLoaded, fontError] = useFonts({ Carlito_400Regular, Carlito_700Bold });
   const ready = fontsLoaded || !!fontError;
 
   return (

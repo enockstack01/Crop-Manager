@@ -96,7 +96,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
               flexDirection: 'row', alignItems: 'center', gap: 10,
               backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
               borderColor: searchFocused ? colors.primary : colors.border, paddingHorizontal: 13, minHeight: 42,
-              ...(searchFocused ? { boxShadow: '0 0 0 3px rgba(46,125,50,0.12)' as any } : null),
+              ...(searchFocused ? { boxShadow: '0 0 0 2px #2E7D32' as any } : null),
             }}
           >
             <Icon name="magnifying-glass" size={13} color={colors.placeholder} />

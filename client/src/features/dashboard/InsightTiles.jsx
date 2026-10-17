@@ -8,9 +8,9 @@ import { t } from '../../i18n/index.js';
 
 export const TONE = {
   good: { color: '#2E7D32', icon: 'circle-check' },
-  warn: { color: '#F57F17', icon: 'triangle-exclamation' },
-  bad: { color: '#D32F2F', icon: 'circle-exclamation' },
-  info: { color: '#1976D2', icon: 'circle-info' },
+  warn: { color: '#F9A825', icon: 'triangle-exclamation' },
+  bad: { color: '#C62828', icon: 'circle-exclamation' },
+  info: { color: '#1B5E20', icon: 'circle-info' },
 };
 
 function Viz({ viz: v, color }) {
@@ -73,7 +73,7 @@ export function InsightTiles({ insights }) {
   return (
     <div className="chart-card full-width insights-card">
       <div className="chart-card-header">
-        <h3><i className="fas fa-lightbulb" style={{ color: 'var(--orange)', marginRight: 8 }} />{t('Key insights')}</h3>
+        <h3><i className="fas fa-lightbulb" style={{ color: 'var(--amber)', marginRight: 8 }} />{t('Key insights')}</h3>
       </div>
       <div className="insight-tiles">
         {insights.map((ins) => {

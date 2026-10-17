@@ -130,7 +130,7 @@ export default function AdminUsers() {
                   <IconButton
                     icon="fa-user-shield"
                     title={row.is_admin ? 'Revoke admin' : 'Make admin'}
-                    color={row.is_admin ? 'var(--purple)' : undefined}
+                    color={row.is_admin ? 'var(--pine)' : undefined}
                     onClick={() => toggleAdmin(row)}
                   />
                 )}

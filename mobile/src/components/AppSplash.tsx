@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, useColorScheme, View } from 'react-native';
+import { Animated, Easing, Image, StyleSheet, useColorScheme, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { LeafLogo } from './LeafLogo';
+
+const DISC = require('../../assets/brand/agricoders-logo-disc.png');
 
 // keep the native splash up until the animated one has drawn its first frame
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -23,8 +24,8 @@ export function SplashReadyOnMount() {
 }
 
 /**
- * Animated continuation of the native splash: same background and leaf position,
- * so the hand-off is seamless. The leaf lifts, the wordmark fades in, a progress
+ * Animated continuation of the native splash: same background and logo position,
+ * so the hand-off is seamless. The master logo lifts, the wordmark fades in, a progress
  * bar runs while the app loads, then the whole layer fades away.
  */
 export function SplashHost({ children }: { children: React.ReactNode }) {
@@ -70,16 +71,17 @@ export function SplashHost({ children }: { children: React.ReactNode }) {
           <Animated.View
             pointerEvents={ready ? 'none' : 'auto'}
             onLayout={() => SplashScreen.hideAsync().catch(() => {})}
-            style={[StyleSheet.absoluteFill, { opacity: fade, backgroundColor: dark ? '#0F1A10' : '#2E7D32', alignItems: 'center', justifyContent: 'center' }]}
+            style={[StyleSheet.absoluteFill, { opacity: fade, backgroundColor: dark ? '#0F1F14' : '#14532D', alignItems: 'center', justifyContent: 'center' }]}
           >
             {/* same size/position as the native splash image (imageWidth 180) */}
             <Animated.View style={{ transform: [{ translateY: leafY }, { scale: leafScale }] }}>
-              <LeafLogo size={180} scale={0.9} color={dark ? '#66BB6A' : '#FFFFFF'} />
+              <Image source={DISC} style={{ width: 180, height: 180 }} resizeMode="contain" accessibilityLabel="Agricoders" />
             </Animated.View>
             <Animated.View style={{ position: 'absolute', top: '58%', alignItems: 'center', opacity: intro, transform: [{ translateY: textY }] }}>
-              <Animated.Text style={{ color: '#FFFFFF', fontSize: 30, fontWeight: '800', letterSpacing: 0.5 }}>CropManager</Animated.Text>
-              <Animated.Text style={{ color: 'rgba(255,255,255,0.78)', fontSize: 14, marginTop: 6 }}>
-                Crop production, managed
+              <Animated.Text style={{ color: '#FFFFFF', fontSize: 14, fontFamily: 'Carlito_700Bold', letterSpacing: 5 }}>AGRICODERS</Animated.Text>
+              <Animated.Text style={{ color: '#FFFFFF', fontSize: 30, fontFamily: 'Carlito_700Bold', marginTop: 10 }}>CropManager</Animated.Text>
+              <Animated.Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontFamily: 'Carlito_700Bold', marginTop: 6 }}>
+                Plan, track and grow: your whole farm in one place
               </Animated.Text>
               <View style={{ width: 120, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 28, overflow: 'hidden' }}>
                 <Animated.View

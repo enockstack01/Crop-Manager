@@ -20,7 +20,7 @@ import { t } from '../../i18n';
 type Step = 'email' | 'password' | 'email-code' | 'second-factor' | 'reset' | 'new-password';
 
 const COPY: Record<Step, { title: string; subtitle: (email: string) => string }> = {
-  email: { title: 'Sign in to Crop Manager', subtitle: () => 'Welcome back! Please sign in to continue' },
+  email: { title: 'Sign in to CropManager', subtitle: () => 'Welcome back! Please sign in to continue' },
   password: { title: 'Enter your password', subtitle: (e) => `Enter the password associated with your account ${e}` },
   'email-code': { title: 'Check your email', subtitle: (e) => `Enter the code we sent to ${e}` },
   'second-factor': { title: 'Verify it’s you', subtitle: (e) => `For your security, enter the code we sent to ${e}` },
