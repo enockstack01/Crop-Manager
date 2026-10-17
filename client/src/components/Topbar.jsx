@@ -3,6 +3,14 @@ import { UserButton } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useList, useResourceMutations } from '../lib/useResource.js';
 import { displayName, formatDateTime } from '../lib/format.js';
+
+/** Role shown under the name: system administrator, organization role, or the account type. */
+function roleLabel(profile) {
+  const ctx = profile?.org_context;
+  if (profile?.is_admin) return 'System administrator';
+  if (ctx?.platform_role === 'org_user') return ctx.membership?.role === 'org_admin' ? 'Organization administrator' : 'Field officer';
+  return profile?.role || 'Farmer';
+}
 import { useToast } from './Toast.jsx';
 import { LanguageMenu } from './LanguageMenu.jsx';
 import { t } from '../i18n/index.js';
@@ -98,7 +106,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
         <div className="topbar-user" style={{ gap: 10 }}>
           <div className="topbar-user-info">
             <div className="topbar-user-name">{displayName(profile)}</div>
-            <div className="topbar-user-role">{t(profile?.role || 'Farmer')}</div>
+            <div className="topbar-user-role">{t(roleLabel(profile))}</div>
           </div>
           <UserButton afterSignOutUrl="/" />
         </div>

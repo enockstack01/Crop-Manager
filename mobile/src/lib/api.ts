@@ -28,11 +28,14 @@ export class ApiError extends Error {
   status?: number;
   /** true when the server was never reached (offline, wrong address, firewall, timeout) */
   network: boolean;
-  constructor(message: string, status?: number, network = false) {
+  /** machine-readable reason from the server (translated by the screens) */
+  code?: string;
+  constructor(message: string, status?: number, network = false, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.network = network;
+    this.code = code;
   }
 }
 
@@ -50,6 +53,6 @@ api.interceptors.response.use(
       error.response.statusText ||
       error.message ||
       'Request failed';
-    return Promise.reject(new ApiError(message, error.response.status));
+    return Promise.reject(new ApiError(message, error.response.status, false, (error.response.data as any)?.details?.code));
   },
 );

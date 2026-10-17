@@ -7,7 +7,7 @@ import { ff } from '../theme/theme';
 import { Icon } from '../components/Icon';
 import { useConfirm } from '../components/Confirm';
 import { haptics } from '../lib/haptics';
-import { NAV_SECTIONS } from './navConfig';
+import { NAV_SECTIONS, NavSection } from './navConfig';
 import { t } from '../i18n';
 
 /*
@@ -42,7 +42,7 @@ function NavItem({ icon, label, active, onPress, danger }: { icon: string; label
   );
 }
 
-export function CustomDrawer(props: DrawerContentComponentProps) {
+export function CustomDrawer(props: DrawerContentComponentProps & { sections?: NavSection[] }) {
   const { signOut } = useAuth();
   const confirm = useConfirm();
   const insets = useSafeAreaInsets();
@@ -77,7 +77,7 @@ export function CustomDrawer(props: DrawerContentComponentProps) {
 
       {/* .sidebar-nav */}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 12 }}>
-        {NAV_SECTIONS.map((section) => (
+        {(props.sections ?? NAV_SECTIONS).map((section) => (
           <View key={section.label || 'root'}>
             {section.label ? (
               <Text

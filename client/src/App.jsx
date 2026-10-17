@@ -27,6 +27,16 @@ import CalculatorDetail from './pages/CalculatorDetail.jsx';
 import Reports from './pages/Reports.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Assistant from './pages/Assistant.jsx';
+import Join from './pages/Join.jsx';
+import OrgRegister from './pages/OrgRegister.jsx';
+import OrgDashboard from './pages/org/OrgDashboard.jsx';
+import OrgFarmers from './pages/org/OrgFarmers.jsx';
+import OrgLinks from './pages/org/OrgLinks.jsx';
+import { OrgTeam, OrgProfile } from './pages/org/OrgTeamProfile.jsx';
+import AdminOrganizations from './pages/admin/AdminOrganizations.jsx';
+import AdminOrganizationDetail from './pages/admin/AdminOrganizationDetail.jsx';
+import AdminAudit from './pages/admin/AdminAudit.jsx';
+import { useMyOrg } from './lib/orgApi.js';
 import Settings from './pages/Settings.jsx';
 import { AdminGuard } from './components/AdminGuard.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -35,11 +45,20 @@ import AdminUserDetail from './pages/admin/AdminUserDetail.jsx';
 import AdminData from './pages/admin/AdminData.jsx';
 import AdminSettings from './pages/admin/AdminSettings.jsx';
 
+/** Organization staff open their workspace instead of the farm dashboard. */
+function Home() {
+  const { platformRole } = useMyOrg();
+  return platformRole === 'org_user' ? <Navigate to="/org" replace /> : <Dashboard />;
+}
+
 export function App() {
   return (
     <Routes>
       <Route path="/sign-in/*" element={<AuthScreen mode="sign-in" />} />
       <Route path="/sign-up/*" element={<AuthScreen mode="sign-up" />} />
+      {/* an organization referral link, and organization sign-up: open to signed-out visitors */}
+      <Route path="/join/:token" element={<Join />} />
+      <Route path="/organization/register" element={<OrgRegister />} />
 
       <Route
         element={
@@ -53,7 +72,7 @@ export function App() {
           </>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<Home />} />
         <Route path="farms" element={<Farms />} />
         <Route path="fields" element={<Fields />} />
         <Route path="crops" element={<Crops />} />
@@ -79,11 +98,22 @@ export function App() {
         <Route path="calendar" element={<Calendar />} />
         <Route path="settings" element={<Settings />} />
 
+        <Route path="org">
+          <Route index element={<OrgDashboard />} />
+          <Route path="farmers" element={<OrgFarmers />} />
+          <Route path="links" element={<OrgLinks />} />
+          <Route path="team" element={<OrgTeam />} />
+          <Route path="profile" element={<OrgProfile />} />
+        </Route>
+
         <Route path="admin" element={<AdminGuard />}>
           <Route index element={<AdminOverview />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="users/:userId" element={<AdminUserDetail />} />
           <Route path="data" element={<AdminData />} />
+          <Route path="organizations" element={<AdminOrganizations />} />
+          <Route path="organizations/:orgId" element={<AdminOrganizationDetail />} />
+          <Route path="audit" element={<AdminAudit />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

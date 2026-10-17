@@ -67,6 +67,11 @@ export const getMe = asyncHandler(async (req, res) => {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).lean();
 
+  if (!profile.full_name && name) {
+    await Profile.updateOne({ user_id: req.userId, $or: [{ full_name: '' }, { full_name: null }] }, { $set: { full_name: name } });
+    profile.full_name = name;
+  }
+
   // role and organization context: tells the apps which workspace to open
   res.json({ ...serialize(profile), org_context: await orgContextFor(profile) });
 });

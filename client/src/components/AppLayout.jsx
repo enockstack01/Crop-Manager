@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
 import { ProfileProvider, useProfile } from './profile.jsx';
@@ -8,6 +8,7 @@ import { AccountGate } from './AccountGate.jsx';
 import { EmptyState, Loading } from './ui.jsx';
 import { setCurrency } from '../lib/format.js';
 import { setLanguage } from '../i18n/index.js';
+import { useMyOrg } from '../lib/orgApi.js';
 
 function readDark() {
   try {
@@ -22,6 +23,7 @@ function Shell() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(readDark);
+  const org = useMyOrg();
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark-mode', dark);
@@ -36,6 +38,18 @@ function Shell() {
   useEffect(() => {
     if (profile?.language) setLanguage(profile.language);
   }, [profile?.language]);
+
+  // a farmer who opened a referral link before signing in goes back to finish joining
+  let pendingToken = null;
+  let orgIntent = false;
+  try {
+    pendingToken = localStorage.getItem('pending_join');
+    orgIntent = localStorage.getItem('org_intent') === '1';
+  } catch { /* storage unavailable */ }
+  if (profile && !profile.is_admin && profile.org_context?.platform_role === 'farmer') {
+    if (pendingToken && !profile.org_context?.farmer_org) return <Navigate to={`/join/${pendingToken}`} replace />;
+    if (orgIntent && profile.account_status === 'new') return <Navigate to="/organization/register" replace />;
+  }
 
   // accounts that are not approved yet see the request form / status page instead of the app
   if (profile && !profile.is_admin && profile.account_status !== 'active') {
@@ -55,6 +69,7 @@ function Shell() {
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         isAdmin={!!profile?.is_admin}
+        orgRole={!profile?.is_admin && org.platformRole === 'org_user' ? org.role || 'org_staff' : ''}
         onToggle={() => setCollapsed((c) => !c)}
         onNavigate={() => setMobileOpen(false)}
       />

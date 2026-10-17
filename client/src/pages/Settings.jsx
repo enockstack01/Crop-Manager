@@ -11,6 +11,9 @@ import { t } from '../i18n/index.js';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from '../i18n/index.js';
 import { useChooseLanguage } from '../components/LanguageMenu.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
+import { formatDate } from '../lib/format.js';
+import { reasonText, useFarmerOrgMutations, useMyOrg } from '../lib/orgApi.js';
 
 export default function Settings() {
   const { profile, isLoading } = useProfile();
@@ -20,6 +23,18 @@ export default function Settings() {
   const [values, setValues] = useState(null);
   const { i18n } = useTranslation();
   const chooseLanguage = useChooseLanguage();
+  const confirm = useConfirm();
+  const { farmerOrg } = useMyOrg();
+  const { leave } = useFarmerOrgMutations();
+  const leaveOrg = async () => {
+    if (!(await confirm(t('Leave <strong>{{name}}</strong>? They will stop seeing your crop activity straight away. Your own records are not changed.', { name: farmerOrg.organization.name }), { confirmLabel: t('Leave') }))) return;
+    try {
+      await leave.mutateAsync();
+      toast(t('You left the organization'));
+    } catch (err) {
+      toast(reasonText(err), 'error');
+    }
+  };
 
   const mutate = useMutation({
     mutationFn: (body) => api.put('/profile', body).then((r) => r.data),
@@ -141,6 +156,25 @@ export default function Settings() {
           />
         </div>
       </div>
+
+      {farmerOrg && (
+        <div className="card" style={{ maxWidth: 720, marginBottom: 20 }}>
+          <div className="card-header">
+            <h3>
+              <i className="fas fa-building" style={{ color: 'var(--primary)', marginRight: 8 }} /> {t('My organization')}
+            </h3>
+          </div>
+          <div className="card-body">
+            <p><b>{farmerOrg.organization.name}</b> <span className="org-muted">· {t(farmerOrg.organization.type)}{farmerOrg.organization.district ? ` · ${farmerOrg.organization.district}` : ''}</span></p>
+            <p className="org-muted" style={{ margin: '8px 0 12px' }}>
+              {t('Joined {{date}}. You agreed on {{consent}} to share a summary of your crop activity: farms, crops, planting, harvests and field activity. They can see it but cannot change your records.', { date: formatDate(farmerOrg.joined_at), consent: formatDate(farmerOrg.consent_given_at) })}
+            </p>
+            <button className="btn btn-secondary" onClick={leaveOrg} disabled={leave.isPending}>
+              <i className="fas fa-right-from-bracket" /> {t('Leave organization')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {showClerk && (
         <div className="card" style={{ maxWidth: 900 }}>

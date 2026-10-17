@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast.jsx';
 import { useConfirm } from '../../components/Confirm.jsx';
 import { PageHeader, Loading, EmptyState, ViewGrid, IconButton } from '../../components/ui.jsx';
 import { formatNumber } from '../../lib/format.js';
+import { reasonText, useAdminOrgMutations, useAdminOrgSettings } from '../../lib/orgApi.js';
 import { t } from '../../i18n/index.js';
 
 function fmtUptime(s) {
@@ -20,6 +21,20 @@ export default function AdminSettings() {
   const confirm = useConfirm();
   const [email, setEmail] = useState('');
   const [limits, setLimits] = useState(null);
+  const { data: orgSettings } = useAdminOrgSettings();
+  const { saveSettings } = useAdminOrgMutations();
+  const [orgForm, setOrgForm] = useState(null);
+  const of = orgForm || orgSettings || { referral_hours: 6, default_max_farmers: 100, default_max_uses: 100, inactive_days: 30 };
+  const saveOrg = async (e) => {
+    e.preventDefault();
+    try {
+      await saveSettings.mutateAsync(Object.fromEntries(Object.entries(of).map(([k, v]) => [k, Number(v)])));
+      toast(t('Organization settings saved'));
+      setOrgForm(null);
+    } catch (err) {
+      toast(reasonText(err), 'error');
+    }
+  };
 
   if (isLoading) return <Loading label="Loading system settings..." />;
   if (isError || !data) return <EmptyState icon="fa-exclamation-triangle" title="Could not load settings" />;
@@ -96,6 +111,28 @@ export default function AdminSettings() {
               ]}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-header">
+          <h3><i className="fas fa-building" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Organization settings')}</h3>
+        </div>
+        <div className="card-body">
+          <form onSubmit={saveOrg} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            {[
+              ['referral_hours', 'Referral link validity (hours)'],
+              ['default_max_farmers', 'Default farmer limit for new organizations'],
+              ['default_max_uses', 'Default farmers per referral link'],
+              ['inactive_days', 'Days without activity before a farmer counts as inactive'],
+            ].map(([k, label]) => (
+              <div className="form-group" key={k} style={{ margin: 0, width: 210 }}>
+                <label className="form-label">{t(label)}</label>
+                <input className="form-control" type="number" min="0" value={of[k]} onChange={(e) => setOrgForm({ ...of, [k]: e.target.value })} />
+              </div>
+            ))}
+            <button className="btn btn-primary" disabled={saveSettings.isPending}>{t('Save')}</button>
+          </form>
         </div>
       </div>
 

@@ -69,3 +69,21 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [{ route: 'settings', label: 'Settings', icon: 'gear' }],
   },
 ];
+
+/** Organization workspace (mirrors the web sidebar for organization users). */
+const ORG_BASE: NavItem[] = [
+  { route: 'org-dashboard', label: 'Overview', icon: 'table-cells-large' },
+  { route: 'org-farmers', label: 'Farmers', icon: 'users' },
+  { route: 'org-links', label: 'Referral links', icon: 'link' },
+];
+const ORG_SYSTEM: NavSection = { label: 'System', items: [{ route: 'settings', label: 'Settings', icon: 'gear' }] };
+export const ORG_ADMIN_SECTIONS: NavSection[] = [
+  { items: ORG_BASE },
+  { label: 'Organization', items: [{ route: 'org-team', label: 'Team', icon: 'user-group' }, { route: 'org-profile', label: 'Organization', icon: 'building' }] },
+  ORG_SYSTEM,
+];
+export const ORG_STAFF_SECTIONS: NavSection[] = [
+  { items: ORG_BASE },
+  { label: 'Organization', items: [{ route: 'org-profile', label: 'Organization', icon: 'building' }] },
+  ORG_SYSTEM,
+];

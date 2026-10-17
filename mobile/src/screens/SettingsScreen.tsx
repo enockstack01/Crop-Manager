@@ -11,9 +11,10 @@ import { AppText, ChartCard, Grid, Loading, PageHeader, Screen, useLayout } from
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
 import { SelectField, TextField } from '../components/fields';
+import { reasonText, useFarmerOrgMutations, useMyOrg } from '../lib/orgApi';
 import { CURRENCY_OPTIONS } from '../lib/currencies';
-import { displayName } from '../lib/format';
-import { LANGUAGES, setLanguage } from '../i18n';
+import { displayName, formatDate } from '../lib/format';
+import { LANGUAGES, setLanguage, t } from '../i18n';
 import { useTranslation } from 'react-i18next';
 
 /** web "Profile Settings" page: Personal Information card, plus appearance and account. */
@@ -28,6 +29,18 @@ export function SettingsScreen() {
   const { isTablet } = useLayout();
   const [values, setValues] = useState<Record<string, any> | null>(null);
   const { i18n } = useTranslation();
+  const { farmerOrg } = useMyOrg();
+  const { leave } = useFarmerOrgMutations();
+  const leaveOrg = async () => {
+    const ok = await confirm(t('Leave {{name}}? They will stop seeing your crop activity straight away. Your own records are not changed.', { name: farmerOrg.organization.name }), { confirmLabel: 'Leave', danger: true });
+    if (!ok) return;
+    try {
+      await leave.mutateAsync();
+      toast(t('You left the organization'));
+    } catch (err) {
+      toast(reasonText(err), 'error');
+    }
+  };
 
   const mutate = useMutation({
     mutationFn: (body: any) => api.put('/profile', body).then((r) => r.data),
@@ -106,6 +119,20 @@ export function SettingsScreen() {
             </View>
           </View>
         </ChartCard>
+
+        {farmerOrg ? (
+          <ChartCard title="My organization" icon="building">
+            <View style={{ gap: 10 }}>
+              <AppText weight="700" style={{ fontSize: 14 }}>{farmerOrg.organization.name} <AppText style={{ fontSize: 12, color: colors.textLight }}>· {t(farmerOrg.organization.type)}{farmerOrg.organization.district ? ` · ${farmerOrg.organization.district}` : ''}</AppText></AppText>
+              <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>
+                {t('Joined {{date}}. You agreed on {{consent}} to share a summary of your crop activity: farms, crops, planting, harvests and field activity. They can see it but cannot change your records.', { date: formatDate(farmerOrg.joined_at), consent: formatDate(farmerOrg.consent_given_at) })}
+              </AppText>
+              <View style={{ alignSelf: 'flex-start' }}>
+                <Button title="Leave organization" icon="right-from-bracket" kind="secondary" loading={leave.isPending} onPress={leaveOrg} />
+              </View>
+            </View>
+          </ChartCard>
+        ) : null}
 
         <ChartCard title="Language" icon="globe">
           <SelectField

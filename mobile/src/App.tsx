@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -27,6 +27,10 @@ import { ConfirmProvider } from './components/Confirm';
 import { Loading } from './components/ui';
 import { SplashHost, SplashReadyOnMount, useSplashReady } from './components/AppSplash';
 import { AppNavigator } from './navigation/AppNavigator';
+import { OrgNavigator } from './navigation/OrgNavigator';
+import { JoinScreen } from './screens/JoinScreen';
+import { OrgRegisterScreen } from './screens/org/OrgRegisterScreen';
+import { usePendingJoin, pendingJoin } from './lib/pendingJoin';
 import { AuthNavigator } from './navigation/AuthNavigator';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AccountGateScreen } from './screens/AccountGateScreen';
@@ -72,6 +76,8 @@ function ApiTokenBridge() {
 function RootGate() {
   const { profile, isLoading, isFetching, isError, error, refetch } = useProfile();
   const splashReady = useSplashReady();
+  const pendingToken = usePendingJoin();
+  const [registeringOrg, setRegisteringOrg] = useState(false);
 
   useEffect(() => {
     if (!isLoading) splashReady();
@@ -88,8 +94,20 @@ function RootGate() {
   if (isError || !profile) {
     return <ConnectionErrorScreen error={error} retrying={isFetching} onRetry={() => refetch()} />;
   }
+  const ctx = profile.org_context;
+  // organization staff work in the organization workspace, not the farm modules
+  if (!profile.is_admin && ctx?.platform_role === 'org_user') {
+    return <OrgNavigator role={ctx.membership?.role || 'org_staff'} />;
+  }
+  // a farmer who opened a referral link finishes joining first (it also approves their account)
+  if (!profile.is_admin && pendingToken && !ctx?.farmer_org && ['new', 'pending', 'active'].includes(profile.account_status || 'new')) {
+    return <JoinScreen token={pendingToken} onDone={() => { pendingJoin.clear(); refetch(); }} />;
+  }
+  if (!profile.is_admin && profile.account_status === 'new' && registeringOrg) {
+    return <OrgRegisterScreen email={profile.email} onBack={() => setRegisteringOrg(false)} />;
+  }
   if (!profile.is_admin && profile.account_status !== 'active') {
-    return <AccountGateScreen profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
+    return <AccountGateScreen onRegisterOrg={() => setRegisteringOrg(true)} profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
   }
   if (!profile.onboarded) return <OnboardingScreen profile={profile} />;
   // the default currency pre-fills new records (each record keeps its own currency)

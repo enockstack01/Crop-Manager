@@ -39,6 +39,12 @@ export function AuthScreen({ mode = 'sign-in' }) {
             <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" appearance={appearance} />
           )}
 
+          {isSignUp && (
+            <p className="subtitle auth-split-switch">
+              {t('Registering an organization?')}{' '}
+              <Link to="/organization/register">{t('Register it here')}</Link>
+            </p>
+          )}
           <p className="subtitle auth-split-switch">
             {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
             <Link to={isSignUp ? '/sign-in' : '/sign-up'}>{isSignUp ? 'Sign in' : 'Sign up'}</Link>

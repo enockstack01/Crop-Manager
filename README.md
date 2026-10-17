@@ -164,3 +164,15 @@ npm start              # serves the API; deploy client/dist to any static host
 CropManager uses the Anthropic API (server side only). Set `ANTHROPIC_API_KEY` in `server/.env` (or the host's environment) and restart the server; no code change is needed. Optional: `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`) and `AI_DAILY_LIMIT` (default 40 requests per user per day). `AI_MOCK=1` returns canned answers for development.
 
 Features (web and mobile, answered in the interface language): diagnosis report from a scouting photo (cause, treatment, medication, how to give it), farm insights, plans and advice (inputs, planting, fertiliser, irrigation, protection, harvest), lender-ready season summary, quick record entry in plain words, and a farm-aware chat. Farm records are sent to Anthropic with each request; usage is logged per user in the `aiusages` collection.
+
+## Organizations and farmer referrals
+
+Cooperatives, NGOs, companies and programmes can have their own accounts, bring farmers onto CropManager with referral links and see a summary of their farmers' crop activity (specification: Logistack "Organization Accounts and Farmer Referral Architecture" v1.0). Crop activity only: farms, fields, crop cycles, planting, activities, irrigation, fertilizer, crop protection, scouting and harvests. Finances, inventory and equipment are never shared.
+
+- **Roles:** system administrator (the existing admin flag), organization administrator, organization field officer, farmer. Every route checks membership and role on the server.
+- **Flow:** an organization registers (pending), a system administrator approves it and sets its farmer limit, the organization creates referral links (valid six hours, with a cap on farmers per link), farmers open the link, sign up or in, agree to share a summary and join. Referred farmers are approved automatically. A farmer belongs to one organization at a time and can leave in Settings.
+- **Limits:** the farmer limit and each link's cap are taken with atomic updates, so simultaneous sign-ups cannot exceed them. Links are validated with server time when opened and again when submitted. Link tokens are stored only as hashes.
+- **Settings** (System Settings, organization settings): link validity (default 6 hours), default farmer limit, default farmers per link, days before a farmer counts as inactive.
+- **Migration:** `npm run migrate-orgs --workspace server` (add `-- --dry` to preview, `-- --rollback --yes` to undo). Existing users stay independent farmers.
+- **Tests:** with the API running (`ALLOW_DEV_AUTH=1 PORT=5075 node server/src/index.js`) run `npm run test:orgs --workspace server`.
+- **Public link address:** set `PUBLIC_APP_URL` (default `https://crop.agricoders.com` in production).

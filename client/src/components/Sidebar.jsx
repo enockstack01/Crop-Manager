@@ -59,17 +59,33 @@ const SECTIONS = [
   { label: 'System', items: [{ to: '/settings', icon: 'fa-cog', label: 'Settings' }] },
 ];
 
+const ORG_SECTIONS = [
+  { items: [{ to: '/org', icon: 'fa-th-large', label: 'Overview', end: true }] },
+  {
+    label: 'Organization',
+    items: [
+      { to: '/org/farmers', icon: 'fa-users', label: 'Farmers' },
+      { to: '/org/links', icon: 'fa-link', label: 'Referral links' },
+      { to: '/org/team', icon: 'fa-user-group', label: 'Team', admin: true },
+      { to: '/org/profile', icon: 'fa-building', label: 'Organization' },
+    ],
+  },
+  { label: 'System', items: [{ to: '/settings', icon: 'fa-cog', label: 'Settings' }] },
+];
+
 const ADMIN_SECTION = {
   label: 'Administration',
   items: [
     { to: '/admin', icon: 'fa-gauge-high', label: 'Admin Overview', end: true },
     { to: '/admin/users', icon: 'fa-users-gear', label: 'User Management' },
+    { to: '/admin/organizations', icon: 'fa-building', label: 'Organizations' },
+    { to: '/admin/audit', icon: 'fa-clipboard-list', label: 'Audit log' },
     { to: '/admin/data', icon: 'fa-database', label: 'Data Browser' },
     { to: '/admin/settings', icon: 'fa-sliders', label: 'System Settings' },
   ],
 };
 
-export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }) {
+export function Sidebar({ collapsed, mobileOpen, isAdmin, orgRole = '', onToggle, onNavigate }) {
   const { signOut } = useClerk();
 
   return (
@@ -86,10 +102,10 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, onToggle, onNavigate }
       </div>
 
       <nav className="sidebar-nav">
-        {(isAdmin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS).map((section, i) => (
+        {(orgRole ? ORG_SECTIONS : isAdmin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS).map((section, i) => (
           <div key={section.label || i}>
             {section.label && <div className="sidebar-label">{t(section.label)}</div>}
-            {section.items.map((item) => (
+            {section.items.filter((item) => !item.admin || orgRole === 'org_admin').map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

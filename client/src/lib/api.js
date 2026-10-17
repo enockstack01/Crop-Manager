@@ -40,6 +40,7 @@ api.interceptors.response.use(
       'Request failed';
     const wrapped = new Error(message);
     wrapped.status = error.response?.status;
+    wrapped.code = error.response?.data?.details?.code; // machine-readable reason, translated by the screens
     wrapped.original = error;
     return Promise.reject(wrapped);
   }

@@ -25,6 +25,22 @@
       },
       "permissions": [
         "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "crop.agricoders.com",
+              "pathPrefix": "/join"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "plugins": [

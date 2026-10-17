@@ -19,7 +19,7 @@ import { t } from '../i18n';
  * the access-request form, then "request sent", or the on-hold / rejected /
  * deactivated notice (mirrors client/src/components/AccountGate.jsx).
  */
-export function AccountGateScreen({ profile, onRefresh, refreshing }: { profile: any; onRefresh: () => void; refreshing: boolean }) {
+export function AccountGateScreen({ profile, onRefresh, refreshing, onRegisterOrg }: { profile: any; onRefresh: () => void; refreshing: boolean; onRegisterOrg?: () => void }) {
   const status = profile.account_status || 'new';
   const [resubmit, setResubmit] = useState(false);
 
@@ -31,7 +31,7 @@ export function AccountGateScreen({ profile, onRefresh, refreshing }: { profile:
   }, [status, onRefresh]);
 
   if (status === 'new' || (status === 'rejected' && resubmit)) {
-    return <RequestForm profile={profile} onCancel={status === 'rejected' ? () => setResubmit(false) : undefined} />;
+    return <RequestForm profile={profile} onCancel={status === 'rejected' ? () => setResubmit(false) : undefined} onRegisterOrg={status === 'new' ? onRegisterOrg : undefined} />;
   }
   return <StatusNotice profile={profile} onRefresh={onRefresh} refreshing={refreshing} onResubmit={() => setResubmit(true)} />;
 }
@@ -41,7 +41,7 @@ function SignOutButton() {
   return <Button title="Sign out" kind="ghost" onPress={() => signOut()} />;
 }
 
-function RequestForm({ profile, onCancel }: { profile: any; onCancel?: () => void }) {
+function RequestForm({ profile, onCancel, onRegisterOrg }: { profile: any; onCancel?: () => void; onRegisterOrg?: () => void }) {
   const qc = useQueryClient();
   const { user } = useUser();
   const prev = profile.access_request || {};
@@ -103,6 +103,7 @@ function RequestForm({ profile, onCancel }: { profile: any; onCancel?: () => voi
           style={{ marginTop: spacing.xs }}
         />
         {onCancel ? <Button title="Cancel" kind="secondary" onPress={onCancel} /> : null}
+        {onRegisterOrg ? <Button title="Registering an organization?" icon="building" kind="ghost" onPress={onRegisterOrg} /> : null}
       </View>
     </AuthLayout>
   );
