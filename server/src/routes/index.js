@@ -8,9 +8,13 @@ import { getMe, updateMe, submitAccessRequest } from '../controllers/profile.con
 import { adjustStock } from '../controllers/inventory.controller.js';
 import uploadsRouter from './uploads.routes.js';
 import adminRouter from './admin.routes.js';
+import { orgRouter, publicJoin, selfRouter } from './org.routes.js';
 import aiRouter from './ai.routes.js';
 
 const api = Router();
+
+// public: the page behind a referral link asks which organization it belongs to (rate limited)
+api.use(publicJoin);
 
 // Everything below requires a signed-in Clerk user
 api.use(requireAuth);
@@ -23,6 +27,9 @@ api.put('/profile', updateMe);
 api.patch('/profile', updateMe);
 api.post('/profile/access-request', submitAccessRequest);
 
+// organization sign-up, joining through a referral link and leaving: also before approval
+api.use(selfRouter);
+
 // administrators only (requireAdmin inside)
 api.use('/admin', adminRouter);
 
@@ -30,6 +37,9 @@ api.use('/admin', adminRouter);
 api.use(requireActiveAccount);
 
 api.get('/dashboard', getDashboard);
+
+// organization workspace (membership and role are checked inside)
+api.use('/organizations', orgRouter);
 
 api.use('/uploads', uploadsRouter);
 

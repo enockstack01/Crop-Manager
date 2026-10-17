@@ -9,7 +9,9 @@
     "start": "node src/index.js",
     "seed": "node src/scripts/seed.js",
     "bootstrap-demo": "node src/scripts/bootstrap-demo.js",
-    "grant-admin": "node src/scripts/grant-admin.js"
+    "grant-admin": "node src/scripts/grant-admin.js",
+    "migrate-orgs": "node src/scripts/migrate-orgs.js",
+    "test:orgs": "node src/scripts/test-orgs.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

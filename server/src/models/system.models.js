@@ -30,6 +30,7 @@ const ProfileSchema = ownedSchema({
   access_request: { type: mongoose.Schema.Types.Mixed, default: null },
   currency: { type: String, enum: CURRENCY_CODES, default: 'USD' },
   language: { type: String, enum: ['en', 'fr', 'rw', 'sw', null], default: null }, // interface language (web + mobile)
+  user_type: { type: String, enum: ['farmer', 'org'], default: 'farmer' }, // organization staff use the organization workspace, farmers the farm modules
   ai_daily_limit: { type: Number, default: null, min: 0 }, // admin override of the AI requests per day (null = platform default)
   last_seen_at: { type: Date, default: null },
 });

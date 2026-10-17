@@ -12,6 +12,7 @@ import { getDbAdminEmails, addAdminEmail as addEmail, removeAdminEmail as remove
 import { STATUS_NOTICES, statusPatch } from '../lib/accountStatus.js';
 import * as M from '../models/index.js';
 import { getLimits, setLimits, usageSummary } from '../lib/ai/usage.js';
+import { audit, detachFarmer } from '../lib/orgs/core.js';
 
 const COUNT_MODELS = OWNED_MODELS.map((model) => [model.modelName, model]);
 
@@ -210,6 +211,10 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   if (userId === req.userId) throw createHttpError(400, 'You cannot delete your own account here');
 
+  // leave no dangling organization links behind (the farmer count of their organization goes down)
+  await detachFarmer({ farmerId: userId, status: 'removed', by: req.userId, reason: 'account deleted' });
+  await M.OrganizationMember.updateMany({ user_id: userId }, { $set: { status: 'removed' } });
+  await audit(req, 'user.deleted', { target_type: 'user', target_id: userId });
   const deletedDocs = await clearUser(userId);
   await M.Profile.deleteOne({ user_id: userId });
   let clerkDeleted = false;

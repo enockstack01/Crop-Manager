@@ -6,6 +6,7 @@ import { isAllowlistedAdmin } from '../lib/adminAllowlist.js';
 import { CURRENCY_CODES } from '../lib/currencies.js';
 import { notifyAdmins, statusPatch } from '../lib/accountStatus.js';
 import { Profile } from '../models/index.js';
+import { orgContextFor } from '../lib/orgs/core.js';
 
 // role is deliberately absent: new users are Farmers and only an admin can change it
 // (PATCH /api/admin/users/:id)
@@ -66,7 +67,8 @@ export const getMe = asyncHandler(async (req, res) => {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).lean();
 
-  res.json(serialize(profile));
+  // role and organization context: tells the apps which workspace to open
+  res.json({ ...serialize(profile), org_context: await orgContextFor(profile) });
 });
 
 export const updateMe = asyncHandler(async (req, res) => {
