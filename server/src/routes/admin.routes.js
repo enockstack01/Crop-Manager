@@ -12,6 +12,7 @@ import {
   deleteRecord,
   resourceList,
   getSettings,
+  setAiLimits,
   addAdminEmail,
   removeAdminEmail,
 } from '../controllers/admin.controller.js';
@@ -23,6 +24,7 @@ router.get('/overview', overview);
 router.get('/resources', resourceList);
 
 router.get('/settings', getSettings);
+router.put('/settings/ai-limits', setAiLimits);
 router.post('/settings/admins', addAdminEmail);
 router.delete('/settings/admins/:email', removeAdminEmail);
 

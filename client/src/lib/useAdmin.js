@@ -53,7 +53,11 @@ export function useAdminSettingsMutations() {
     mutationFn: (email) => api.delete(`/admin/settings/admins/${encodeURIComponent(email)}`).then((r) => r.data),
     onSuccess: invalidate,
   });
-  return { addAdmin, removeAdmin };
+  const setAiLimits = useMutation({
+    mutationFn: (body) => api.put('/admin/settings/ai-limits', body).then((r) => r.data),
+    onSuccess: invalidate,
+  });
+  return { addAdmin, removeAdmin, setAiLimits };
 }
 
 export function useAdminDataMutations() {

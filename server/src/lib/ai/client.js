@@ -8,10 +8,14 @@ import createHttpError from '../httpError.js';
  *   ANTHROPIC_API_KEY   the key (server only, never sent to a browser or the mobile app)
  *   ANTHROPIC_MODEL     model id, default claude-sonnet-5-5
  *   AI_DAILY_LIMIT      requests per user per day, default 40 (admins are not limited)
+ *   AI_HOURLY_LIMIT     requests per user per hour, default 15
+ *   Both limits can be changed from Admin > System settings; a per-user daily limit can be set on the
+ *   user's page. The environment values are the defaults until an administrator changes them.
  *   AI_MOCK=1           canned answers without calling Anthropic (development and tests only)
  */
 export const AI_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
 export const AI_DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT || 40);
+export const AI_HOURLY_LIMIT = Number(process.env.AI_HOURLY_LIMIT || 15);
 
 export const aiMock = () => process.env.AI_MOCK === '1' && process.env.NODE_ENV !== 'production';
 export const aiConfigured = () => aiMock() || !!process.env.ANTHROPIC_API_KEY;

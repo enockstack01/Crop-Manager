@@ -5,7 +5,7 @@ import { asyncHandler } from '../lib/asyncHandler.js';
 import { UPLOAD_DIR } from '../routes/uploads.routes.js';
 import { CropScoutingRecord } from '../models/index.js';
 import { aiConfigured, aiMock, askText, askTool, AI_MODEL } from '../lib/ai/client.js';
-import { assertWithinLimit, logUsage, remainingToday } from '../lib/ai/usage.js';
+import { assertWithinLimit, logUsage, usageFor } from '../lib/ai/usage.js';
 import { buildFarmContext, contextText } from '../lib/ai/farmContext.js';
 import {
   ADVICE_TOPICS, ADVICE_TOOL, DIAGNOSE_TOOL, INSIGHTS_TOOL, RECORD_TOOL, SUMMARY_TOOL, mockFor, systemBlocks,
@@ -41,8 +41,8 @@ async function runTool(req, { feature, mock = feature, tool, userText, extraSyst
 
 /* ---------------------------------------------------------------- status */
 export const status = asyncHandler(async (req, res) => {
-  const { limit, remaining } = await remainingToday(req.profile);
-  res.json({ enabled: aiConfigured(), mock: aiMock(), model: aiConfigured() ? AI_MODEL : null, limit, remaining });
+  const u = await usageFor(req.profile);
+  res.json({ enabled: aiConfigured(), mock: aiMock(), model: aiConfigured() ? AI_MODEL : null, ...u });
 });
 
 /* -------------------------------------------------------------- diagnose */

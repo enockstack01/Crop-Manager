@@ -30,9 +30,11 @@ export function AiStatusBar() {
     );
   }
   if (s.remaining == null) return null;
+  const hourLeft = s.hourly_remaining != null && s.hourly_remaining < s.remaining;
   return (
     <div className="ai-status">
-      <i className="fas fa-bolt" /> {t('{{count}} AI requests left today', { count: s.remaining })}
+      <i className="fas fa-bolt" />{' '}
+      {hourLeft ? t('{{count}} AI requests left this hour', { count: s.hourly_remaining }) : t('{{count}} AI requests left today', { count: s.remaining })}
     </div>
   );
 }

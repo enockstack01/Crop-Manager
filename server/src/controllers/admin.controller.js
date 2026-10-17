@@ -11,6 +11,7 @@ import { OWNED_MODELS, clearUser, seedUser } from '../lib/seedData.js';
 import { getDbAdminEmails, addAdminEmail as addEmail, removeAdminEmail as removeEmail } from '../lib/adminAllowlist.js';
 import { STATUS_NOTICES, statusPatch } from '../lib/accountStatus.js';
 import * as M from '../models/index.js';
+import { getLimits, setLimits, usageSummary } from '../lib/ai/usage.js';
 
 const COUNT_MODELS = OWNED_MODELS.map((model) => [model.modelName, model]);
 
@@ -166,6 +167,12 @@ export const updateUser = asyncHandler(async (req, res) => {
   for (const key of ['is_admin', 'role']) {
     if (req.body[key] !== undefined) patch[key] = req.body[key];
   }
+  if (req.body.ai_daily_limit !== undefined) {
+    const v = req.body.ai_daily_limit;
+    if (v === null || v === '') patch.ai_daily_limit = null; // back to the platform default
+    else if (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 10000) patch.ai_daily_limit = Number(v);
+    else throw createHttpError(400, 'AI requests per day must be a whole number from 0 to 10000');
+  }
   // legacy toggle from older clients: is_active true/false → active/deactivated
   let status = req.body.account_status;
   if (status === undefined && req.body.is_active !== undefined) status = req.body.is_active ? 'active' : 'deactivated';
@@ -287,6 +294,12 @@ export const reseedUser = asyncHandler(async (req, res) => {
 
 // ---- GET /api/admin/settings ----
 export const getSettings = asyncHandler(async (_req, res) => {
+  const [aiLimits, aiToday] = await Promise.all([getLimits(), usageSummary()]);
+  const topProfiles = await M.Profile.find({ user_id: { $in: aiToday.top.map((x) => x.user_id) } }, 'user_id email full_name').lean();
+  aiToday.top = aiToday.top.map((x) => {
+    const p = topProfiles.find((q) => q.user_id === x.user_id);
+    return { ...x, name: p?.full_name || p?.email || x.user_id };
+  });
   const conn = mongoose.connection;
   const [dbStats, dbAdmins, collectionCounts] = await Promise.all([
     conn.db.stats().catch(() => null),
@@ -315,12 +328,23 @@ export const getSettings = asyncHandler(async (_req, res) => {
       data_size_mb: dbStats ? +(dbStats.dataSize / 1048576).toFixed(2) : null,
       storage_size_mb: dbStats ? +(dbStats.storageSize / 1048576).toFixed(2) : null,
     },
+    ai: { limits: aiLimits, today: aiToday },
     collection_counts: Object.fromEntries(collectionCounts),
     admin_allowlist: {
       env: env.adminEmails, // immutable, from server/.env
       managed: dbAdmins, // editable here
     },
   });
+});
+
+// ---- PUT /api/admin/settings/ai-limits  { daily, hourly } ----
+export const setAiLimits = asyncHandler(async (req, res) => {
+  const daily = Number(req.body.daily);
+  const hourly = Number(req.body.hourly);
+  const ok = (v) => Number.isInteger(v) && v >= 0 && v <= 10000;
+  if (!ok(daily) || !ok(hourly)) throw createHttpError(400, 'Limits must be whole numbers from 0 to 10000');
+  if (hourly > daily) throw createHttpError(400, 'The hourly limit cannot be higher than the daily limit');
+  res.json(await setLimits({ daily, hourly }, req.userId));
 });
 
 // ---- POST /api/admin/settings/admins  { email } ----

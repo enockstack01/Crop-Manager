@@ -15,15 +15,27 @@ function fmtUptime(s) {
 
 export default function AdminSettings() {
   const { data, isLoading, isError } = useAdminSettings();
-  const { addAdmin, removeAdmin } = useAdminSettingsMutations();
+  const { addAdmin, removeAdmin, setAiLimits } = useAdminSettingsMutations();
   const toast = useToast();
   const confirm = useConfirm();
   const [email, setEmail] = useState('');
+  const [limits, setLimits] = useState(null);
 
   if (isLoading) return <Loading label="Loading system settings..." />;
   if (isError || !data) return <EmptyState icon="fa-exclamation-triangle" title="Could not load settings" />;
 
-  const { app, database, collection_counts: counts, admin_allowlist: allow } = data;
+  const { app, database, collection_counts: counts, admin_allowlist: allow, ai } = data;
+  const form = limits || { daily: ai.limits.daily, hourly: ai.limits.hourly };
+  const saveLimits = async (e) => {
+    e.preventDefault();
+    try {
+      await setAiLimits.mutateAsync({ daily: Number(form.daily), hourly: Number(form.hourly) });
+      toast(t('AI limits saved'));
+      setLimits(null);
+    } catch (err) {
+      toast(err.message || 'Failed', 'error');
+    }
+  };
 
   const add = async (e) => {
     e.preventDefault();
@@ -88,6 +100,38 @@ export default function AdminSettings() {
       </div>
 
       <div className="chart-grid">
+        <div className="card">
+          <div className="card-header">
+            <h3><i className="fas fa-wand-magic-sparkles" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('AI usage limits')}</h3>
+          </div>
+          <div className="card-body">
+            <p style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 12 }}>
+              {t("Each user can make this many AI requests. Administrators are not limited. A different daily limit can be set on a user's page.")}
+            </p>
+            <form onSubmit={saveLimits} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">{t('Requests per day')}</label>
+                <input className="form-control" type="number" min="0" max="10000" value={form.daily} onChange={(e) => setLimits({ ...form, daily: e.target.value })} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">{t('Requests per hour')}</label>
+                <input className="form-control" type="number" min="0" max="10000" value={form.hourly} onChange={(e) => setLimits({ ...form, hourly: e.target.value })} />
+              </div>
+              <button className="btn btn-primary" disabled={setAiLimits.isPending}>{t('Save')}</button>
+            </form>
+            <div style={{ marginTop: 16, fontSize: 13 }}>
+              <strong>{t('Today')}:</strong> {formatNumber(ai.today.requests)} {t('requests')} · {formatNumber(ai.today.users)} {t('users')}
+              {ai.today.top.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  {ai.today.top.map((x) => (
+                    <div key={x.user_id} style={row}><span>{x.name}</span><strong>{formatNumber(x.count)}</strong></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="card">
           <div className="card-header">
             <h3><i className="fas fa-user-shield" style={{ color: 'var(--pine)', marginRight: 8 }} />{t('Administrator allowlist')}</h3>

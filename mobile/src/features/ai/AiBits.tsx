@@ -26,6 +26,7 @@ export function AiStatusBar() {
   }, []);
   if (!s) return null;
   const off = !s.enabled;
+  const hourLeft = s.hourly_remaining != null && s.remaining != null && s.hourly_remaining < s.remaining;
   if (!off && s.remaining == null) return null;
   return (
     <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingHorizontal: 12,
@@ -34,7 +35,7 @@ export function AiStatusBar() {
       <AppText style={{ fontSize: 12, color: colors.textLight, flexShrink: 1 }}>
         {off
           ? (s.error ? t('Could not check the AI assistant.') : t('The AI assistant is not set up yet. Your administrator needs to add the Anthropic API key.'))
-          : t('{{count}} AI requests left today', { count: s.remaining })}
+          : hourLeft ? t('{{count}} AI requests left this hour', { count: s.hourly_remaining }) : t('{{count}} AI requests left today', { count: s.remaining })}
       </AppText>
     </View>
   );

@@ -153,6 +153,23 @@ export default function AdminUserDetail() {
               onChange={(e) => patch({ role: e.target.value }, 'Account type updated')}
               options={USER_ROLES}
             />
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">{t('AI requests per day')}</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                max="10000"
+                key={u.ai_daily_limit ?? 'default'}
+                defaultValue={u.ai_daily_limit ?? ''}
+                placeholder={t('Platform default')}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (String(u.ai_daily_limit ?? '') !== v) patch({ ai_daily_limit: v === '' ? null : Number(v) }, 'AI limit updated');
+                }}
+              />
+              <div className="form-hint">{t('Leave empty to use the platform default. 0 turns AI off for this user.')}</div>
+            </div>
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" onClick={doReseed} disabled={reseed.isPending}>
                 <i className="fas fa-seedling" /> {t('Re-seed demo data')}
