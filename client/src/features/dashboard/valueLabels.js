@@ -2,7 +2,6 @@
  * Every chart shows the numbers it draws (same approach as LivestockPro):
  *  - bars: the value at the end of each bar (turned upright when wider than the bar)
  *  - lines: the value above each point
- *  - doughnuts: the value on each slice that fits, and "label: value (pct%)" in the legend
  * Values are shortened (12.4K) so they fit; tooltips still show the exact figure.
  * Per chart: options.plugins.valueLabels = { display, lines, color, surface }.
  */
@@ -50,25 +49,6 @@ export const valueLabelsPlugin = {
     ctx.save();
     ctx.font = FONT(chart.width < 440 ? 9.5 : 11);
 
-    if (chart.config.type === 'doughnut' || chart.config.type === 'pie') {
-      chart.data.datasets.forEach((ds, di) => {
-        if (!chart.isDatasetVisible(di)) return;
-        chart.getDatasetMeta(di).data.forEach((arc, i) => {
-          const v = Number(ds.data[i]) || 0;
-          if (!v || chart.getDataVisibility?.(i) === false) return;
-          const { startAngle, endAngle, innerRadius, outerRadius, x, y } = arc.getProps(['startAngle', 'endAngle', 'innerRadius', 'outerRadius', 'x', 'y']);
-          const text = formatCompact(v);
-          const r = (innerRadius + outerRadius) / 2;
-          // too thin to hold the number: the legend lists it
-          if ((endAngle - startAngle) * r < ctx.measureText(text).width + 6 || outerRadius - innerRadius < 14) return;
-          const mid = (startAngle + endAngle) / 2;
-          drawText(ctx, text, x + Math.cos(mid) * r, y + Math.sin(mid) * r, { color: '#FFFFFF', halo: 'rgba(0,0,0,0.25)' });
-        });
-      });
-      ctx.restore();
-      return;
-    }
-
     const horizontal = chart.options.indexAxis === 'y';
     chart.data.datasets.forEach((ds, di) => {
       if (!chart.isDatasetVisible(di)) return;
@@ -102,14 +82,3 @@ export const valueLabelsPlugin = {
     ctx.restore();
   },
 };
-
-/** Doughnut / pie legend items read "Label: value (pct%)". */
-export function legendWithValues(chart, baseGenerate) {
-  const items = baseGenerate(chart);
-  const data = chart.data.datasets?.[0]?.data || [];
-  const total = data.reduce((s, v) => s + (Number(v) || 0), 0);
-  return items.map((it) => {
-    const v = Number(data[it.index]) || 0;
-    return { ...it, text: `${it.text}: ${formatCompact(v)} (${total ? Math.round((v / total) * 100) : 0}%)` };
-  });
-}
