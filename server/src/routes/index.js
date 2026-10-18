@@ -43,7 +43,7 @@ api.use('/organizations', orgRouter);
 
 api.use('/uploads', uploadsRouter);
 
-// AI assistant (Anthropic): diagnosis reports, insights, advice, summaries, chat
+// AI assistant: diagnosis reports, insights, advice, summaries, chat
 api.use('/ai', aiRouter);
 
 // resource-specific extras

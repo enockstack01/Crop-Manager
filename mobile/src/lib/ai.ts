@@ -1,7 +1,7 @@
 import { api } from './api';
 import i18n, { t } from '../i18n';
 
-/* The CropManager AI assistant (server: /api/ai, Anthropic). Answers come back in the interface language. */
+/* The CropManager AI assistant (server: /api/ai). Answers come back in the interface language. */
 const post = (path: string, body: Record<string, unknown> = {}) =>
   api.post(`/ai/${path}`, { language: i18n.language, ...body }, { timeout: 90000 }).then((r) => r.data);
 

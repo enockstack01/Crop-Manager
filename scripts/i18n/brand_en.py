@@ -14,7 +14,7 @@ import re
 # written exactly like this wherever they appear
 PROPER = {
     'CropManager', 'LivestockPro', 'Agriplan', 'Agricoders', 'Logistack', 'Google', 'Clerk', 'Android', 'iOS',
-    'Kinyarwanda', 'Swahili', 'French', 'English', 'Anthropic', 'Claude', 'Rwanda', 'Zambia',
+    'Kinyarwanda', 'Swahili', 'French', 'English', 'Rwanda', 'Zambia',
 }
 PROPER_PHRASES = ['One Health']
 ABBREVIATIONS = {'prod', 'exp', 'qty', 'avg', 'est', 'approx', 'max', 'min', 'no', 'vs', 'e.g', 'i.e'}

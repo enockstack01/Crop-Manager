@@ -2,7 +2,7 @@ import { api } from './api.js';
 import i18n from '../i18n/index.js';
 
 /*
- * The CropManager AI assistant (server: /api/ai, powered by the Anthropic API). Every call
+ * The CropManager AI assistant (server: /api/ai). Every call
  * sends the interface language so the answer is written in it. Model calls can take a while,
  * so they get a longer timeout than the rest of the API.
  */

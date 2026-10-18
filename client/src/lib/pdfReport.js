@@ -168,7 +168,7 @@ export async function downloadDiagnosisPdf(o) {
   if (r.follow_up_days) block(t('Follow up'), t('Check the crop again in {{count}} days.', { count: r.follow_up_days }));
 
   // disclaimer box (Amber outline)
-  const note = doc.splitTextToSize(t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by Anthropic.'), W - 2 * M - 20);
+  const note = doc.splitTextToSize(t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by our AI service.'), W - 2 * M - 20);
   room(note.length * 12 + 24);
   doc.setDrawColor(...C.amber);
   doc.roundedRect(M, y, W - 2 * M, note.length * 12 + 16, 6, 6, 'S');

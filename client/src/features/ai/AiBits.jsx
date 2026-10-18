@@ -7,7 +7,7 @@ export function AiDisclaimer() {
   return (
     <p className="ai-disclaimer">
       <i className="fas fa-circle-info" />{' '}
-      {t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by Anthropic.')}
+      {t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by our AI service.')}
     </p>
   );
 }
@@ -25,7 +25,7 @@ export function AiStatusBar() {
     return (
       <div className="ai-status ai-status-off">
         <i className="fas fa-plug-circle-xmark" />{' '}
-        {s.error ? t('Could not check the AI assistant.') : t('The AI assistant is not set up yet. Your administrator needs to add the Anthropic API key.')}
+        {s.error ? t('Could not check the AI assistant.') : t('The AI assistant is not set up yet. Your administrator needs to switch it on.')}
       </div>
     );
   }

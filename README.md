@@ -161,9 +161,9 @@ npm start              # serves the API; deploy client/dist to any static host
 
 ## AI assistant
 
-CropManager uses the Anthropic API (server side only). Set `ANTHROPIC_API_KEY` in `server/.env` (or the host's environment) and restart the server; no code change is needed. Optional: `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`) and `AI_DAILY_LIMIT` (default 40 requests per user per day). `AI_MOCK=1` returns canned answers for development.
+The AI features run on the server only. Set `AI_API_KEY` in `server/.env` (or the host's environment) and restart the server; no code change is needed. Optional: `AI_MODEL`, `AI_DAILY_LIMIT` (default 40 requests per user per day) and `AI_HOURLY_LIMIT` (default 15). `AI_MOCK=1` returns canned answers for development.
 
-Features (web and mobile, answered in the interface language): diagnosis report from a scouting photo (cause, treatment, medication, how to give it), farm insights, plans and advice (inputs, planting, fertiliser, irrigation, protection, harvest), lender-ready season summary, quick record entry in plain words, and a farm-aware chat. Farm records are sent to Anthropic with each request; usage is logged per user in the `aiusages` collection.
+Features (web and mobile, answered in the interface language): diagnosis report from a scouting photo (cause, treatment, medication, how to give it), farm insights, plans and advice (inputs, planting, fertiliser, irrigation, protection, harvest), lender-ready season summary, quick record entry in plain words, and a farm-aware chat. Farm records are sent to the AI service with each request; usage is logged per user in the `aiusages` collection.
 
 ## Organizations and farmer referrals
 

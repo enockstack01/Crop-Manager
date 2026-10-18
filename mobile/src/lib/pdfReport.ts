@@ -55,7 +55,7 @@ function html(r: any, o: { photo?: string | null; crop?: string; owner?: string 
     ${r.other_possibilities?.length ? section('Other possibilities', r.other_possibilities.join(' · ')) : ''}
     ${section('When to get expert help', r.when_to_get_help)}
     ${r.follow_up_days ? section('Follow up', t('Check the crop again in {{count}} days.', { count: r.follow_up_days })) : ''}
-    <div class="note">${esc(t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by Anthropic.'))}</div>
+    <div class="note">${esc(t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by our AI service.'))}</div>
   </div>
   <div class="foot">CropManager &middot; by Agricoders &middot; www.agricoders.com</div>
   </body></html>`;

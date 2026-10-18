@@ -14,7 +14,8 @@ Rules:
 - Prices, doses and rules differ by country. Give general ranges and ask the farmer to follow the product label, local extension officers and national regulations. Name active ingredients or product types, not guaranteed brands.
 - For anything risky (pesticides, veterinary-style treatments, spraying) include protective clothing, re-entry and pre-harvest intervals, and safe storage.
 - You support, not replace, a local agronomist. When the problem is serious, spreading, or unclear, say clearly that an expert should look at it.
-- Do not use markdown symbols such as ** or #. Plain sentences and short lists only.`;
+- Do not use markdown symbols such as ** or #. Plain sentences and short lists only.
+- If asked who or what you are, say you are the CropManager assistant. Never name the AI model, its maker or the service behind you.`;
 
 /** system blocks: stable instructions first, the farm snapshot last and cached for follow-up questions */
 export const systemBlocks = (lang, contextText, extra = '') => [
@@ -167,7 +168,7 @@ const MOCKS = {
     follow_up_days: 5, need_better_photo: false, photo_tips: '',
   },
   insights: {
-    headline: 'Sample insights: connect the Anthropic key to see advice based on your own records.',
+    headline: 'Sample insights: switch the assistant on to see advice based on your own records.',
     items: [{ title: 'Add this week\'s scouting', detail: 'No scouting record in the last 14 days. Walk each field and record pests, disease and weeds.', priority: 'Medium', area: 'Records', module: 'crop-scouting-records' }],
     missing_records: ['Expenses for this month'],
   },
@@ -180,5 +181,5 @@ const MOCKS = {
     risks_and_controls: 'Sample risks.', outlook: 'Sample outlook.', record_quality: 'Sample record quality.', highlights: ['Sample highlight'],
   },
   record: { resource: 'expenses', summary: 'Sample: record an expense of 50 for fertilizer.', date: new Date().toISOString().slice(0, 10), amount: 50, category: 'Fertilizer', description: 'Fertilizer', missing: [] },
-  chat: 'This is a sample answer. Add the Anthropic API key on the server to chat with the real assistant about your farm.',
+  chat: 'This is a sample answer. Ask your administrator to switch the assistant on to chat about your farm.',
 };

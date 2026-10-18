@@ -4,7 +4,7 @@ import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { UPLOAD_DIR } from '../routes/uploads.routes.js';
 import { CropScoutingRecord } from '../models/index.js';
-import { aiConfigured, aiMock, askText, askTool, AI_MODEL } from '../lib/ai/client.js';
+import { aiConfigured, aiMock, askText, askTool } from '../lib/ai/client.js';
 import { assertWithinLimit, logUsage, usageFor } from '../lib/ai/usage.js';
 import { buildFarmContext, contextText } from '../lib/ai/farmContext.js';
 import {
@@ -19,7 +19,7 @@ const clip = (v, n = 1500) => (typeof v === 'string' ? v.trim().slice(0, n) : ''
 /** Runs one structured request: limit check, farm snapshot, model call, usage log. */
 async function runTool(req, { feature, mock = feature, tool, userText, extraSystem = '', withFarm = true, content, maxTokens }) {
   if (!aiConfigured()) {
-    throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to add the Anthropic API key.', { code: 'ai_not_configured' });
+    throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
   }
   await assertWithinLimit(req.profile);
   if (aiMock()) {
@@ -42,7 +42,7 @@ async function runTool(req, { feature, mock = feature, tool, userText, extraSyst
 /* ---------------------------------------------------------------- status */
 export const status = asyncHandler(async (req, res) => {
   const u = await usageFor(req.profile);
-  res.json({ enabled: aiConfigured(), mock: aiMock(), model: aiConfigured() ? AI_MODEL : null, ...u });
+  res.json({ enabled: aiConfigured(), ...u });
 });
 
 /* -------------------------------------------------------------- diagnose */
@@ -168,7 +168,7 @@ export const parseRecord = asyncHandler(async (req, res) => {
 /* -------------------------------------------------------------------- chat */
 export const chat = asyncHandler(async (req, res) => {
   if (!aiConfigured()) {
-    throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to add the Anthropic API key.', { code: 'ai_not_configured' });
+    throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
   }
   const incoming = Array.isArray(req.body?.messages) ? req.body.messages : [];
   const turns = incoming

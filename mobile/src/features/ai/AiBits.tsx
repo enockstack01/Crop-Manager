@@ -11,7 +11,7 @@ export function AiDisclaimer() {
   const { colors } = useTheme();
   return (
     <AppText style={{ fontSize: 12, lineHeight: 18, color: colors.textLight, marginTop: 16 }}>
-      {t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by Anthropic.')}
+      {t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by our AI service.')}
     </AppText>
   );
 }
@@ -34,7 +34,7 @@ export function AiStatusBar() {
       <Icon name={off ? 'plug-circle-xmark' : 'bolt'} size={12} color={off ? colors.orange : colors.primary} />
       <AppText style={{ fontSize: 12, color: colors.textLight, flexShrink: 1 }}>
         {off
-          ? (s.error ? t('Could not check the AI assistant.') : t('The AI assistant is not set up yet. Your administrator needs to add the Anthropic API key.'))
+          ? (s.error ? t('Could not check the AI assistant.') : t('The AI assistant is not set up yet. Your administrator needs to switch it on.'))
           : hourLeft ? t('{{count}} AI requests left this hour', { count: s.hourly_remaining }) : t('{{count}} AI requests left today', { count: s.remaining })}
       </AppText>
     </View>
