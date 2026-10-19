@@ -226,4 +226,7 @@ T = {
         "Rahisisha uzalishaji wako wa mazao. Fuatilia mashamba, mizunguko ya zao, shughuli, mavuno, akiba na fedha, mahali pamoja."),
     'System administrator': ('Administrateur système', 'Umuyobozi wa sisitemu', 'Msimamizi wa mfumo'),
     'Organization administrator': ("Administrateur de l'organisation", "Umuyobozi w'umuryango", 'Msimamizi wa shirika'),
+    'Could not reach CropManager': ("Impossible de joindre CropManager", "Ntibishobotse kugera kuri CropManager", "Imeshindikana kufikia CropManager"),
+    'Check your internet connection and try again. Your invitation link is still valid.': ("Vérifiez votre connexion internet et réessayez. Votre lien d'invitation est toujours valide.", "Genzura murandasi yawe ugerageze nanone. Ihuza ry'ubutumire bwawe riracyakora.", "Angalia muunganisho wako wa intaneti na ujaribu tena. Kiungo chako cha mwaliko bado ni halali."),
+    'Try again': ('Réessayer', 'Ongera ugerageze', 'Jaribu tena'),
 }

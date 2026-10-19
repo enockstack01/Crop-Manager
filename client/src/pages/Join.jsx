@@ -30,7 +30,13 @@ export default function Join() {
     let live = true;
     api.get(`/join/${token}`)
       .then((r) => { if (live) { pendingJoin.set(token); setState({ info: r.data }); } })
-      .catch((err) => { if (live) { pendingJoin.clear(); setState({ code: err.code || 'invalid', message: err.message }); } });
+      .catch((err) => {
+        if (!live) return;
+        // a server that cannot be reached is not a bad link: keep the link and offer a retry
+        if (err.network || (err.status || 0) >= 500) { setState({ unreachable: true }); return; }
+        pendingJoin.clear();
+        setState({ code: err.code || 'invalid', message: err.message });
+      });
     return () => { live = false; };
   }, [token]);
 
@@ -59,6 +65,14 @@ export default function Join() {
         </div>
 
         {state.loading && <p className="org-muted">{t('Checking your invitation…')}</p>}
+
+        {state.unreachable && (
+          <>
+            <h1>{t('Could not reach CropManager')}</h1>
+            <p className="org-muted">{t('Check your internet connection and try again. Your invitation link is still valid.')}</p>
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>{t('Try again')}</button>
+          </>
+        )}
 
         {state.code && (
           <>

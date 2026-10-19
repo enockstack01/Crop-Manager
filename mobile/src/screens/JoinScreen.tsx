@@ -19,7 +19,8 @@ const ICON = require('../../assets/brand/cropmanager-icon.png');
 export function JoinScreen({ token, onDone }: { token: string; onDone: () => void }) {
   const { colors } = useTheme();
   const { join } = useFarmerOrgMutations();
-  const [state, setState] = useState<{ loading?: boolean; info?: any; code?: string; message?: string }>({ loading: true });
+  const [state, setState] = useState<{ loading?: boolean; info?: any; code?: string; message?: string; unreachable?: boolean }>({ loading: true });
+  const [attempt, setAttempt] = useState(0);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,9 +28,14 @@ export function JoinScreen({ token, onDone }: { token: string; onDone: () => voi
     let live = true;
     api.get(`/join/${token}`)
       .then((r) => live && setState({ info: r.data }))
-      .catch((err: any) => live && setState({ code: err.code || 'invalid', message: err.message }));
+      .catch((err: any) => {
+        if (!live) return;
+        // a server that cannot be reached is not a bad link: keep the link and offer a retry
+        if (err.network || (err.status || 0) >= 500) setState({ unreachable: true });
+        else setState({ code: err.code || 'invalid', message: err.message });
+      });
     return () => { live = false; };
-  }, [token]);
+  }, [token, attempt]);
 
   const finish = async () => { await pendingJoin.clear(); onDone(); };
   const go = async () => {
@@ -56,6 +62,14 @@ export function JoinScreen({ token, onDone }: { token: string; onDone: () => voi
         </View>
 
         {state.loading ? <AppText variant="subtitle">{t('Checking your invitation…')}</AppText> : null}
+
+        {state.unreachable ? (
+          <>
+            <AppText weight="700" style={{ fontSize: 22, color: colors.primaryDark }}>{t('Could not reach CropManager')}</AppText>
+            <AppText variant="subtitle" style={{ fontSize: 13 }}>{t('Check your internet connection and try again. Your invitation link is still valid.')}</AppText>
+            <Button title="Try again" icon="rotate" onPress={() => { setState({ loading: true }); setAttempt((a) => a + 1); }} />
+          </>
+        ) : null}
 
         {state.code ? (
           <>
