@@ -103,3 +103,15 @@ The phone must be able to reach the API: same Wi-Fi as the API host, with port
 
 `android/` and `ios/` are git-ignored — run `npx expo prebuild` to generate them
 when you need a bare/local build.
+
+## Developing in Android Studio
+
+The Android project is generated from `app.json`, `app.config.js` and the plugins by Expo (`npx expo prebuild --platform android`). The generated `android/` folder is git-ignored, so cloud builds (`npm run build:android`) are unaffected; to rebuild it from scratch, delete `android/` and run the command again.
+
+1. Create `mobile/.env.local` (git-ignored) so the emulator can reach your computer: `EXPO_PUBLIC_API_URL=http://10.0.2.2:5000/api`, `EXPO_PUBLIC_API_ORIGIN=http://10.0.2.2:5000` and the same `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` as `.env` (`10.0.2.2` is the emulator's name for your computer). A real phone uses the LAN address in `.env`.
+2. Start the API: `npm run dev:server` from the repository root (port 5000).
+3. Open the `mobile/android` folder in Android Studio and let Gradle sync. If it asks for the SDK location, `android/local.properties` should contain `sdk.dir=C:/Users/<you>/AppData/Local/Android/Sdk` (forward slashes: single backslashes break the build). Use the JDK bundled with Android Studio (Settings, Build Tools, Gradle, Gradle JDK).
+4. Start an emulator (Device Manager) and press Run. Then start the JavaScript server with `npm start` in `mobile/` (or `npx expo start --dev-client`) so the app loads your code and reloads on save.
+5. From a terminal instead: `npm run android` in `mobile/` (builds, installs and starts everything).
+
+The first build compiles React Native and takes 10 to 20 minutes and a few GB of memory: close other Gradle builds first. The app is a development client, so JavaScript changes appear without rebuilding; rebuild only after changing native config or dependencies.
