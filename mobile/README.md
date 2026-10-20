@@ -115,3 +115,9 @@ The Android project is generated from `app.json`, `app.config.js` and the plugin
 5. From a terminal instead: `npm run android` in `mobile/` (builds, installs and starts everything).
 
 The first build compiles React Native and takes 10 to 20 minutes and a few GB of memory: close other Gradle builds first. The app is a development client, so JavaScript changes appear without rebuilding; rebuild only after changing native config or dependencies.
+
+Things that went wrong the first time, and the fixes:
+
+- **Gradle fails with "Invalid file path" or "restricted method in java.lang.System":** write `sdk.dir` in `android/local.properties` with forward slashes, and on Java 24 or newer (Android Studio's bundled JDK is Java 25) add `--enable-native-access=ALL-UNNAMED` to `org.gradle.jvmargs` in `android/gradle.properties`. Both files live in the generated `android/` folder, so repeat them after deleting and regenerating it.
+- **The app opens another project's code:** every Expo project defaults to Metro port 8081. If LivestockPro or another app is already using it, run this one on its own port (`npx expo start --dev-client --port 8082`) and open the app with `adb shell am start -a android.intent.action.VIEW -d "exp+cropmanager://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8082"`.
+- **"System UI isn't responding" on the emulator:** the machine is short of memory. Close other Gradle builds, Chrome and unused emulators, tap Wait, or cold boot the emulator (`emulator -avd <name> -no-snapshot-load`).
