@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAdmin } from '../middleware/admin.js';
 import { orgAccess } from '../lib/orgs/access.js';
 import * as oa from '../controllers/orgAdmin.controller.js';
+import * as aa from '../controllers/aiAdmin.controller.js';
 import {
   overview,
   listUsers,
@@ -38,6 +39,9 @@ router.patch('/organizations/:orgId', orgAccess(), oa.updateOrganizationAdmin);
 router.delete('/organizations/:orgId', orgAccess(), oa.deleteOrganizationAdmin);
 router.post('/organizations/:orgId/import-farmers', orgAccess(), oa.importFarmers);
 router.get('/platform-stats', oa.platformStats);
+router.get('/ai', aa.getAiAdmin);
+router.put('/ai/models', aa.putAiModels);
+router.post('/ai/test', aa.testAi);
 router.get('/audit-logs', oa.listAuditLogs);
 router.get('/settings/organizations', oa.getOrgSettingsAdmin);
 router.put('/settings/organizations', oa.putOrgSettingsAdmin);

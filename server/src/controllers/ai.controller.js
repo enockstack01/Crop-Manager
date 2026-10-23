@@ -4,8 +4,9 @@ import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { UPLOAD_DIR } from '../routes/uploads.routes.js';
 import { CropScoutingRecord } from '../models/index.js';
-import { aiConfigured, aiMock, askText, askTool } from '../lib/ai/client.js';
-import { assertWithinLimit, logUsage, usageFor } from '../lib/ai/usage.js';
+import { aiConfigured, aiMock, askAgent, askTool } from '../lib/ai/client.js';
+import { farmTools } from '../lib/ai/farmTools.js';
+import { assertWithinLimit, logFailure, logUsage, usageFor } from '../lib/ai/usage.js';
 import { buildFarmContext, contextText } from '../lib/ai/farmContext.js';
 import {
   ADVICE_TOPICS, ADVICE_TOOL, DIAGNOSE_TOOL, INSIGHTS_TOOL, RECORD_TOOL, SUMMARY_TOOL, mockFor, systemBlocks,
@@ -17,7 +18,7 @@ const langOf = (req) => (LANGS.includes(req.body?.language) ? req.body.language 
 const clip = (v, n = 1500) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 
 /** Runs one structured request: limit check, farm snapshot, model call, usage log. */
-async function runTool(req, { feature, mock = feature, tool, userText, extraSystem = '', withFarm = true, content, maxTokens }) {
+async function runTool(req, { feature, task = 'report', mock = feature, tool, userText, extraSystem = '', withFarm = true, content, maxTokens }) {
   if (!aiConfigured()) {
     throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
   }
@@ -29,14 +30,21 @@ async function runTool(req, { feature, mock = feature, tool, userText, extraSyst
   const lang = langOf(req);
   const { ctx, lists } = withFarm ? await buildFarmContext(req.userId, req.profile) : { ctx: null, lists: null };
   const system = systemBlocks(lang, ctx ? contextText(ctx) : 'FARM DATA: not shared for this request.', extraSystem);
-  const { data, usage } = await askTool({
-    system,
-    tool,
-    maxTokens,
-    messages: [{ role: 'user', content: content || [{ type: 'text', text: userText }] }],
-  });
-  await logUsage(req.userId, feature, usage);
-  return { data, lists };
+  let out;
+  try {
+    out = await askTool({
+      task,
+      system,
+      tool,
+      maxTokens,
+      messages: [{ role: 'user', content: content || [{ type: 'text', text: userText }] }],
+    });
+  } catch (err) {
+    await logFailure(req.userId, feature, err.tier, err.details?.code);
+    throw err;
+  }
+  await logUsage(req.userId, feature, out.usage, out.tier);
+  return { data: out.data, lists };
 }
 
 /* ---------------------------------------------------------------- status */
@@ -86,7 +94,7 @@ export const diagnose = asyncHandler(async (req, res) => {
   const text = `Diagnose this crop problem for the farmer and write the report: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${image ? '\n\nA photo of the affected plant is attached.' : '\n\nNo photo was added, so say how sure you can be.'}`;
   const content = image ? [image, { type: 'text', text }] : [{ type: 'text', text }];
   const { data } = await runTool(req, {
-    feature: 'diagnose', tool: DIAGNOSE_TOOL, content, maxTokens: 2500,
+    feature: 'diagnose', task: 'vision', tool: DIAGNOSE_TOOL, content, maxTokens: 2500,
     extraSystem: 'Task: crop disease, pest and nutrient diagnosis from a photo and notes. Look at leaf colour, spots, lesions, holes, frass, wilting, growth stage. Prefer the most likely cause for the farm\'s country and season. Be honest about uncertainty.',
   });
   res.json({ report: data, photo_url: photoUrl });
@@ -138,7 +146,7 @@ export const parseRecord = asyncHandler(async (req, res) => {
   const text = clip(req.body?.text, 800);
   if (!text) throw createHttpError(400, 'Type or say what you want to record.');
   const out = await runTool(req, {
-    feature: 'record', tool: RECORD_TOOL, maxTokens: 800,
+    feature: 'record', task: 'quick', tool: RECORD_TOOL, maxTokens: 800,
     userText: `Farmer says: "${text}"`,
     extraSystem: 'Task: turn what the farmer says into one expense, sale or harvest record. Never guess an amount or quantity the farmer did not say; list it under missing instead.',
   });
@@ -166,6 +174,27 @@ export const parseRecord = asyncHandler(async (req, res) => {
 });
 
 /* -------------------------------------------------------------------- chat */
+/** Runs the chat agent for one conversation: the farm snapshot plus tools that look up the detail. */
+export async function runChat(req, turns, { extraSystem = '', extra } = {}) {
+  const { ctx } = await buildFarmContext(req.userId, req.profile);
+  const { tools, handlers } = farmTools(req.userId, extra);
+  try {
+    const out = await askAgent({
+      task: 'chat',
+      system: systemBlocks(langOf(req), contextText(ctx), `Task: answer the farmer's question as a practical agronomist. Use the farm snapshot first; when you need details (dates, amounts, history) call the record tools instead of guessing. Keep answers short (under 200 words) unless the farmer asks for detail, and say clearly what data you used and what is missing. ${extraSystem}`),
+      messages: turns,
+      tools,
+      handlers,
+      maxTokens: 1800,
+    });
+    await logUsage(req.userId, 'chat', out.usage, out.tier);
+    return out.text;
+  } catch (err) {
+    await logFailure(req.userId, 'chat', err.tier, err.details?.code);
+    throw err;
+  }
+}
+
 export const chat = asyncHandler(async (req, res) => {
   if (!aiConfigured()) {
     throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
@@ -178,14 +207,8 @@ export const chat = asyncHandler(async (req, res) => {
   if (!turns.length || turns[turns.length - 1].role !== 'user') throw createHttpError(400, 'Ask a question first.');
   await assertWithinLimit(req.profile);
   if (aiMock()) {
-    await logUsage(req.userId, 'chat');
+    await logUsage(req.userId, 'chat', {}, 'mock');
     return res.json({ reply: mockFor('chat') });
   }
-  const { ctx } = await buildFarmContext(req.userId, req.profile);
-  const { text, usage } = await askText({
-    system: systemBlocks(langOf(req), contextText(ctx), 'Task: answer the farmer\'s question in a short chat message (under 180 words unless they ask for detail). Ask one short follow-up question only when you truly need it.'),
-    messages: turns,
-  });
-  await logUsage(req.userId, 'chat', usage);
-  res.json({ reply: text });
+  res.json({ reply: await runChat(req, turns) });
 });

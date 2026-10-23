@@ -36,6 +36,7 @@ import { OrgTeam, OrgProfile } from './pages/org/OrgTeamProfile.jsx';
 import AdminOrganizations from './pages/admin/AdminOrganizations.jsx';
 import AdminOrganizationDetail from './pages/admin/AdminOrganizationDetail.jsx';
 import AdminAudit from './pages/admin/AdminAudit.jsx';
+import AdminAI from './pages/admin/AdminAI.jsx';
 import { useMyOrg } from './lib/orgApi.js';
 import Settings from './pages/Settings.jsx';
 import { AdminGuard } from './components/AdminGuard.jsx';
@@ -114,6 +115,7 @@ export function App() {
           <Route path="organizations" element={<AdminOrganizations />} />
           <Route path="organizations/:orgId" element={<AdminOrganizationDetail />} />
           <Route path="audit" element={<AdminAudit />} />
+          <Route path="ai" element={<AdminAI />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

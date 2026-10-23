@@ -80,6 +80,7 @@ const ADMIN_SECTION = {
     { to: '/admin/users', icon: 'fa-users-gear', label: 'User Management' },
     { to: '/admin/organizations', icon: 'fa-building', label: 'Organizations' },
     { to: '/admin/audit', icon: 'fa-clipboard-list', label: 'Audit log' },
+    { to: '/admin/ai', icon: 'fa-wand-magic-sparkles', label: 'AI assistant' },
     { to: '/admin/data', icon: 'fa-database', label: 'Data Browser' },
     { to: '/admin/settings', icon: 'fa-sliders', label: 'System Settings' },
   ],

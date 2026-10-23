@@ -2,13 +2,15 @@ import mongoose from 'mongoose';
 import { ownedSchema } from '../../models/_base.js';
 import { SystemSetting } from '../../models/system.models.js';
 import createHttpError from '../httpError.js';
-import { AI_DAILY_LIMIT, AI_HOURLY_LIMIT, AI_MODEL } from './client.js';
+import { AI_DAILY_LIMIT, AI_HOURLY_LIMIT } from './client.js';
 
 /** One row per AI request: who asked, which feature, what it cost in tokens. */
 const AiUsageSchema = ownedSchema({
   feature: { type: String, required: true },
   day: { type: String, required: true, index: true }, // YYYY-MM-DD (UTC)
-  model: { type: String },
+  model: { type: String }, // the tier name (Fast, Balanced...), never the real model id
+  ok: { type: Boolean, default: true },
+  error_code: { type: String, default: '' },
   input_tokens: { type: Number, default: 0 },
   output_tokens: { type: Number, default: 0 },
   cache_read_tokens: { type: Number, default: 0 },
@@ -71,16 +73,40 @@ export async function assertWithinLimit(profile) {
   }
 }
 
-export const logUsage = (userId, feature, usage = {}) =>
-  AiUsage.create({ user_id: userId, feature, day: today(), model: AI_MODEL, ...usage }).catch((e) => console.error('[ai] usage log failed', e.message));
+export const logUsage = (userId, feature, usage = {}, tier = '') =>
+  AiUsage.create({ user_id: userId, feature, day: today(), model: tier, ...usage }).catch((e) => console.error('[ai] usage log failed', e.message));
 
-/** Platform-wide numbers for the admin screen. */
-export async function usageSummary() {
-  const day = today();
-  const [totals, top] = await Promise.all([
-    AiUsage.aggregate([{ $match: { day } }, { $group: { _id: null, requests: { $sum: 1 }, users: { $addToSet: '$user_id' }, input: { $sum: '$input_tokens' }, output: { $sum: '$output_tokens' } } }]),
-    AiUsage.aggregate([{ $match: { day } }, { $group: { _id: '$user_id', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 5 }]),
+/** A request that failed after it started (shown to administrators as errors; it does not use up the allowance). */
+export const logFailure = (userId, feature, tier = '', code = 'failed') =>
+  AiUsage.create({ user_id: userId, feature, day: today(), model: tier, ok: false, error_code: code }).catch(() => {});
+
+/** Usage over the last `days` days for the admin screen: totals, by day, by model, by feature, heaviest users. */
+export async function usageReport(days = 30) {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const match = { $match: { day: { $gte: since } } };
+  const sum = { requests: { $sum: { $cond: ['$ok', 1, 0] } }, errors: { $sum: { $cond: ['$ok', 0, 1] } }, input: { $sum: '$input_tokens' }, output: { $sum: '$output_tokens' }, cached: { $sum: '$cache_read_tokens' } };
+  const [total, byDay, byModel, byFeature, top, usersNow] = await Promise.all([
+    AiUsage.aggregate([match, { $group: { _id: null, ...sum, users: { $addToSet: '$user_id' } } }]),
+    AiUsage.aggregate([match, { $group: { _id: '$day', ...sum } }, { $sort: { _id: 1 } }]),
+    AiUsage.aggregate([match, { $group: { _id: '$model', ...sum } }, { $sort: { requests: -1 } }]),
+    AiUsage.aggregate([match, { $group: { _id: '$feature', ...sum } }, { $sort: { requests: -1 } }]),
+    AiUsage.aggregate([match, { $group: { _id: '$user_id', count: { $sum: 1 }, tokens: { $sum: { $add: ['$input_tokens', '$output_tokens'] } } } }, { $sort: { count: -1 } }, { $limit: 8 }]),
+    AiUsage.aggregate([{ $match: { day: today() } }, { $group: { _id: '$user_id' } }]),
   ]);
-  const t = totals[0] || {};
-  return { requests: t.requests || 0, users: t.users?.length || 0, input_tokens: t.input || 0, output_tokens: t.output || 0, top: top.map((x) => ({ user_id: x._id, count: x.count })) };
+  const t = total[0] || {};
+  const row = (r) => ({ requests: r.requests || 0, errors: r.errors || 0, input_tokens: r.input || 0, output_tokens: r.output || 0, cached_tokens: r.cached || 0 });
+  return {
+    days,
+    totals: { ...row(t), users: t.users?.length || 0, users_today: usersNow.length },
+    by_day: byDay.map((r) => ({ day: r._id, ...row(r) })),
+    by_model: byModel.map((r) => ({ model: r._id || 'unknown', ...row(r) })),
+    by_feature: byFeature.map((r) => ({ feature: r._id, ...row(r) })),
+    top_users: top.map((r) => ({ user_id: r._id, count: r.count, tokens: r.tokens })),
+  };
+}
+
+/** Today's requests, kept for the settings summary. */
+export async function usageSummary() {
+  const r = await usageReport(1);
+  return { requests: r.totals.requests, users: r.totals.users_today, input_tokens: r.totals.input_tokens, output_tokens: r.totals.output_tokens, top: r.top_users.slice(0, 5).map((x) => ({ user_id: x.user_id, count: x.count })) };
 }

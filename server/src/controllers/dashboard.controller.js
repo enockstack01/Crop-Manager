@@ -1,22 +1,9 @@
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { serialize } from '../lib/serialize.js';
-import { reshapeMany, toPopulate } from '../lib/shape.js';
-import { resourceByPath } from '../resources.js';
+import { recordLoader } from '../lib/records.js';
 import * as M from '../models/index.js';
 
-function loader(path, { sort, limit } = {}) {
-  const resource = resourceByPath[path];
-  const relations = resource.relations || [];
-  const populate = toPopulate(relations);
-  return async (user_id) => {
-    let query = resource.model.find({ user_id });
-    if (sort) query = query.sort(sort);
-    if (limit) query = query.limit(limit);
-    if (populate.length) query = query.populate(populate);
-    const rows = await query.lean();
-    return reshapeMany(serialize(rows), relations);
-  };
-}
+const loader = (path, opts) => recordLoader(path, opts);
 
 /**
  * Mirrors dashboard.js:loadAllData() — the eleven datasets the dashboard aggregates
