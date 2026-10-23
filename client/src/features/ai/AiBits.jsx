@@ -69,6 +69,7 @@ export function DiagnosisReport({ report: r, photo, photos = [] }) {
           <b>{t('The photo or notes are not enough for a sure answer.')}</b> {r.photo_tips}
         </div>
       )}
+      <Section icon="fa-camera" title="What is happening" text={r.overview} />
       <Section icon="fa-leaf" title="Affected part" text={r.affected_part} />
       {r.visible_signs?.length > 0 && <Section icon="fa-eye" title="What the photo shows" text={r.visible_signs.join(' · ')} />}
       <Section icon="fa-magnifying-glass" title="Cause" text={r.cause} />
@@ -79,6 +80,7 @@ export function DiagnosisReport({ report: r, photo, photos = [] }) {
       {r.other_possibilities?.length > 0 && (
         <Section icon="fa-list" title="Other possibilities" text={r.other_possibilities.join(' · ')} />
       )}
+      <Section icon="fa-link" title="Your farm" text={r.farm_link} />
       <Section icon="fa-user-doctor" title="When to get expert help" text={r.when_to_get_help} />
       {r.follow_up_days ? (
         <p className="ai-followup"><i className="fas fa-calendar-check" /> {t('Check the crop again in {{count}} days.', { count: r.follow_up_days })}</p>

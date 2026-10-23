@@ -356,7 +356,7 @@ function PlantCheck() {
   const [mode, setMode] = useState(null); // null | 'camera' | 'files'
   return (
     <>
-      <p className="ai-lead">{t('Take a photo of the sick leaf, stem or fruit. The assistant finds the infected part, names the problem and tells you how to treat it.')}</p>
+      <p className="ai-lead">{t('Take a photo, or choose one from your device: a field, a plant, a leaf, stem or fruit. The assistant tells you what is happening on your farm, finds the affected part, names the problem and tells you how to treat it, using your own records and the weather.')}</p>
       <div className="ai-actions">
         <button className="btn btn-primary" onClick={() => setMode('camera')}><i className="fas fa-camera" /> {t('Take a photo')}</button>
         <button className="btn btn-secondary" onClick={() => setMode('files')}><i className="fas fa-image" /> {t('Choose photos')}</button>

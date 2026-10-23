@@ -345,7 +345,7 @@ function PlantCheck() {
   const [mode, setMode] = useState<null | 'camera' | 'files'>(null);
   return (
     <View style={{ gap: 12 }}>
-      <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('Take a photo of the sick leaf, stem or fruit. The assistant finds the infected part, names the problem and tells you how to treat it.')}</AppText>
+      <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('Take a photo, or choose one from your device: a field, a plant, a leaf, stem or fruit. The assistant tells you what is happening on your farm, finds the affected part, names the problem and tells you how to treat it, using your own records and the weather.')}</AppText>
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
         <Button title="Take a photo" icon="camera" onPress={() => setMode('camera')} />
         <Button title="Choose photos" kind="secondary" icon="image" onPress={() => setMode('files')} />

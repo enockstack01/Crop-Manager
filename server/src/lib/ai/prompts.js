@@ -36,6 +36,8 @@ export const DIAGNOSE_TOOL = {
       problem_type: { type: 'string', enum: ['Disease', 'Pest', 'Nutrient deficiency', 'Weed', 'Weather or soil stress', 'Healthy', 'Unclear'] },
       confidence: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'How sure you are from the photo and notes' },
       severity: { type: 'string', enum: ['Low', 'Medium', 'High', 'Critical'] },
+      overview: str('What is happening in the photo(s) in plain words: the crop or animal, growth stage, overall condition, soil and surroundings, and anything that needs the farmer\'s attention. Describe only what is visible.'),
+      farm_link: str('How this relates to the farmer\'s own records and the weather (name the field, crop, stock or recent work) and what is missing. Empty if nothing in the records applies.'),
       affected_part: str('Which part of the plant is affected as seen in the photo: leaf, stem, fruit, root, flower, whole plant... (empty without a photo)'),
       visible_signs: list('What you can see on the affected part: colour, spots, lesions, holes, mould, wilting... (at most 5, empty without a photo)'),
       cause: str('What is causing it and what favours it, in 2 to 4 sentences'),
@@ -197,6 +199,7 @@ const MOCKS = {
   },
   diagnose: {
     title: 'Fall armyworm damage (sample answer)', problem_type: 'Pest', confidence: 'Medium', severity: 'High',
+    overview: 'Sample: young maize with ragged leaves in a dry field.', farm_link: 'Mock answer.',
     affected_part: 'Leaf (whorl)', visible_signs: ['Ragged holes in young leaves', 'Sawdust-like droppings'],
     cause: 'Young caterpillars feed inside the whorl and leave ragged holes and sawdust-like droppings. Warm dry spells and late planting favour them.',
     treatment: 'Scout 20 plants in a W pattern. Hand-pick egg masses and young larvae where the attack is small. Spray early morning or late evening, aiming into the whorl.',

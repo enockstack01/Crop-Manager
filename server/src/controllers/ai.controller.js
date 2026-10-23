@@ -92,14 +92,17 @@ export const diagnose = asyncHandler(async (req, res) => {
     ['Affected area or share of plants', clip(b.affected, 120)],
   ].filter(([, v]) => v);
   const images = urls.map((u) => photoBlock(req.userId, u)).filter(Boolean);
-  const image = images[0] || null;
-  if (!image && !lines.length) throw createHttpError(400, 'Add a photo or describe what you see.');
+  if (!images.length && !lines.length) throw createHttpError(400, 'Add a photo or describe what you see.');
+  try {
+    const w = await weatherForUser(req.userId, {});
+    if (w.located) lines.push(['Weather at the farm', `now ${w.current.temp}C ${w.current.description}, rain past 7 days ${w.rain_past_7d_mm} mm, next days ${JSON.stringify(w.daily.slice(0, 4).map((d) => ({ date: d.date, min: d.tmin, max: d.tmax, rain_mm: d.rain_mm })))}`]);
+  } catch { /* the report works without weather */ }
 
-  const text = `Diagnose this crop problem for the farmer and write the report: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${images.length ? `\n\n${images.length === 1 ? 'A photo' : `${images.length} photos`} of the plant ${images.length === 1 ? 'is' : 'are'} attached. Find the part that is infected or damaged (leaf, stem, fruit, root or the whole plant), say which part it is, and describe the signs you can see on it.` : '\n\nNo photo was added, so say how sure you can be.'}`;
+  const text = `Report what is exactly happening on the farm in the attached photo(s) and notes, then the problem if any: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${images.length ? `\n\n${images.length === 1 ? 'A photo' : `${images.length} photos`} of the plant ${images.length === 1 ? 'is' : 'are'} attached. Find the part that is infected or damaged (leaf, stem, fruit, root or the whole plant), say which part it is, and describe the signs you can see on it.` : '\n\nNo photo was added, so say how sure you can be.'}`;
   const content = images.length ? [...images, { type: 'text', text }] : [{ type: 'text', text }];
   const { data } = await runTool(req, {
     feature: 'diagnose', task: 'vision', tool: DIAGNOSE_TOOL, content, maxTokens: 2500,
-    extraSystem: 'Task: crop disease, pest and nutrient diagnosis from a photo and notes. Look at leaf colour, spots, lesions, holes, frass, wilting, growth stage. Prefer the most likely cause for the farm\'s country and season. Be honest about uncertainty.',
+    extraSystem: 'Task: report what is exactly happening on the farm from the photo(s) and notes: first the overview of the scene (crop, stage, condition, soil, weeds, pests, water, anything unusual), then the problem if any, and link it to the farmer\'s records and the weather. The photo may show a whole field, a single plant, a leaf, stock or equipment. Crop disease, pest and nutrient diagnosis: Look at leaf colour, spots, lesions, holes, frass, wilting, growth stage. Prefer the most likely cause for the farm\'s country and season. Be honest about uncertainty.',
   });
   res.json({ report: data, photo_url: photoUrl });
 });

@@ -112,6 +112,7 @@ export function DiagnosisReport({ report: r, photos = [] }: { report: any; photo
           ))}
         </View>
       ) : null}
+      <Section icon="camera" title="What is happening" text={r.overview} />
       <Section icon="leaf" title="Affected part" text={r.affected_part} />
       {r.visible_signs?.length ? <Section icon="eye" title="What the photo shows" text={r.visible_signs.join(' · ')} /> : null}
       <Section icon="magnifying-glass" title="Cause" text={r.cause} />
@@ -120,6 +121,7 @@ export function DiagnosisReport({ report: r, photos = [] }: { report: any; photo
       <Section icon="clipboard-list" title="How to give it" text={r.how_to_give} />
       <Section icon="shield-halved" title="Prevention" text={r.prevention} />
       {r.other_possibilities?.length ? <Section icon="list" title="Other possibilities" text={r.other_possibilities.join(' · ')} /> : null}
+      <Section icon="link" title="Your farm" text={r.farm_link} />
       <Section icon="user-doctor" title="When to get expert help" text={r.when_to_get_help} />
       {r.follow_up_days ? (
         <AppText style={{ fontSize: 13, color: colors.textLight }}>{t('Check the crop again in {{count}} days.', { count: r.follow_up_days })}</AppText>

@@ -340,6 +340,7 @@ export async function downloadDiagnosisPdf(o) {
   const sections = [
     { type: 'tiles', tiles: [{ label: 'Type', value: t(r.problem_type) }, { label: 'Severity', value: t(r.severity) }, { label: 'Confidence', value: t(r.confidence) }] },
     photo ? { type: 'image', data: photo } : null,
+    { type: 'text', title: t('What is happening'), text: r.overview },
     { type: 'text', title: t('Affected part'), text: r.affected_part },
     r.visible_signs?.length ? { type: 'list', title: t('What the photo shows'), items: r.visible_signs } : null,
     { type: 'text', title: t('Cause'), text: r.cause },
@@ -348,11 +349,12 @@ export async function downloadDiagnosisPdf(o) {
     { type: 'text', title: t('How to give it'), text: r.how_to_give },
     { type: 'text', title: t('Prevention'), text: r.prevention },
     r.other_possibilities?.length ? { type: 'text', title: t('Other possibilities'), text: r.other_possibilities.join(' · ') } : null,
+    { type: 'text', title: t('Your farm'), text: r.farm_link },
     { type: 'text', title: t('When to get expert help'), text: r.when_to_get_help },
     r.follow_up_days ? { type: 'text', title: t('Follow up'), text: t('Check the crop again in {{count}} days.', { count: r.follow_up_days }) } : null,
     { type: 'note', text: t('AI advice is a guide, not a prescription. Follow product labels and local rules, and ask an agronomist or vet for serious problems. The text you send is processed by our AI service.') },
   ].filter(Boolean);
   return downloadDocPdf({
-    kind: t('Disease analysis report'), title: r.title, meta: [o.crop, o.context, o.owner], sections, fileName: o.fileName, landscape: false,
+    kind: t('Farm photo report'), title: r.title, meta: [o.crop, o.context, o.owner], sections, fileName: o.fileName, landscape: false,
   });
 }
