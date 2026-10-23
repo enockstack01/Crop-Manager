@@ -6,10 +6,12 @@ import { UPLOAD_DIR } from '../routes/uploads.routes.js';
 import { CropScoutingRecord } from '../models/index.js';
 import { aiConfigured, aiMock, askAgent, askTool } from '../lib/ai/client.js';
 import { farmTools } from '../lib/ai/farmTools.js';
+import { weatherTool } from './weather.controller.js';
+import { weatherForUser } from '../lib/weather.js';
 import { assertWithinLimit, logFailure, logUsage, usageFor } from '../lib/ai/usage.js';
 import { buildFarmContext, contextText } from '../lib/ai/farmContext.js';
 import {
-  ADVICE_TOPICS, ADVICE_TOOL, DIAGNOSE_TOOL, INSIGHTS_TOOL, RECORD_TOOL, SUMMARY_TOOL, mockFor, systemBlocks,
+  ADVICE_TOPICS, ADVICE_TOOL, CALC_TOOL, DIAGNOSE_TOOL, INSIGHTS_TOOL, RECORD_TOOL, SUMMARY_TOOL, mockFor, systemBlocks,
 } from '../lib/ai/prompts.js';
 
 const LANGS = ['en', 'fr', 'rw', 'sw', 'ar', 'de', 'es', 'hi', 'pt', 'zh'];
@@ -173,11 +175,45 @@ export const parseRecord = asyncHandler(async (req, res) => {
   res.json({ resource: r.resource, summary: r.summary, record, missing: [...new Set(missing)], crop_name: crop?.name || r.crop || null, farm_name: farm?.name || null });
 });
 
+/* ------------------------------------------------------------ calculator report */
+export const calculatorReport = asyncHandler(async (req, res) => {
+  const b = req.body || {};
+  const type = clip(b.type, 40);
+  if (!type) throw createHttpError(400, 'Say which calculator this is.');
+  const inputs = JSON.stringify(b.inputs || {}).slice(0, 1500);
+  const results = (Array.isArray(b.results) ? b.results : []).slice(0, 12).map((r) => `${clip(r.label, 80)}: ${clip(String(r.value), 120)}`).join('\n');
+  let weather = '';
+  try {
+    const w = await weatherForUser(req.userId, {});
+    if (w.located) {
+      const days = w.daily.slice(0, 5).map((d) => ({ date: d.date, min: d.tmin, max: d.tmax, rain_mm: d.rain_mm, chance: d.pop }));
+      weather = `\nWEATHER at ${w.location.name}: now ${w.current.temp}C ${w.current.description}; next days ${JSON.stringify(days)}; rain past 7 days ${w.rain_past_7d_mm} mm; water plan ${JSON.stringify(w.water)}`;
+    }
+  } catch { /* the report still works without weather */ }
+  const field = b.field_name ? `\nThey chose the field "${clip(b.field_name, 80)}".` : '';
+  const { data } = await runTool(req, {
+    feature: 'calculator', tool: CALC_TOOL, maxTokens: 3000,
+    userText: `The farmer used the "${type}" calculator.\nINPUTS: ${inputs}\nRESULTS:\n${results}${field}${weather}\nExplain the results, work out the other quantities they will need, and give a plan using their own records (fields, crops, stock in inventory, past applications, costs) and the weather. Use the record tools when you need details.`,
+    extraSystem: 'Task: farm calculation report. Check the arithmetic yourself; if the inputs look unrealistic for the crop or unit, say so plainly. Name the farmer\'s fields, crops and stock items where they matter.',
+  });
+  res.json({ report: data });
+});
+
+/* ---------------------------------------------------------- weather briefing */
+export const weatherBriefing = asyncHandler(async (req, res) => {
+  if (!aiConfigured()) throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
+  await assertWithinLimit(req.profile);
+  if (aiMock()) { await logUsage(req.userId, 'weather', {}, 'mock'); return res.json({ briefing: mockFor('chat') }); }
+  const reply = await runChat(req, [{ role: 'user', content: 'Call the weather tool and give me a weather briefing for my farm for the coming week: what to do and what to avoid for my crops and fields (planting, fertilizer, spraying, irrigation, harvest, disease risk). Name my crops and fields where it matters. Short numbered steps, at most 220 words.' }]);
+  res.json({ briefing: reply });
+});
+
 /* -------------------------------------------------------------------- chat */
 /** Runs the chat agent for one conversation: the farm snapshot plus tools that look up the detail. */
 export async function runChat(req, turns, { extraSystem = '', extra } = {}) {
   const { ctx } = await buildFarmContext(req.userId, req.profile);
-  const { tools, handlers } = farmTools(req.userId, extra);
+  const w = weatherTool(req.userId);
+  const { tools, handlers } = farmTools(req.userId, extra ? { tools: [...w.tools, ...extra.tools], handlers: { ...w.handlers, ...extra.handlers } } : w);
   try {
     const out = await askAgent({
       task: 'chat',

@@ -108,6 +108,37 @@ export const ADVICE_TOOL = {
   },
 };
 
+export const CALC_TOOL = {
+  name: 'report_calculation',
+  description: 'Explain a farm calculation and what to do with it, using the records of this farm.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      headline: str('The result in one plain sentence for the farmer'),
+      meaning: list('What each result means in practice (one entry per result line)', {
+        type: 'object',
+        properties: { result: str('The result line'), explanation: str('What it means for the farm, in simple words') },
+        required: ['result', 'explanation'],
+      }),
+      estimates: list('Other useful estimates worked out from the inputs: bags or sacks, number of applications, cost, labour days, water per plant, etc. Show the arithmetic briefly in the note', {
+        type: 'object',
+        properties: { label: str('What is estimated'), value: str('The figure with its unit'), note: str('How it was worked out and what it assumes') },
+        required: ['label', 'value'],
+      }),
+      recommendations: list('What to do next, in order, with timing and amounts for this farm', {
+        type: 'object',
+        properties: { action: str('What to do'), detail: str('Amount, timing or method') },
+        required: ['action'],
+      }),
+      farm_link: str('How this relates to your own fields, crops, stock and past records (name them), and what is missing'),
+      weather_note: str('How the current weather and forecast change this plan (empty if it does not matter)'),
+      cautions: list('Mistakes and safety points to avoid (at most 4)'),
+      assumptions: list('Assumptions made because data was missing'),
+    },
+    required: ['headline', 'meaning', 'recommendations'],
+  },
+};
+
 export const SUMMARY_TOOL = {
   name: 'report_season_summary',
   description: 'Write a season summary a bank or lender can read.',
@@ -157,6 +188,11 @@ export const RECORD_TOOL = {
 export const mockFor = (feature) => MOCKS[feature];
 
 const MOCKS = {
+  calc: {
+    headline: 'Sample explanation: switch the assistant on to see advice based on your own records.',
+    meaning: [{ result: 'Result', explanation: 'This is the amount your inputs give.' }], estimates: [], recommendations: [{ action: 'Check the result against local advice', detail: 'Ask your extension officer.' }],
+    farm_link: 'Mock answer.', weather_note: '', cautions: [], assumptions: [],
+  },
   diagnose: {
     title: 'Fall armyworm damage (sample answer)', problem_type: 'Pest', confidence: 'Medium', severity: 'High',
     cause: 'Young caterpillars feed inside the whorl and leave ragged holes and sawdust-like droppings. Warm dry spells and late planting favour them.',

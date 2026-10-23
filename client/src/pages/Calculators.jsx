@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CALCULATOR_BY_TYPE, CALCULATORS } from '../lib/calculators.js';
 import { useList, useResourceMutations } from '../lib/useResource.js';
@@ -14,6 +15,8 @@ export default function Calculators() {
   const { data } = useList('calculation-history', { perPage: 20, sort: 'created_at', order: 'desc' });
   const { remove } = useResourceMutations('calculation-history');
   const history = data?.data || [];
+  const [q, setQ] = useState('');
+  const shown = CALCULATORS.filter((c) => !q.trim() || `${t(c.title)} ${t(c.desc)} ${c.title}`.toLowerCase().includes(q.trim().toLowerCase()));
 
   const reopen = (h) => {
     try {
@@ -35,14 +38,17 @@ export default function Calculators() {
     <>
       <PageHeader title="Agricultural Calculators" subtitle="Quick field-planning tools." />
 
+      <input className="form-control calc-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search calculators...')} aria-label={t('Search calculators...')} />
       <div className="calculator-grid" style={{ marginBottom: 32 }}>
-        {CALCULATORS.map((c) => (
+        {shown.length === 0 && <p style={{ color: 'var(--text-light)' }}>{t('No calculator matches your search.')}</p>}
+        {shown.map((c) => (
           <Link key={c.type} className="calc-card" to={`/calculators/${c.type}`}>
             <div className="calc-card-icon">
               <i className={`fas ${c.icon}`} />
             </div>
             <h3>{c.title}</h3>
             <p>{c.desc}</p>
+            <span className="ai-chip">{t('Fills from your farm, explains the result')}</span>
           </Link>
         ))}
       </div>

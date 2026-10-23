@@ -16,6 +16,8 @@ export const aiInsights = () => post('insights');
 export const aiAdvice = (topic, question) => post('advice', { topic, question });
 export const aiSeasonSummary = (scope) => post('season-summary', { scope });
 export const aiParseRecord = (text) => post('parse-record', { text });
+export const aiWeatherBriefing = () => post('weather-briefing');
+export const aiCalculatorReport = (body) => post('calculator-report', body);
 export const aiChat = (messages) => post('chat', { messages });
 
 /** The diagnosis report as plain text for the scouting "Recommendation" field. */

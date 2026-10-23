@@ -54,6 +54,7 @@ const SECTIONS = [
     items: [
       { to: '/reports', icon: 'fa-file-alt', label: 'Reports' },
       { to: '/calendar', icon: 'fa-calendar-check', label: 'Calendar' },
+      { to: '/weather', icon: 'fa-cloud-sun', label: 'Weather' },
     ],
   },
   { label: 'System', items: [{ to: '/settings', icon: 'fa-cog', label: 'Settings' }] },

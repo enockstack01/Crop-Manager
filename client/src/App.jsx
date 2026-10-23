@@ -26,6 +26,7 @@ import Calculators from './pages/Calculators.jsx';
 import CalculatorDetail from './pages/CalculatorDetail.jsx';
 import Reports from './pages/Reports.jsx';
 import Calendar from './pages/Calendar.jsx';
+import Weather from './pages/Weather.jsx';
 import Assistant from './pages/Assistant.jsx';
 import Join from './pages/Join.jsx';
 import OrgRegister from './pages/OrgRegister.jsx';
@@ -97,6 +98,7 @@ export function App() {
         <Route path="assistant" element={<Assistant />} />
         <Route path="reports" element={<Reports />} />
         <Route path="calendar" element={<Calendar />} />
+        <Route path="weather" element={<Weather />} />
         <Route path="settings" element={<Settings />} />
 
         <Route path="org">

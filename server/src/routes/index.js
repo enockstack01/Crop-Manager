@@ -5,6 +5,8 @@ import { resources } from '../resources.js';
 import { genericRouter } from './generic.routes.js';
 import { getDashboard } from '../controllers/dashboard.controller.js';
 import { search } from '../controllers/search.controller.js';
+import { calculatorContext } from '../controllers/calculators.controller.js';
+import { getWeather, findPlace } from '../controllers/weather.controller.js';
 import { getMe, updateMe, submitAccessRequest } from '../controllers/profile.controller.js';
 import { adjustStock } from '../controllers/inventory.controller.js';
 import uploadsRouter from './uploads.routes.js';
@@ -38,6 +40,9 @@ api.use('/admin', adminRouter);
 api.use(requireActiveAccount);
 
 api.get('/dashboard', getDashboard);
+api.get('/weather', getWeather);
+api.get('/calculators/context', calculatorContext);
+api.get('/weather/geocode', findPlace);
 api.get('/search', search);
 
 // organization workspace (membership and role are checked inside)

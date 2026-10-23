@@ -18,5 +18,7 @@ router.post('/advice', ai.advice);
 router.post('/season-summary', ai.seasonSummary);
 router.post('/parse-record', ai.parseRecord);
 router.post('/chat', ai.chat);
+router.post('/calculator-report', ai.calculatorReport);
+router.post('/weather-briefing', ai.weatherBriefing);
 
 export default router;
