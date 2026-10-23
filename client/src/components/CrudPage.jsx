@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useList, useResourceMutations } from '../lib/useResource.js';
 import { debounce } from '../lib/format.js';
 import { useToast } from './Toast.jsx';
 import { useConfirm } from './Confirm.jsx';
 import { Modal } from './Modal.jsx';
+import { ExportMenu } from './ExportMenu.jsx';
+import { downloadExport } from '../lib/download.js';
 import {
   DataTable,
   EmptyState,
@@ -41,11 +44,16 @@ export function CrudPage({
   extraActions,
 }) {
   const toast = useToast();
+  const loc = useLocation();
   const confirm = useConfirm();
   const { remove } = useResourceMutations(resource);
 
   const [page, setPage] = useState(1);
   const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') || ''); // the top bar search opens a page with its box filled in
+  useEffect(() => {
+    const v = new URLSearchParams(loc.search).get('q');
+    if (v !== null) setQ(v);
+  }, [loc.search]);
   const [sort, setSort] = useState(defaultSort.sort);
   const [order, setOrder] = useState(defaultSort.order);
   const [filterValues, setFilterValues] = useState({});
@@ -103,17 +111,22 @@ export function CrudPage({
       <PageHeader
         title={title}
         subtitle={subtitle}
-        action={
-          FormComponent && (
-            <button className="btn btn-primary" onClick={() => setFormState({ editing: null })}>
-              <i className="fas fa-plus" /> {t(addLabel)}
-            </button>
-          )
-        }
+        action={(
+          <div className="page-actions">
+            <ExportMenu
+              run={(format) => downloadExport(`/export/${resource}`, { format, ...(q ? { q } : {}), ...filterValues }, `${resource}.${format}`)}
+            />
+            {FormComponent && (
+              <button className="btn btn-primary" onClick={() => setFormState({ editing: null })}>
+                <i className="fas fa-plus" /> {t(addLabel)}
+              </button>
+            )}
+          </div>
+        )}
       />
 
       {(searchable || filters.length > 0) && (
-        <TableToolbar onSearch={searchable ? onSearch : undefined} searchPlaceholder={searchPlaceholder}>
+        <TableToolbar key={loc.search} search={q} onSearch={searchable ? onSearch : undefined} searchPlaceholder={searchPlaceholder}>
           {filters.map((f) => (
             <FilterSelect
               key={f.key}

@@ -6,6 +6,7 @@ import { genericRouter } from './generic.routes.js';
 import { getDashboard } from '../controllers/dashboard.controller.js';
 import { search } from '../controllers/search.controller.js';
 import { calculatorContext } from '../controllers/calculators.controller.js';
+import { exportAll, exportResource, exportTables } from '../controllers/export.controller.js';
 import { getWeather, findPlace } from '../controllers/weather.controller.js';
 import { getMe, updateMe, submitAccessRequest } from '../controllers/profile.controller.js';
 import { adjustStock } from '../controllers/inventory.controller.js';
@@ -40,6 +41,9 @@ api.use('/admin', adminRouter);
 api.use(requireActiveAccount);
 
 api.get('/dashboard', getDashboard);
+api.get('/export', exportAll);
+api.post('/export/tables', exportTables);
+api.get('/export/:path', exportResource);
 api.get('/weather', getWeather);
 api.get('/calculators/context', calculatorContext);
 api.get('/weather/geocode', findPlace);

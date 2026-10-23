@@ -4,6 +4,8 @@ import { useDashboard } from '../features/dashboard/useDashboard.js';
 import { baseOptions, breakdownOptions, LEAF, AMBER, INK, useIsDark } from '../features/dashboard/charts.jsx';
 import { useProfile } from '../components/profile.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { ExportMenu } from '../components/ExportMenu.jsx';
+import { downloadTables } from '../lib/download.js';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, formatDate, currenciesUsed, getCurrency } from '../lib/format.js';
 import { t } from '../i18n/index.js';
@@ -24,23 +26,38 @@ const monthLabel = (key) => {
 const round1 = (n) => Math.round((n + Number.EPSILON) * 10) / 10;
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
-/* ---- CSV export ---------------------------------------------------------- */
-function downloadCSV(filename, headers, rows) {
-  const esc = (v) => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const body = [headers, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
-  const blob = new Blob(['﻿' + body], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-}
+/* ---- full tables for the exports: every record behind the figures, totals included ---- */
+const dash = (v) => (v === null || v === undefined ? '' : v);
+const cycleTable = (cycles) => ({
+  title: 'Crop cycles',
+  headers: ['Crop', 'Farm', 'Field', 'Season', 'Status', 'Planted', 'Expected Harvest', 'Area (ha)', 'Expected (kg)', 'Actual (kg)'],
+  rows: [...cycles].sort((a, b) => (b.planting_date || '').localeCompare(a.planting_date || '')).map((r) => [
+    r.crops?.name || '', r.farms?.name || '', r.fields?.name || '', r.seasons?.name || '', r.status || '',
+    r.planting_date || '', r.expected_harvest_date || '', dash(r.area_planted), dash(r.expected_production), dash(r.actual_production),
+  ]),
+});
+const harvestTable = (harvests) => ({
+  title: 'Harvest records',
+  headers: ['Date', 'Crop', 'Farm', 'Field', 'Quantity', 'Unit', 'Area (ha)', 'Grade', 'Quality', 'Storage', 'Labour cost', 'Transport cost', 'Other costs', 'Notes'],
+  rows: [...harvests].sort((a, b) => (b.harvest_date || '').localeCompare(a.harvest_date || '')).map((h) => [
+    h.harvest_date || '', h.crops?.name || h.crop_cycles?.crops?.name || '', h.farms?.name || '', h.fields?.name || '', dash(h.quantity), h.unit || '',
+    dash(h.harvested_area), h.grade || '', h.quality || '', h.storage_location || '', dash(h.labor_cost), dash(h.transport_cost), dash(h.other_costs), h.notes || '',
+  ]),
+});
+const expenseTable = (expenses, currency) => ({
+  title: `Expenses (${currency})`,
+  headers: ['Date', 'Category', 'Description', 'Farm', 'Supplier', 'Payment', 'Amount', 'Notes'],
+  rows: [...expenses].sort((a, b) => (b.expense_date || '').localeCompare(a.expense_date || '')).map((e) => [
+    e.expense_date || '', e.category || '', e.description || '', e.farms?.name || '', e.supplier || '', e.payment_method || '', dash(e.amount), e.notes || '',
+  ]),
+});
+const saleTable = (sales, currency) => ({
+  title: `Sales (${currency})`,
+  headers: ['Date', 'Crop', 'Buyer', 'Farm', 'Quantity', 'Unit', 'Unit price', 'Total', 'Payment', 'Market', 'Notes'],
+  rows: [...sales].sort((a, b) => (b.sale_date || '').localeCompare(a.sale_date || '')).map((x) => [
+    x.sale_date || '', x.crops?.name || '', x.buyer || '', x.farms?.name || '', dash(x.quantity), x.unit || '', dash(x.unit_price), dash(x.total_amount), x.payment_status || '', x.market || '', x.notes || '',
+  ]),
+});
 
 /* ---- small presentational bits ---------------------------------------- */
 function ReportCard({ title, icon, iconColor = 'var(--primary)', right, children, bodyStyle }) {
@@ -106,13 +123,17 @@ function useFilteredData(d, filters) {
       return s === filters.season;
     };
     const farmOk = (rec) => !filters.farm || rec.farm_id === filters.farm;
+    const cycleCrop = {};
+    (d.cycles || []).forEach((c) => { cycleCrop[c.id] = c.crop_id || null; });
+    // a record belongs to a crop directly or through its crop cycle; costs with no cycle belong to no crop
+    const cropOk = (rec) => !filters.crop || (rec.crop_id || cycleCrop[rec.crop_cycle_id]) === filters.crop;
 
     const cycles = (d.cycles || []).filter(
-      (c) => farmOk(c) && seasonOk(c, c.season_id || null) && (filters.from || filters.to ? inRange(c.planting_date) : true),
+      (c) => farmOk(c) && cropOk(c) && seasonOk(c, c.season_id || null) && (filters.from || filters.to ? inRange(c.planting_date) : true),
     );
-    const harvests = (d.harvests || []).filter((h) => farmOk(h) && seasonOk(h) && inRange(h.harvest_date));
-    const allExpenses = (d.expenses || []).filter((e) => farmOk(e) && seasonOk(e) && inRange(e.expense_date));
-    const allSales = (d.sales || []).filter((s) => farmOk(s) && seasonOk(s) && inRange(s.sale_date));
+    const harvests = (d.harvests || []).filter((h) => farmOk(h) && cropOk(h) && seasonOk(h) && inRange(h.harvest_date));
+    const allExpenses = (d.expenses || []).filter((e) => farmOk(e) && cropOk(e) && seasonOk(e) && inRange(e.expense_date));
+    const allSales = (d.sales || []).filter((s) => farmOk(s) && cropOk(s) && seasonOk(s) && inRange(s.sale_date));
 
     // money is never converted: the financial report covers one currency at a time
     const currencies = currenciesUsed(allSales, allExpenses);
@@ -200,10 +221,18 @@ function buildProduction({ cycles, harvests }, dark) {
     chart,
     columns,
     tableRows,
-    csv: {
-      headers: ['Crop', 'Cycles', 'Area (ha)', 'Expected (kg)', 'Harvested (kg)', 'Yield (kg/ha)', 'Achievement (%)'],
-      rows: rows.map((r) => [r.crop, r.cycles, round1(r.area), Math.round(r.expected), Math.round(r.harvested), Math.round(r.yield), Math.round(r.achievement)]),
-    },
+    tables: [
+      {
+        title: 'Production by crop',
+        headers: ['Crop', 'Cycles', 'Area (ha)', 'Expected (kg)', 'Harvested (kg)', 'Yield (kg/ha)', 'Achievement (%)'],
+        rows: [
+          ...rows.map((r) => [r.crop, r.cycles, round1(r.area), Math.round(r.expected), Math.round(r.harvested), Math.round(r.yield), Math.round(r.achievement)]),
+          ...(rows.length > 1 ? [['All crops', tot.cycles, round1(tot.area), Math.round(tot.expected), Math.round(tot.harvested), tot.area ? Math.round(tot.harvested / tot.area) : 0, tot.expected ? Math.round((tot.harvested / tot.expected) * 100) : 0]] : []),
+        ],
+      },
+      cycleTable(cycles),
+      harvestTable(harvests),
+    ],
   };
 }
 
@@ -284,10 +313,18 @@ function buildYield({ harvests }, dark) {
     chart,
     columns,
     tableRows,
-    csv: {
-      headers: ['Crop', 'Records', 'Harvested Area (ha)', 'Quantity (kg)', 'Avg Yield (kg/ha)'],
-      rows: rows.map((r) => [r.crop, r.records, round1(r.area), Math.round(r.qty), Math.round(r.yield)]),
-    },
+    tables: [
+      {
+        title: 'Yield by crop',
+        headers: ['Crop', 'Records', 'Harvested Area (ha)', 'Quantity (kg)', 'Avg Yield (kg/ha)'],
+        rows: [
+          ...rows.map((r) => [r.crop, r.records, round1(r.area), Math.round(r.qty), Math.round(r.yield)]),
+          ...(rows.length > 1 ? [['All crops', rows.reduce((a, r) => a + r.records, 0), round1(totArea), Math.round(totQty), totArea ? Math.round(totQty / totArea) : 0]] : []),
+        ],
+      },
+      { title: 'Harvest by month (kg)', headers: ['Month', 'Quantity (kg)'], rows: mKeys.map((k) => [monthLabel(k), Math.round(monthMap[k])]) },
+      harvestTable(harvests),
+    ],
   };
 }
 
@@ -381,10 +418,19 @@ function buildFinancial({ expenses, sales, currency }, dark) {
           />
         </ReportCard>
       ) : null,
-    csv: {
-      headers: ['Month', `Revenue (${currency})`, `Expenses (${currency})`, `Net (${currency})`, 'Margin (%)'],
-      rows: months.map((r) => [r.month, round1(r.revenue), round1(r.expenses), round1(r.net), Math.round(r.margin)]),
-    },
+    tables: [
+      {
+        title: `Revenue and expenses by month (${currency})`,
+        headers: ['Month', 'Revenue', 'Expenses', 'Net', 'Margin (%)'],
+        rows: [
+          ...months.map((r) => [monthLabel(r.month), round1(r.revenue), round1(r.expenses), round1(r.net), Math.round(r.margin)]),
+          ...(months.length ? [['Total', round1(totRev), round1(totExp), round1(net), totRev ? Math.round((net / totRev) * 100) : 0]] : []),
+        ],
+      },
+      { title: `Expense breakdown (${currency})`, headers: ['Category', 'Amount', 'Share (%)'], rows: cats.map((c) => [c.category, round1(c.amount), totExp ? Math.round((c.amount / totExp) * 100) : 0]) },
+      saleTable(sales, currency),
+      expenseTable(expenses, currency),
+    ],
   };
 }
 
@@ -429,13 +475,7 @@ function buildCycles({ cycles }, dark) {
     chart,
     columns,
     tableRows: rows.map((r) => ({ ...r, _key: r.id })),
-    csv: {
-      headers: ['Crop', 'Farm', 'Field', 'Season', 'Status', 'Planted', 'Expected Harvest', 'Area (ha)', 'Expected (kg)', 'Actual (kg)'],
-      rows: rows.map((r) => [
-        r.crops?.name || '', r.farms?.name || '', r.fields?.name || '', r.seasons?.name || '', r.status || '',
-        r.planting_date || '', r.expected_harvest_date || '', num(r.area_planted), Math.round(num(r.expected_production)), Math.round(num(r.actual_production)),
-      ]),
-    },
+    tables: [cycleTable(cycles)],
   };
 }
 
@@ -448,9 +488,8 @@ export default function Reports() {
   const toast = useToast();
   const dark = useIsDark();
   const bodyRef = useRef(null);
-  const [pdfBusy, setPdfBusy] = useState(false);
-  const [active, setActive] = useState('production');
-  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '', currency: '' });
+    const [active, setActive] = useState('production');
+  const [filters, setFilters] = useState({ farm: '', crop: '', season: '', from: '', to: '', currency: '' });
 
   const d = data || {};
   const filtered = useFilteredData(d, filters);
@@ -470,9 +509,13 @@ export default function Reports() {
   }
 
   const meta = REPORTS.find((r) => r.id === active);
+  const cropName = (d.crops || []).find((x) => x.id === filters.crop)?.name || '';
+  const reportTitle = `${cropName ? `${cropName} · ` : ''}${t('{{report}} Report', { report: t(meta.label) })}`;
+  const sections = () => report.tables.filter((x) => x.rows.length);
   const setF = (k) => (e) => setFilters((f) => ({ ...f, [k]: e.target.value }));
   const filterLabel = () => {
     const parts = [];
+    if (filters.crop) parts.push(`${t('Crop')}: ${cropName}`);
     if (filters.farm) parts.push((d.farms || []).find((x) => x.id === filters.farm)?.name);
     if (filters.season) parts.push((d.seasons || []).find((x) => x.id === filters.season)?.name);
     if (filters.from || filters.to) parts.push(`${filters.from || '…'} → ${filters.to || '…'}`);
@@ -480,34 +523,32 @@ export default function Reports() {
     return parts.filter(Boolean).join(' · ') || t('All farms · all time');
   };
 
-  const exportCSV = () => {
-    const stamp = new Date().toISOString().slice(0, 10);
-    downloadCSV(`${active}-report-${stamp}.csv`, report.csv.headers, report.csv.rows);
-    toast('Report exported as CSV', 'info');
-  };
+  const stamp = () => new Date().toISOString().slice(0, 10);
 
   const exportPDF = async () => {
-    setPdfBusy(true);
-    try {
-      const { downloadReportPdf } = await import('../lib/pdfReport.js');
-      const stamp = new Date().toISOString().slice(0, 10);
-      await downloadReportPdf({
-        title: t('{{report}} Report', { report: t(meta.label) }),
-        subtitle: filterLabel(),
-        owner: profile?.full_name || '',
-        tiles: report.tiles,
-        headers: report.csv.headers,
-        rows: report.csv.rows,
-        chartRoot: bodyRef.current,
-        dark,
-        fileName: `CropManager-${active}-report-${stamp}.pdf`,
-      });
-      toast('Report downloaded as PDF', 'info');
-    } catch (err) {
-      toast(err.message || 'Could not create the PDF', 'error');
-    } finally {
-      setPdfBusy(false);
-    }
+    const { downloadDocPdf } = await import('../lib/pdfReport.js');
+    await downloadDocPdf({
+      kind: t('Report'),
+      title: reportTitle,
+      meta: [profile?.full_name, filterLabel()],
+      fileName: `CropManager-${active}${cropName ? `-${cropName}` : ''}-report-${stamp()}.pdf`,
+      sections: [
+        { type: 'tiles', tiles: report.tiles },
+        { type: 'charts', root: bodyRef.current, dark, title: t('Overview') },
+        ...sections().map((x) => ({ type: 'table', title: t(x.title), headers: x.headers, rows: x.rows })),
+      ],
+    });
+    toast('Report downloaded as PDF', 'info');
+  };
+
+  const exportReport = async (format) => {
+    if (format === 'pdf') return exportPDF();
+    await downloadTables(format, {
+      kind: 'Report', title: reportTitle, subtitle: filterLabel(),
+      tables: sections().map((x) => ({ title: t(x.title), headers: x.headers.map((h) => t(h)), rows: x.rows })),
+    }, `${active}-report-${stamp()}.${format}`);
+    toast(format === 'xlsx' ? 'Report exported as Excel' : 'Report exported as CSV', 'info');
+    return undefined;
   };
 
   return (
@@ -521,6 +562,10 @@ export default function Reports() {
           <select className="dashboard-filter-select" value={filters.farm} onChange={setF('farm')}>
             <option value="">{t('All Farms')}</option>
             {(d.farms || []).map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          </select>
+          <select className="dashboard-filter-select" value={filters.crop} onChange={setF('crop')} aria-label={t('Crop')}>
+            <option value="">{t('All Crops')}</option>
+            {(d.crops || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select className="dashboard-filter-select" value={filters.season} onChange={setF('season')}>
             <option value="">{t('All Seasons')}</option>
@@ -547,19 +592,14 @@ export default function Reports() {
           </button>
         ))}
         <div style={{ flex: 1 }} />
-        <button className="btn btn-sm btn-secondary" onClick={exportCSV} disabled={report.empty}>
-          <i className="fas fa-file-csv" /> {t('Export CSV')}
-        </button>
-        <button className="btn btn-sm btn-primary" onClick={exportPDF} disabled={report.empty || pdfBusy}>
-          <i className="fas fa-file-pdf" /> {pdfBusy ? t('Preparing…') : t('Download PDF')}
-        </button>
+        <ExportMenu run={exportReport} disabled={report.empty} />
         <button className="btn btn-sm btn-secondary" onClick={() => window.print()}>
           <i className="fas fa-print" /> {t('Print')}
         </button>
       </div>
 
       <div className="print-only" style={{ marginBottom: 12 }}>
-        <h1 className="page-title">{t('{{report}} Report', { report: t(meta.label) })}</h1>
+        <h1 className="page-title">{reportTitle}</h1>
         <p className="page-subtitle">
           {profile?.full_name ? `${profile.full_name} · ` : ''}{filterLabel()} · {t('generated {{date}}', { date: formatDate(new Date().toISOString()) })}
         </p>

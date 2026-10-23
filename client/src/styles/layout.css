@@ -544,3 +544,22 @@
 @media (max-width: 768px) {
     .search-pop { position: fixed; top: 64px; left: 8px; right: 8px; width: auto; max-width: none; }
 }
+
+/* ---- export menu and page actions ---- */
+.page-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.export-menu { position: relative; }
+.export-pop {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + 6px);
+    min-width: 230px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 1100;
+    padding: 6px;
+}
+.export-pop button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 8px; text-align: start; font-size: 13px; color: var(--text); }
+.export-pop button:hover { background: var(--bg); }
+.export-pop i { color: var(--primary-ink); width: 16px; text-align: center; }
