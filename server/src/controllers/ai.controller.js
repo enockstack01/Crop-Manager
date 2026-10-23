@@ -12,7 +12,7 @@ import {
   ADVICE_TOPICS, ADVICE_TOOL, DIAGNOSE_TOOL, INSIGHTS_TOOL, RECORD_TOOL, SUMMARY_TOOL, mockFor, systemBlocks,
 } from '../lib/ai/prompts.js';
 
-const LANGS = ['en', 'fr', 'rw', 'sw'];
+const LANGS = ['en', 'fr', 'rw', 'sw', 'ar', 'de', 'es', 'hi', 'pt', 'zh'];
 /** the language the farmer reads the app in: sent by the app, else the profile, else English */
 const langOf = (req) => (LANGS.includes(req.body?.language) ? req.body.language : LANGS.includes(req.profile?.language) ? req.profile.language : 'en');
 const clip = (v, n = 1500) => (typeof v === 'string' ? v.trim().slice(0, n) : '');

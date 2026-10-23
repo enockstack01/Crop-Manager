@@ -81,7 +81,7 @@ export default function AdminUsers() {
                   <strong>{displayName(r)}</strong>
                   {r.is_admin && <span className="badge badge-primary" style={{ marginLeft: 8 }}>{t('Admin')}</span>}
                   <br />
-                  <span className="text-xs text-light">{r.email || r.user_id}</span>
+                  <span className="text-xs text-light">{r.public_id ? `${r.public_id} · ` : ''}{r.email || r.user_id}</span>
                 </>
               ),
             },

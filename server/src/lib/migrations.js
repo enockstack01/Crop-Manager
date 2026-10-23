@@ -1,5 +1,6 @@
 import * as M from '../models/index.js';
 import { migrateAccountStatuses } from './accountStatus.js';
+import { assignMissingPublicIds } from './publicId.js';
 
 /** Every model whose records carry money values (and therefore a `currency`). */
 export const MONEY_MODELS = [
@@ -29,5 +30,6 @@ export async function migrateRecordCurrencies() {
 
 export async function runMigrations() {
   await migrateAccountStatuses();
+  await assignMissingPublicIds();
   await migrateRecordCurrencies();
 }

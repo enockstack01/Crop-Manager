@@ -96,6 +96,7 @@ export default function AdminUserDetail() {
                 ['Full name', u.full_name || '—'],
                 ['Email', u.email],
                 ['Account type', u.role],
+                ['User ID', u.public_id || '—'],
                 ['Currency', u.currency || 'USD'],
                 ['Phone', u.phone],
                 ['Location', u.location],

@@ -1,5 +1,6 @@
 import createHttpError from '../lib/httpError.js';
 import { Profile } from '../models/index.js';
+import { ensurePublicId } from '../lib/publicId.js';
 
 /**
  * Runs after requireAuth on every /api route:
@@ -14,6 +15,7 @@ export async function loadProfile(req, _res, next) {
       { $set: { last_seen_at: new Date() }, $setOnInsert: { user_id: req.userId, role: 'Farmer' } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).lean();
+    if (!req.profile.public_id) req.profile.public_id = await ensurePublicId(req.profile);
     next();
   } catch (err) {
     next(err);

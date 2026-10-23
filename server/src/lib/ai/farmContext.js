@@ -5,7 +5,7 @@ import * as M from '../../models/index.js';
  * (every query is scoped by user_id), and only the fields an agronomist would use.
  */
 
-const LANGUAGES = { en: 'English', fr: 'French', rw: 'Kinyarwanda', sw: 'Swahili' };
+const LANGUAGES = { en: 'English', fr: 'French', rw: 'Kinyarwanda', sw: 'Swahili', ar: 'Arabic', de: 'German', es: 'Spanish', hi: 'Hindi', pt: 'Portuguese', zh: 'Simplified Chinese' };
 export const languageName = (code) => LANGUAGES[code] || 'English';
 
 const OPEN_STATUSES = new Set(['Planned', 'Planted', 'Growing', 'Ready for Harvest']);

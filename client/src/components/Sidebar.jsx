@@ -86,6 +86,10 @@ const ADMIN_SECTION = {
   ],
 };
 
+/** Every page a person can open, for the search box. */
+export const NAV_PAGES = (orgUser = false) =>
+  (orgUser ? ORG_SECTIONS : SECTIONS).flatMap((sec) => sec.items).map((i) => ({ to: i.to, label: i.label, icon: i.icon }));
+
 export function Sidebar({ collapsed, mobileOpen, isAdmin, orgRole = '', onToggle, onNavigate }) {
   const { signOut } = useClerk();
 

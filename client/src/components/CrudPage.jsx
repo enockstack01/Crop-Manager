@@ -45,7 +45,7 @@ export function CrudPage({
   const { remove } = useResourceMutations(resource);
 
   const [page, setPage] = useState(1);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') || ''); // the top bar search opens a page with its box filled in
   const [sort, setSort] = useState(defaultSort.sort);
   const [order, setOrder] = useState(defaultSort.order);
   const [filterValues, setFilterValues] = useState({});

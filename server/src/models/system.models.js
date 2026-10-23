@@ -29,7 +29,8 @@ const ProfileSchema = ownedSchema({
   // account_type, message, submitted_at }
   access_request: { type: mongoose.Schema.Types.Mixed, default: null },
   currency: { type: String, enum: CURRENCY_CODES, default: 'USD' },
-  language: { type: String, enum: ['en', 'fr', 'rw', 'sw', null], default: null }, // interface language (web + mobile)
+  language: { type: String, enum: ['en', 'fr', 'rw', 'sw', 'ar', 'de', 'es', 'hi', 'pt', 'zh', null], default: null }, // interface language (web + mobile)
+  public_id: { type: String, unique: true, sparse: true, index: true }, // Crop + six digits, see lib/publicId.js
   user_type: { type: String, enum: ['farmer', 'org'], default: 'farmer' }, // organization staff use the organization workspace, farmers the farm modules
   ai_daily_limit: { type: Number, default: null, min: 0 }, // admin override of the AI requests per day (null = platform default)
   last_seen_at: { type: Date, default: null },

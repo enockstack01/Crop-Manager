@@ -65,13 +65,21 @@ const ZERO = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0 };
  */
 export async function askTool({ task = 'report', system, messages, tool, maxTokens = 2000 }) {
   const { tier, id } = await resolveModel(task);
+  // these models do not accept a forced tool choice: ask for the tool in the prompt and check the reply
+  const sys = [...system, { type: 'text', text: `Give your answer only by calling the function ${tool.name}. Do not write any other text.` }];
   try {
-    const msg = await getClient().messages.create({
-      model: id, max_tokens: maxTokens, system, messages, tools: [tool], tool_choice: { type: 'tool', name: tool.name },
-    });
-    const block = msg.content.find((b) => b.type === 'tool_use');
-    if (!block) throw new Error('no tool_use block in the reply');
-    return { data: block.input, usage: usageOf(msg), tier };
+    let usage = { ...ZERO };
+    let convo = messages;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system: sys, messages: convo, tools: [tool] });
+      usage = addUsage(usage, usageOf(msg));
+      const block = msg.content.find((b) => b.type === 'tool_use' && b.name === tool.name);
+      if (block) return { data: block.input, usage, tier };
+      if (msg.stop_reason === 'max_tokens') throw new Error('reply was cut off');
+      // it answered in words: ask once more for the function call
+      convo = [...messages, { role: 'assistant', content: msg.content.length ? msg.content : [{ type: 'text', text: '...' }] }, { role: 'user', content: `Please give that answer by calling the function ${tool.name}.` }];
+    }
+    throw new Error('no function call in the reply');
   } catch (err) {
     throw Object.assign(friendly(err), { tier });
   }
@@ -102,7 +110,7 @@ export async function askAgent({ task = 'chat', system, messages, tools, handler
     for (let round = 0; round < maxRounds; round += 1) {
       const last = round === maxRounds - 1;
       const msg = await getClient().messages.create({
-        model: id, max_tokens: maxTokens, system, messages: convo, tools, ...(last ? { tool_choice: { type: 'none' } } : {}),
+        model: id, max_tokens: maxTokens, system, messages: convo, tools,
       });
       usage = addUsage(usage, usageOf(msg));
       const calls = msg.content.filter((b) => b.type === 'tool_use');
@@ -122,7 +130,8 @@ export async function askAgent({ task = 'chat', system, messages, tools, handler
         }
         results.push({ type: 'tool_result', tool_use_id: c.id, content: JSON.stringify(out).slice(0, 12000) });
       }
-      convo.push({ role: 'user', content: results });
+      // on the last round, tell it to stop looking things up and answer
+      convo.push({ role: 'user', content: last || round === maxRounds - 2 ? [...results, { type: 'text', text: 'Now write your answer with what you have. Do not look anything else up.' }] : results });
     }
     throw new Error('too many tool rounds');
   } catch (err) {

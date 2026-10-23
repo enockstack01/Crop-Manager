@@ -3,6 +3,7 @@ import { UserButton } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useList, useResourceMutations } from '../lib/useResource.js';
 import { displayName, formatDateTime } from '../lib/format.js';
+import { GlobalSearch } from './GlobalSearch.jsx';
 
 /** Role shown under the name: system administrator, organization role, or the account type. */
 function roleLabel(profile) {
@@ -45,18 +46,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
         <button id="mobile-menu-btn" onClick={onMobileMenu}>
           <i className="fas fa-bars" />
         </button>
-        <div className="topbar-search">
-          <i className="fas fa-search" />
-          <input
-            type="text"
-            placeholder={t('Search...')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.target.value.trim().length >= 2) {
-                toast('Global search is coming in a future phase', 'info');
-              }
-            }}
-          />
-        </div>
+        <GlobalSearch orgUser={profile?.org_context?.platform_role === 'org_user'} />
       </div>
 
       <div className="topbar-right">
@@ -106,7 +96,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
         <div className="topbar-user" style={{ gap: 10 }}>
           <div className="topbar-user-info">
             <div className="topbar-user-name">{displayName(profile)}</div>
-            <div className="topbar-user-role">{t(roleLabel(profile))}</div>
+            <div className="topbar-user-role" title={profile?.public_id ? `${t('User ID')}: ${profile.public_id}` : undefined}>{t(roleLabel(profile))}{profile?.public_id ? ` · ${profile.public_id}` : ''}</div>
           </div>
           <UserButton afterSignOutUrl="/" />
         </div>

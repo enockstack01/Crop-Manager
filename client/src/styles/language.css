@@ -50,3 +50,9 @@
   color: var(--text);
   cursor: pointer;
 }
+
+/* ten languages: the menu scrolls on short screens */
+.lang-menu {
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
+}

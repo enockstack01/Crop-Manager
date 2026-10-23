@@ -110,7 +110,7 @@ export const listUsers = asyncHandler(async (req, res) => {
   const filter = {};
   if (q) {
     const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    filter.$or = [{ full_name: rx }, { email: rx }, { role: rx }];
+    filter.$or = [{ full_name: rx }, { email: rx }, { role: rx }, { public_id: rx }];
   }
   const status = req.query.status;
   if (status === 'admins') filter.is_admin = true;

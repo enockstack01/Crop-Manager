@@ -4,6 +4,12 @@ import en from './locales/en.json';
 import fr from './locales/fr.json';
 import rw from './locales/rw.json';
 import sw from './locales/sw.json';
+import ar from './locales/ar.json';
+import de from './locales/de.json';
+import es from './locales/es.json';
+import hi from './locales/hi.json';
+import pt from './locales/pt.json';
+import zh from './locales/zh.json';
 
 /*
  * Interface languages. The English text itself is the key (keySeparator / nsSeparator
@@ -18,7 +24,16 @@ export const LANGUAGES = [
   { code: 'fr', label: 'Français' },
   { code: 'rw', label: 'Kinyarwanda' },
   { code: 'sw', label: 'Kiswahili' },
+  { code: 'ar', label: 'العربية' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'es', label: 'Español' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'pt', label: 'Português' },
+  { code: 'zh', label: '中文' },
 ];
+/** right-to-left scripts */
+export const RTL = ['ar'];
+const dirOf = (code) => (RTL.includes(code) ? 'rtl' : 'ltr');
 const CODES = LANGUAGES.map((l) => l.code);
 const KEY = 'language';
 
@@ -39,6 +54,12 @@ i18n.use(initReactI18next).init({
     fr: { translation: fr },
     rw: { translation: rw },
     sw: { translation: sw },
+    ar: { translation: ar },
+    de: { translation: de },
+    es: { translation: es },
+    hi: { translation: hi },
+    pt: { translation: pt },
+    zh: { translation: zh },
   },
   lng: stored(),
   fallbackLng: 'en',
@@ -48,6 +69,7 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 document.documentElement.lang = i18n.language;
+document.documentElement.dir = dirOf(i18n.language);
 
 /** Translate English UI text (with optional {{placeholders}}). Non-strings pass through. */
 export function t(text, vars) {
@@ -63,6 +85,7 @@ export function setLanguage(code) {
     /* storage unavailable */
   }
   document.documentElement.lang = code;
+  document.documentElement.dir = dirOf(code);
   i18n.changeLanguage(code);
 }
 

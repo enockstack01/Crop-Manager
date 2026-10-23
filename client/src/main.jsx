@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import './styles/index.css';
 import { useTranslation } from 'react-i18next';
-import { frFR } from '@clerk/localizations';
+import { frFR, deDE, esES, ptBR, zhCN, arSA, hiIN } from '@clerk/localizations';
 import './i18n/index.js';
 import { App } from './App.jsx';
 import { setTokenGetter } from './lib/api.js';
@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
 });
 
 // Clerk's own sign-in / sign-up screens are translated where Clerk offers the language
-const CLERK_LOCALES = { fr: frFR };
+const CLERK_LOCALES = { fr: frFR, de: deDE, es: esES, pt: ptBR, zh: zhCN, ar: arSA, hi: hiIN };
 
 /** Remounts the app when the interface language changes, so every screen re-renders in it. */
 function LanguageRoot({ children }) {

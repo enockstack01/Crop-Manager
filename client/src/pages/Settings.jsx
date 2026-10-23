@@ -112,6 +112,9 @@ export default function Settings() {
             <TextField label="Email" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} />
           </FormRow>
           <FormRow>
+            <TextField label="User ID" value={profile?.public_id || ''} disabled style={{ opacity: 0.6 }} hint="Your CropManager ID: quote it when you contact support. It is printed on your reports." />
+          </FormRow>
+          <FormRow>
             <TextField label="Phone" value={current.phone} onChange={set('phone')} placeholder="+260 xxx xxx xxx" />
             <TextField label="Location" value={current.location} onChange={set('location')} placeholder="City, Country" />
           </FormRow>
