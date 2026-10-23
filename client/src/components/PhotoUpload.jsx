@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { useToast } from './Toast.jsx';
+import { CameraCapture, cameraSupported } from './CameraCapture.jsx';
 import { t } from '../i18n/index.js';
 
 export function PhotoUpload({ label = 'Photo', value, onChange }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [camera, setCamera] = useState(false);
+  const snap = useRef(null);
 
-  const handle = async (e) => {
-    const file = e.target.files?.[0];
+  const upload = async (file) => {
     if (!file) return;
     setBusy(true);
     try {
@@ -29,7 +31,12 @@ export function PhotoUpload({ label = 'Photo', value, onChange }) {
   return (
     <div className="form-group">
       <label className="form-label">{label}</label>
-      <input type="file" accept="image/*" className="form-control" onChange={handle} disabled={busy} />
+      <div className="photo-actions">
+        <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => (cameraSupported() ? setCamera(true) : snap.current?.click())}><i className="fas fa-camera" /> {t('Take photo')}</button>
+        <input type="file" accept="image/*" className="form-control" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
+      </div>
+      <input ref={snap} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+      {camera && <CameraCapture onClose={() => setCamera(false)} onCapture={upload} />}
       {busy && <div className="form-hint">{t('Uploading…')}</div>}
       {value && (
         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>

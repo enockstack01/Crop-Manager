@@ -10,7 +10,8 @@
 .weather-stat { display: flex; flex-direction: column; gap: 2px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 10px; font-size: 12px; }
 .weather-stat i { color: var(--amber); }
 .weather-stat strong { font-size: 16px; }
-.weather-hours, .weather-days { display: flex; gap: 10px; overflow-x: auto; }
+.weather-hours, .weather-days { display: flex; gap: 10px; overflow-x: auto; min-height: 0; }
+.chart-card-body.weather-hours, .chart-card-body.weather-days { min-height: 0; }
 .weather-hour, .weather-day { flex: 1 0 84px; text-align: center; border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .weather-hour i, .weather-day i { font-size: 22px; color: var(--leaf); }
 .weather-hour-t, .weather-day-n { font-size: 12px; color: var(--text-light); font-weight: 600; }

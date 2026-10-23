@@ -36,6 +36,8 @@ export const DIAGNOSE_TOOL = {
       problem_type: { type: 'string', enum: ['Disease', 'Pest', 'Nutrient deficiency', 'Weed', 'Weather or soil stress', 'Healthy', 'Unclear'] },
       confidence: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'How sure you are from the photo and notes' },
       severity: { type: 'string', enum: ['Low', 'Medium', 'High', 'Critical'] },
+      affected_part: str('Which part of the plant is affected as seen in the photo: leaf, stem, fruit, root, flower, whole plant... (empty without a photo)'),
+      visible_signs: list('What you can see on the affected part: colour, spots, lesions, holes, mould, wilting... (at most 5, empty without a photo)'),
       cause: str('What is causing it and what favours it, in 2 to 4 sentences'),
       treatment: str('What to do now on the farm: removal, isolation, cultural steps, in order'),
       medication: str('Products to consider by active ingredient or type, with when to use them. Say "none needed" if nothing is required'),
@@ -195,6 +197,7 @@ const MOCKS = {
   },
   diagnose: {
     title: 'Fall armyworm damage (sample answer)', problem_type: 'Pest', confidence: 'Medium', severity: 'High',
+    affected_part: 'Leaf (whorl)', visible_signs: ['Ragged holes in young leaves', 'Sawdust-like droppings'],
     cause: 'Young caterpillars feed inside the whorl and leave ragged holes and sawdust-like droppings. Warm dry spells and late planting favour them.',
     treatment: 'Scout 20 plants in a W pattern. Hand-pick egg masses and young larvae where the attack is small. Spray early morning or late evening, aiming into the whorl.',
     medication: 'A registered product with emamectin benzoate or spinetoram, or a Bt biopesticide for small larvae. Rotate active ingredients.',

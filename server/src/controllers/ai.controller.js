@@ -76,7 +76,8 @@ export const diagnose = asyncHandler(async (req, res) => {
   if (b.scouting_id) {
     rec = (await CropScoutingRecord.findOne({ _id: b.scouting_id, user_id: req.userId }).lean()) || {};
   }
-  const photoUrl = b.photo_url || rec.photo_url || null;
+  const urls = [...new Set([...(Array.isArray(b.photo_urls) ? b.photo_urls : []), b.photo_url, rec.photo_url].filter(Boolean))].slice(0, 3);
+  const photoUrl = urls[0] || null;
   const lines = [
     ['Crop', clip(b.crop, 80)],
     ['Growth stage', clip(b.growth_stage || rec.growth_stage, 80)],
@@ -90,11 +91,12 @@ export const diagnose = asyncHandler(async (req, res) => {
     ['Notes', clip(b.notes || rec.notes)],
     ['Affected area or share of plants', clip(b.affected, 120)],
   ].filter(([, v]) => v);
-  const image = photoBlock(req.userId, photoUrl);
+  const images = urls.map((u) => photoBlock(req.userId, u)).filter(Boolean);
+  const image = images[0] || null;
   if (!image && !lines.length) throw createHttpError(400, 'Add a photo or describe what you see.');
 
-  const text = `Diagnose this crop problem for the farmer and write the report: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${image ? '\n\nA photo of the affected plant is attached.' : '\n\nNo photo was added, so say how sure you can be.'}`;
-  const content = image ? [image, { type: 'text', text }] : [{ type: 'text', text }];
+  const text = `Diagnose this crop problem for the farmer and write the report: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${images.length ? `\n\n${images.length === 1 ? 'A photo' : `${images.length} photos`} of the plant ${images.length === 1 ? 'is' : 'are'} attached. Find the part that is infected or damaged (leaf, stem, fruit, root or the whole plant), say which part it is, and describe the signs you can see on it.` : '\n\nNo photo was added, so say how sure you can be.'}`;
+  const content = images.length ? [...images, { type: 'text', text }] : [{ type: 'text', text }];
   const { data } = await runTool(req, {
     feature: 'diagnose', task: 'vision', tool: DIAGNOSE_TOOL, content, maxTokens: 2500,
     extraSystem: 'Task: crop disease, pest and nutrient diagnosis from a photo and notes. Look at leaf colour, spots, lesions, holes, frass, wilting, growth stage. Prefer the most likely cause for the farm\'s country and season. Be honest about uncertainty.',

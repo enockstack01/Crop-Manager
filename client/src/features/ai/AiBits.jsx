@@ -50,11 +50,11 @@ export function Thinking({ label = 'Thinking…' }) {
 const SEVERITY = { Low: 'badge-success', Medium: 'badge-warning', High: 'badge-danger', Critical: 'badge-danger' };
 
 /** Diagnosis-to-treatment report: cause, treatment, medication, how to give it. */
-export function DiagnosisReport({ report: r, photo }) {
+export function DiagnosisReport({ report: r, photo, photos = [] }) {
   return (
     <div className="ai-report">
       <div className="ai-report-head">
-        {photo && <img src={photo} alt="" className="ai-report-photo" />}
+        {(photos.length ? photos : photo ? [photo] : []).slice(0, 3).map((p) => <img key={p} src={p} alt="" className="ai-report-photo" />)}
         <div>
           <h3>{r.title}</h3>
           <div className="ai-badges">
@@ -69,6 +69,8 @@ export function DiagnosisReport({ report: r, photo }) {
           <b>{t('The photo or notes are not enough for a sure answer.')}</b> {r.photo_tips}
         </div>
       )}
+      <Section icon="fa-leaf" title="Affected part" text={r.affected_part} />
+      {r.visible_signs?.length > 0 && <Section icon="fa-eye" title="What the photo shows" text={r.visible_signs.join(' · ')} />}
       <Section icon="fa-magnifying-glass" title="Cause" text={r.cause} />
       <Section icon="fa-hand-holding-medical" title="Treatment" text={r.treatment} />
       <Section icon="fa-prescription-bottle-medical" title="Medication" text={r.medication} />

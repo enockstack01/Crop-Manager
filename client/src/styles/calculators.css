@@ -139,3 +139,4 @@
 .calc-table td:last-child { color: var(--text-light); }
 .calc-search { max-width: 360px; margin-bottom: 16px; }
 .calc-card .ai-chip { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 999px; background: var(--amber); color: var(--ink); }
+.calc-assist.weather .btn { align-self: flex-start; }

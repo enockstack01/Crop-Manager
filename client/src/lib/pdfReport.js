@@ -340,6 +340,8 @@ export async function downloadDiagnosisPdf(o) {
   const sections = [
     { type: 'tiles', tiles: [{ label: 'Type', value: t(r.problem_type) }, { label: 'Severity', value: t(r.severity) }, { label: 'Confidence', value: t(r.confidence) }] },
     photo ? { type: 'image', data: photo } : null,
+    { type: 'text', title: t('Affected part'), text: r.affected_part },
+    r.visible_signs?.length ? { type: 'list', title: t('What the photo shows'), items: r.visible_signs } : null,
     { type: 'text', title: t('Cause'), text: r.cause },
     { type: 'text', title: t('Treatment'), text: r.treatment },
     { type: 'text', title: t('Medication'), text: r.medication },

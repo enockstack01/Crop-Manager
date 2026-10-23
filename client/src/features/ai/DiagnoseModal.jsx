@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../../components/Modal.jsx';
 import { useToast } from '../../components/Toast.jsx';
-import { PhotoUpload } from '../../components/PhotoUpload.jsx';
+import { PhotoSet } from '../../components/PhotoSet.jsx';
 import { aiDiagnose, reportToText } from '../../lib/ai.js';
 import { useProfile } from '../../components/profile.jsx';
 import { AiDisclaimer, AiStatusBar, DiagnosisReport, Thinking } from './AiBits.jsx';
@@ -12,11 +12,12 @@ import { t } from '../../i18n/index.js';
  * how to give it). `input` holds what the scouting record already says; `onUse(text)` is
  * called with the report as text so the caller can save it as the record's recommendation.
  */
-export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Use as recommendation' }) {
+export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Use as recommendation', autoCamera = false }) {
   const toast = useToast();
   const { profile } = useProfile();
   const [pdfBusy, setPdfBusy] = useState(false);
-  const [photo, setPhoto] = useState(input.photo_url || null);
+  const [photos, setPhotos] = useState(input.photo_url ? [input.photo_url] : []);
+  const photo = photos[0] || null;
   const [symptoms, setSymptoms] = useState('');
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState(null);
@@ -26,7 +27,7 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
     setBusy(true);
     setError('');
     try {
-      const { report: r } = await aiDiagnose({ ...input, photo_url: photo, symptoms });
+      const { report: r } = await aiDiagnose({ ...input, photo_url: photo, photo_urls: photos, symptoms });
       setReport(r);
     } catch (err) {
       setError(err.message || t('The AI assistant could not answer.'));
@@ -85,7 +86,7 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
       }
     >
       <AiStatusBar />
-      <PhotoUpload label="Photo of the affected plant" value={photo} onChange={setPhoto} />
+      <PhotoSet urls={photos} onChange={setPhotos} autoCamera={autoCamera && open} />
       <div className="form-group">
         <label className="form-label">{t('What do you see? (optional)')}</label>
         <textarea
@@ -98,7 +99,7 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
       </div>
       {busy && <Thinking label="Looking at the photo…" />}
       {error && <div className="auth-message error show" role="alert">{error}</div>}
-      {report && !busy && <DiagnosisReport report={report} photo={photo} />}
+      {report && !busy && <DiagnosisReport report={report} photo={photo} photos={photos} />}
       <AiDisclaimer />
     </Modal>
   );

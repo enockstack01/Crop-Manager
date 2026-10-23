@@ -6,6 +6,7 @@ import { useResourceMutations } from '../lib/useResource.js';
 import { formatCurrency } from '../lib/format.js';
 import { aiAdvice, aiChat, aiInsights, aiParseRecord, aiSeasonSummary } from '../lib/ai.js';
 import { AiDisclaimer, AiStatusBar, Thinking } from '../features/ai/AiBits.jsx';
+import { DiagnoseModal } from '../features/ai/DiagnoseModal.jsx';
 import { t } from '../i18n/index.js';
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'plans', icon: 'fa-list-check', label: 'Plans and advice' },
   { id: 'summary', icon: 'fa-file-signature', label: 'Season summary' },
   { id: 'record', icon: 'fa-pen-to-square', label: 'Quick record' },
+  { id: 'photo', icon: 'fa-camera', label: 'Check a plant' },
 ];
 
 /** Runs an AI call and keeps its loading, error and result state. */
@@ -350,7 +352,21 @@ function QuickRecord() {
 }
 
 /* --------------------------------------------------------------- page */
-const VIEWS = { ask: Ask, insights: Insights, plans: Plans, summary: Summary, record: QuickRecord };
+function PlantCheck() {
+  const [mode, setMode] = useState(null); // null | 'camera' | 'files'
+  return (
+    <>
+      <p className="ai-lead">{t('Take a photo of the sick leaf, stem or fruit. The assistant finds the infected part, names the problem and tells you how to treat it.')}</p>
+      <div className="ai-actions">
+        <button className="btn btn-primary" onClick={() => setMode('camera')}><i className="fas fa-camera" /> {t('Take a photo')}</button>
+        <button className="btn btn-secondary" onClick={() => setMode('files')}><i className="fas fa-image" /> {t('Choose photos')}</button>
+      </div>
+      {mode && <DiagnoseModal key={mode} open onClose={() => setMode(null)} input={{}} autoCamera={mode === 'camera'} />}
+    </>
+  );
+}
+
+const VIEWS = { ask: Ask, insights: Insights, plans: Plans, summary: Summary, record: QuickRecord, photo: PlantCheck };
 
 export default function Assistant() {
   const [tab, setTab] = useState('ask');
