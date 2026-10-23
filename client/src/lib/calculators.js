@@ -3,6 +3,15 @@ import { formatNumber } from './format.js';
 
 const num = (v) => parseFloat(v) || 0;
 
+/** Total amount for an area and a rate: converts the area to the unit the rate is per (ha or acre) and says what the total is in. */
+const totalFor = (v, fallback) => {
+  const perAcre = /acre/i.test(v.rateUnit || '');
+  const acres = v.unit === 'acres';
+  const area = num(v.area) * (perAcre === acres ? 1 : perAcre ? 2.47105 : 0.404686);
+  const unit = /bags/i.test(v.rateUnit || '') ? 'bags' : (v.rateUnit || fallback).split('/')[0];
+  return `${formatNumber((area * num(v.rate)).toFixed(2))} ${unit}`;
+};
+
 export const CALCULATORS = [
   {
     type: 'fertilizer',
@@ -16,7 +25,7 @@ export const CALCULATORS = [
       { name: 'rateUnit', label: 'Rate Unit', type: 'select', options: ['kg/ha', 'kg/acre', 'bags/ha'], default: 'kg/ha' },
     ],
     compute: (v) => [
-      { label: 'Total Fertilizer Required', value: `${formatNumber((num(v.area) * num(v.rate)).toFixed(2))} ${v.rateUnit || 'kg'} / ${v.unit || 'ha'}` },
+      { label: 'Total Fertilizer Required', value: totalFor(v, 'kg') },
     ],
   },
   {
@@ -49,7 +58,7 @@ export const CALCULATORS = [
       { name: 'rateUnit', label: 'Rate Unit', type: 'select', options: ['kg/ha', 'kg/acre'], default: 'kg/ha' },
     ],
     compute: (v) => [
-      { label: 'Total Seed Required', value: `${formatNumber((num(v.area) * num(v.rate)).toFixed(2))} ${v.rateUnit || 'kg'} / ${v.unit || 'ha'}` },
+      { label: 'Total Seed Required', value: totalFor(v, 'kg') },
     ],
   },
   {

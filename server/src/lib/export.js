@@ -170,8 +170,10 @@ export function toPdf(tables, meta = {}) {
     const widths = minW.map((m, i) => m + (extra[i] / extraSum) * spare);
 
     if (y > bottom - 80) { doc.addPage(); y = M; }
-    doc.fillColor(C.forest).font('Helvetica-Bold').fontSize(12.5).text(t.title, M, y);
-    y = doc.y + 6;
+    if (!(tables.length === 1 && t.title === meta.title)) { // a lone table already has its title at the top
+      doc.fillColor(C.forest).font('Helvetica-Bold').fontSize(12.5).text(t.title, M, y);
+      y = doc.y + 6;
+    }
 
     const drawRow = (cells, header, shade) => {
       doc.font(header ? 'Helvetica-Bold' : 'Helvetica').fontSize(size);

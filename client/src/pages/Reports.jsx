@@ -494,6 +494,13 @@ export default function Reports() {
   const d = data || {};
   const filtered = useFilteredData(d, filters);
   const report = useMemo(() => BUILDERS[active](filtered, dark), [active, filtered, dark]);
+  const [rq, setRq] = useState('');
+  // the search box narrows the detail table (total rows stay)
+  const shownRows = useMemo(() => {
+    const n = rq.trim().toLowerCase();
+    if (!n) return report.tableRows || [];
+    return (report.tableRows || []).filter((r) => r._total || Object.entries(r).some(([k, v]) => !k.startsWith('_') && v !== null && typeof v !== 'object' && String(v).toLowerCase().includes(n)) || [r.crops?.name, r.farms?.name, r.fields?.name, r.seasons?.name].some((x) => x && x.toLowerCase().includes(n)));
+  }, [report, rq]);
 
   if (isLoading) return <Loading label="Loading report data..." />;
   if (isError) {
@@ -592,6 +599,7 @@ export default function Reports() {
           </button>
         ))}
         <div style={{ flex: 1 }} />
+        <div className="table-search"><i className="fas fa-search" /><input type="text" value={rq} placeholder={t('Search this report...')} onChange={(e) => setRq(e.target.value)} /></div>
         <ExportMenu run={exportReport} disabled={report.empty} />
         <button className="btn btn-sm btn-secondary" onClick={() => window.print()}>
           <i className="fas fa-print" /> {t('Print')}
@@ -627,7 +635,7 @@ export default function Reports() {
             icon="fa-table"
             right={<span style={{ fontSize: 12, color: 'var(--text-light)' }}>{filterLabel()}</span>}
           >
-            <ReportTable columns={report.columns} rows={report.tableRows} />
+            <ReportTable columns={report.columns} rows={shownRows} />
           </ReportCard>
 
           {report.extra}

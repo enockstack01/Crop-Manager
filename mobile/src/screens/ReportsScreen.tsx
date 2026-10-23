@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, View } from 'react-native';
+import { RefreshControl, TextInput, View } from 'react-native';
 import { useDashboard } from '../lib/useResource';
 import { currenciesUsed, formatCurrency, formatDate, formatNumber, getCurrency } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
@@ -126,6 +126,13 @@ export function ReportsScreen() {
   }, [d, filters]);
 
   const report = useMemo(() => build(active, filtered), [active, filtered]);
+  const [rq, setRq] = useState('');
+  // the search box narrows the detail table (total rows stay)
+  const shownRows = useMemo(() => {
+    const nd = rq.trim().toLowerCase();
+    if (!nd) return report.rows;
+    return report.rows.filter((r: any) => r._total || Object.entries(r).some(([k, v]) => !k.startsWith('_') && v !== null && typeof v !== 'object' && String(v).toLowerCase().includes(nd)) || [r.crops?.name, r.farms?.name, r.fields?.name, r.seasons?.name].some((x: any) => x && String(x).toLowerCase().includes(nd)));
+  }, [report, rq]);
   const meta = REPORTS.find((r) => r.id === active)!;
   const cropName = ((d.crops || []) as any[]).find((x) => x.id === filters.crop)?.name || '';
   const reportTitle = `${cropName ? `${cropName} · ` : ''}${t('{{report}} Report', { report: t(meta.label) })}`;
@@ -179,6 +186,10 @@ export function ReportsScreen() {
         ) : null}
       </Grid>
 
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, minHeight: 40, marginBottom: 12 }}>
+        <TextInput value={rq} onChangeText={setRq} placeholder={t('Search this report...')} placeholderTextColor={colors.placeholder} style={{ flex: 1, paddingVertical: 8, color: colors.text, fontSize: 13 }} />
+      </View>
+
       {/* .report-tabs */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
         {REPORTS.map((r) => (
@@ -207,7 +218,7 @@ export function ReportsScreen() {
           ) : null}
 
           <ChartCard title={t('{{report}} Detail', { report: t(meta.label) })} icon="table" bodyStyle={{ padding: 0 }}>
-            <ReportTable columns={report.columns} rows={report.rows} />
+            <ReportTable columns={report.columns} rows={shownRows} />
           </ChartCard>
 
           {report.extra ? (
