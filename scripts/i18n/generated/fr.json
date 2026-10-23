@@ -55,6 +55,7 @@
  "Description": "Description",
  "District": "District",
  "Documents": "Documents",
+ "Download everything you have recorded: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.": "Téléchargez tout ce que vous avez enregistré : une feuille par type de fiche dans Excel, ou un seul PDF. Chaque page de fiches a aussi son propre bouton Exporter.",
  "Download report (PDF)": "Télécharger le rapport (PDF)",
  "Equipment service": "Entretien du matériel",
  "Estimate": "Estimation",
@@ -62,6 +63,7 @@
  "Excellent": "Excellent",
  "Explain with my farm data": "Expliquer avec les données de mon exploitation",
  "Export": "Exporter",
+ "Export all my records": "Exporter toutes mes fiches",
  "Failed": "Échec",
  "Feels like": "Ressenti",
  "Fertigation": "Fertigation",
@@ -194,5 +196,6 @@
  "Write my briefing": "Écrire mon bilan",
  "Yield by crop": "Rendement par culture",
  "Your CropManager ID: quote it when you contact support. It is printed on your reports.": "Votre ID CropManager : indiquez-le quand vous contactez l'assistance. Il figure sur vos rapports.",
+ "Your data": "Vos données",
  "Your farm": "Votre exploitation"
 }

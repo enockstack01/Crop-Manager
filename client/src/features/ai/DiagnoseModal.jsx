@@ -44,7 +44,7 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
         report,
         photoUrl: photo,
         crop: input.crop,
-        owner: profile?.full_name || '',
+        owner: [profile?.full_name, profile?.public_id].filter(Boolean).join(' · '),
         fileName: `CropManager-disease-report-${new Date().toISOString().slice(0, 10)}.pdf`,
       });
     } catch (err) {

@@ -10,6 +10,8 @@ import { useTheme } from '../theme/ThemeProvider';
 import { AppText, ChartCard, Grid, Loading, PageHeader, Screen, useLayout } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
+import { ExportButton } from '../components/ExportSheet';
+import { shareExport } from '../lib/exports';
 import { SelectField, TextField } from '../components/fields';
 import { reasonText, useFarmerOrgMutations, useMyOrg } from '../lib/orgApi';
 import { CURRENCY_OPTIONS } from '../lib/currencies';
@@ -99,6 +101,7 @@ export function SettingsScreen() {
               />
               <TextField label="Email" value={email} onChangeValue={() => {}} editable={false} />
             </Grid>
+            <TextField label="User ID" value={profile?.public_id || ''} onChangeValue={() => {}} editable={false} hint="Your CropManager ID: quote it when you contact support. It is printed on your reports." />
             <Grid columns={isTablet ? 2 : 1} gap={18}>
               <TextField label="Phone" value={current.phone} onChangeValue={set('phone')} placeholder="+260 xxx xxx xxx" keyboardType="phone-pad" />
               <TextField label="Location" value={current.location} onChangeValue={set('location')} placeholder="City, Country" />
@@ -133,6 +136,13 @@ export function SettingsScreen() {
             </View>
           </ChartCard>
         ) : null}
+
+        <ChartCard title="Your data" icon="database">
+          <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight, marginBottom: 12 }}>{t('Download everything you have recorded: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.')}</AppText>
+          <View style={{ alignSelf: 'flex-start' }}>
+            <ExportButton run={(format) => shareExport('', format)} />
+          </View>
+        </ChartCard>
 
         <ChartCard title="Language" icon="globe">
           <SelectField

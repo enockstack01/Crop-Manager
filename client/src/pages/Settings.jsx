@@ -7,6 +7,8 @@ import { useToast } from '../components/Toast.jsx';
 import { PageHeader, Loading } from '../components/ui.jsx';
 import { FormRow, SelectField, TextField } from '../components/form.jsx';
 import { CURRENCY_OPTIONS } from '../lib/currencies.js';
+import { ExportMenu } from '../components/ExportMenu.jsx';
+import { downloadExport } from '../lib/download.js';
 import { t } from '../i18n/index.js';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES } from '../i18n/index.js';
@@ -140,6 +142,18 @@ export default function Settings() {
               <i className="fas fa-save" /> {t('Save Changes')}
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ maxWidth: 720, marginBottom: 20 }}>
+        <div className="card-header">
+          <h3>
+            <i className="fas fa-database" style={{ color: 'var(--forest)', marginRight: 8 }} /> {t('Your data')}
+          </h3>
+        </div>
+        <div className="card-body">
+          <p className="org-muted" style={{ marginBottom: 12 }}>{t('Download everything you have recorded: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.')}</p>
+          <ExportMenu label="Export all my records" run={(format) => downloadExport('/export', { format }, `cropmanager-all-records.${format}`)} />
         </div>
       </div>
 

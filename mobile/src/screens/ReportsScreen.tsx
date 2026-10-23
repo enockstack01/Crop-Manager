@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, Share, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
 import { useDashboard } from '../lib/useResource';
 import { currenciesUsed, formatCurrency, formatDate, formatNumber, getCurrency } from '../lib/format';
 import { useTheme } from '../theme/ThemeProvider';
@@ -7,6 +7,10 @@ import { AppText, Badge, ChartCard, EmptyState, Grid, Loading, PageHeader, Scree
 import { Bars, HBars, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';
 import { Button } from '../components/Button';
+import { ExportButton } from '../components/ExportSheet';
+import { shareTables } from '../lib/exports';
+import { shareReportPdf } from '../lib/pdfReport';
+import { useProfile } from '../lib/useResource';
 import { useToast } from '../components/Toast';
 import { CYCLE_STATUSES, STATUS_COLORS } from '../features/dashboard/aggregate';
 import { t } from '../i18n';
@@ -31,6 +35,39 @@ const monthLabel = (key: string) => {
   return new Date(Number(y), Number(m) - 1).toLocaleString('en', { month: 'short', year: '2-digit' });
 };
 
+/* full tables for the exports: every record behind the figures, totals included */
+const dash = (v: any) => (v === null || v === undefined ? '' : v);
+const cycleTable = (cycles: any[]) => ({
+  title: 'Crop cycles',
+  headers: ['Crop', 'Farm', 'Field', 'Season', 'Status', 'Planted', 'Expected Harvest', 'Area (ha)', 'Expected (kg)', 'Actual (kg)'],
+  rows: [...cycles].sort((a, b) => (b.planting_date || '').localeCompare(a.planting_date || '')).map((r) => [
+    r.crops?.name || '', r.farms?.name || '', r.fields?.name || '', r.seasons?.name || '', r.status || '',
+    r.planting_date || '', r.expected_harvest_date || '', dash(r.area_planted), dash(r.expected_production), dash(r.actual_production),
+  ]),
+});
+const harvestTable = (harvests: any[]) => ({
+  title: 'Harvest records',
+  headers: ['Date', 'Crop', 'Farm', 'Field', 'Quantity', 'Unit', 'Area (ha)', 'Grade', 'Quality', 'Storage', 'Labour cost', 'Transport cost', 'Other costs', 'Notes'],
+  rows: [...harvests].sort((a, b) => (b.harvest_date || '').localeCompare(a.harvest_date || '')).map((h) => [
+    h.harvest_date || '', h.crops?.name || h.crop_cycles?.crops?.name || '', h.farms?.name || '', h.fields?.name || '', dash(h.quantity), h.unit || '',
+    dash(h.harvested_area), h.grade || '', h.quality || '', h.storage_location || '', dash(h.labor_cost), dash(h.transport_cost), dash(h.other_costs), h.notes || '',
+  ]),
+});
+const expenseTable = (expenses: any[], currency: string) => ({
+  title: `Expenses (${currency})`,
+  headers: ['Date', 'Category', 'Description', 'Farm', 'Supplier', 'Payment', 'Amount', 'Notes'],
+  rows: [...expenses].sort((a, b) => (b.expense_date || '').localeCompare(a.expense_date || '')).map((e) => [
+    e.expense_date || '', e.category || '', e.description || '', e.farms?.name || '', e.supplier || '', e.payment_method || '', dash(e.amount), e.notes || '',
+  ]),
+});
+const saleTable = (sales: any[], currency: string) => ({
+  title: `Sales (${currency})`,
+  headers: ['Date', 'Crop', 'Buyer', 'Farm', 'Quantity', 'Unit', 'Unit price', 'Total', 'Payment', 'Market', 'Notes'],
+  rows: [...sales].sort((a, b) => (b.sale_date || '').localeCompare(a.sale_date || '')).map((x) => [
+    x.sale_date || '', x.crops?.name || '', x.buyer || '', x.farms?.name || '', dash(x.quantity), x.unit || '', dash(x.unit_price), dash(x.total_amount), x.payment_status || '', x.market || '', x.notes || '',
+  ]),
+});
+
 type Column = { key: string; label: string; align?: 'right'; render?: (r: any) => React.ReactNode };
 type Built = {
   empty: boolean;
@@ -38,7 +75,7 @@ type Built = {
   chart: React.ReactNode;
   columns: Column[];
   rows: any[];
-  csv: { headers: string[]; rows: (string | number)[][] };
+  tables: { title: string; headers: string[]; rows: any[][] }[];
   extra?: { title: string; columns: Column[]; rows: any[] };
 };
 
@@ -46,8 +83,9 @@ export function ReportsScreen() {
   const { data, isLoading, isError, refetch, isFetching } = useDashboard();
   const { colors } = useTheme();
   const toast = useToast();
+  const { profile } = useProfile();
   const [active, setActive] = useState<ReportId>('production');
-  const [filters, setFilters] = useState({ farm: '', season: '', from: '', to: '', currency: '' });
+  const [filters, setFilters] = useState({ farm: '', crop: '', season: '', from: '', to: '', currency: '' });
 
   const d = data || {};
 
@@ -67,15 +105,19 @@ export function ReportsScreen() {
       return s === filters.season;
     };
     const farmOk = (r: any) => !filters.farm || r.farm_id === filters.farm;
-    const allExpenses = (d.expenses || []).filter((e: any) => farmOk(e) && seasonOk(e) && inRange(e.expense_date));
-    const allSales = (d.sales || []).filter((s: any) => farmOk(s) && seasonOk(s) && inRange(s.sale_date));
+    const cycleCrop: Record<string, string | null> = {};
+    (d.cycles || []).forEach((c: any) => { cycleCrop[c.id] = c.crop_id || null; });
+    // a record belongs to a crop directly or through its crop cycle; costs with no cycle belong to no crop
+    const cropOk = (r: any) => !filters.crop || (r.crop_id || cycleCrop[r.crop_cycle_id]) === filters.crop;
+    const allExpenses = (d.expenses || []).filter((e: any) => farmOk(e) && cropOk(e) && seasonOk(e) && inRange(e.expense_date));
+    const allSales = (d.sales || []).filter((s: any) => farmOk(s) && cropOk(s) && seasonOk(s) && inRange(s.sale_date));
     // money is never converted: the financial report covers one currency at a time
     const currencies = currenciesUsed(allSales, allExpenses);
     const currency = filters.currency && currencies.includes(filters.currency) ? filters.currency : currencies[0] || getCurrency();
     const inCurrency = (r: any) => (r.currency || getCurrency()) === currency;
     return {
-      cycles: (d.cycles || []).filter((c: any) => farmOk(c) && seasonOk(c, c.season_id || null) && (filters.from || filters.to ? inRange(c.planting_date) : true)),
-      harvests: (d.harvests || []).filter((h: any) => farmOk(h) && seasonOk(h) && inRange(h.harvest_date)),
+      cycles: (d.cycles || []).filter((c: any) => farmOk(c) && cropOk(c) && seasonOk(c, c.season_id || null) && (filters.from || filters.to ? inRange(c.planting_date) : true)),
+      harvests: (d.harvests || []).filter((h: any) => farmOk(h) && cropOk(h) && seasonOk(h) && inRange(h.harvest_date)),
       expenses: allExpenses.filter(inCurrency),
       sales: allSales.filter(inCurrency),
       currency,
@@ -85,6 +127,8 @@ export function ReportsScreen() {
 
   const report = useMemo(() => build(active, filtered), [active, filtered]);
   const meta = REPORTS.find((r) => r.id === active)!;
+  const cropName = ((d.crops || []) as any[]).find((x) => x.id === filters.crop)?.name || '';
+  const reportTitle = `${cropName ? `${cropName} · ` : ''}${t('{{report}} Report', { report: t(meta.label) })}`;
 
   if (isLoading) return <Loading label="Loading report data..." />;
   if (isError) {
@@ -93,25 +137,35 @@ export function ReportsScreen() {
 
   const set = (k: keyof typeof filters) => (v: string) => setFilters((f) => ({ ...f, [k]: v }));
 
-  const exportCSV = async () => {
-    const esc = (v: any) => {
-      const s = v === null || v === undefined ? '' : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const body = [report.csv.headers, ...report.csv.rows].map((r) => r.map(esc).join(',')).join('\r\n');
-    try {
-      await Share.share({ title: t('{{report}} Report', { report: t(meta.label) }), message: body });
-    } catch {
-      toast('Could not export the report', 'error');
+  const filterLabel = () => {
+    const parts: string[] = [];
+    if (filters.crop) parts.push(`${t('Crop')}: ${cropName}`);
+    if (filters.farm) parts.push(((d.farms || []) as any[]).find((x) => x.id === filters.farm)?.name);
+    if (filters.season) parts.push(((d.seasons || []) as any[]).find((x) => x.id === filters.season)?.name);
+    if (filters.from || filters.to) parts.push(`${filters.from || '…'} → ${filters.to || '…'}`);
+    if (active === 'financial') parts.push(t('amounts in {{currency}}', { currency: filtered.currency }));
+    return parts.filter(Boolean).join(' · ') || t('All farms · all time');
+  };
+  const sections = () => report.tables.filter((x) => x.rows.length);
+  const exportReport = async (format: 'pdf' | 'xlsx' | 'csv') => {
+    if (format === 'pdf') {
+      await shareReportPdf({ title: reportTitle, subtitle: filterLabel(), owner: [profile?.full_name, profile?.public_id].filter(Boolean).join(' · '), tiles: report.tiles, tables: sections() });
+      return;
     }
+    await shareTables(format, {
+      kind: 'Report', title: reportTitle, subtitle: filterLabel(),
+      tables: sections().map((x) => ({ title: t(x.title), headers: x.headers.map((h) => t(h)), rows: x.rows })),
+    }, `${active}-report.${format}`);
   };
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
       <PageHeader title="Reports" subtitle="Production, yield and financial reporting." />
+      {cropName ? <AppText weight="700" style={{ fontSize: 15, color: colors.primaryDark, marginBottom: 10 }}>{reportTitle}</AppText> : null}
 
       <Grid columns={2} gap={10} style={{ marginBottom: 16 }}>
         <SelectField value={filters.farm} onChangeValue={set('farm')} placeholder="All Farms" options={(d.farms || []).map((f: any) => ({ value: f.id, label: f.name }))} />
+        <SelectField value={filters.crop} onChangeValue={set('crop')} placeholder="All Crops" options={(d.crops || []).map((c: any) => ({ value: c.id, label: c.name }))} />
         <SelectField value={filters.season} onChangeValue={set('season')} placeholder="All Seasons" options={(d.seasons || []).map((s: any) => ({ value: s.id, label: s.name }))} />
         <DateField value={filters.from} onChangeValue={set('from')} />
         <DateField value={filters.to} onChangeValue={set('to')} />
@@ -131,7 +185,7 @@ export function ReportsScreen() {
           <Button key={r.id} title={r.label} icon={r.icon} size="sm" kind={active === r.id ? 'primary' : 'secondary'} onPress={() => setActive(r.id)} />
         ))}
         <View style={{ flexGrow: 1 }} />
-        <Button title="Export CSV" icon="file-csv" size="sm" kind="secondary" disabled={report.empty} onPress={exportCSV} />
+        <ExportButton size="sm" disabled={report.empty} run={exportReport} />
       </View>
 
       {report.empty ? (
@@ -274,10 +328,18 @@ function build(id: ReportId, f: any): Built {
             }]
           : []),
       ],
-      csv: {
-        headers: ['Crop', 'Cycles', 'Area (ha)', 'Expected (kg)', 'Harvested (kg)', 'Yield (kg/ha)', 'Achievement (%)'],
-        rows: rows.map((r: any) => [r.crop, r.cycles, round1(r.area), Math.round(r.expected), Math.round(r.harvested), Math.round(r.yield), Math.round(r.achievement)]),
-      },
+      tables: [
+        {
+          title: 'Production by crop',
+          headers: ['Crop', 'Cycles', 'Area (ha)', 'Expected (kg)', 'Harvested (kg)', 'Yield (kg/ha)', 'Achievement (%)'],
+          rows: [
+            ...rows.map((r: any) => [r.crop, r.cycles, round1(r.area), Math.round(r.expected), Math.round(r.harvested), Math.round(r.yield), Math.round(r.achievement)]),
+            ...(rows.length > 1 ? [['All crops', tot.cycles, round1(tot.area), Math.round(tot.expected), Math.round(tot.harvested), tot.area ? Math.round(tot.harvested / tot.area) : 0, tot.expected ? Math.round((tot.harvested / tot.expected) * 100) : 0]] : []),
+          ],
+        },
+        cycleTable(f.cycles),
+        harvestTable(f.harvests),
+      ],
     };
   }
 
@@ -323,10 +385,18 @@ function build(id: ReportId, f: any): Built {
           ? [{ _key: '__total', _total: true, crop: 'All crops', records: rows.reduce((s: number, r: any) => s + r.records, 0), area: totArea, qty: totQty, yield: totArea > 0 ? totQty / totArea : 0 }]
           : []),
       ],
-      csv: {
-        headers: ['Crop', 'Records', 'Harvested Area (ha)', 'Quantity (kg)', 'Avg Yield (kg/ha)'],
-        rows: rows.map((r: any) => [r.crop, r.records, round1(r.area), Math.round(r.qty), Math.round(r.yield)]),
-      },
+      tables: [
+        {
+          title: 'Yield by crop',
+          headers: ['Crop', 'Records', 'Harvested Area (ha)', 'Quantity (kg)', 'Avg Yield (kg/ha)'],
+          rows: [
+            ...rows.map((r: any) => [r.crop, r.records, round1(r.area), Math.round(r.qty), Math.round(r.yield)]),
+            ...(rows.length > 1 ? [['All crops', rows.reduce((a: number, r: any) => a + r.records, 0), round1(totArea), Math.round(totQty), totArea ? Math.round(totQty / totArea) : 0]] : []),
+          ],
+        },
+        { title: 'Harvest by month (kg)', headers: ['Month', 'Quantity (kg)'], rows: mKeys.map((k) => [monthLabel(k), Math.round(monthMap[k])]) },
+        harvestTable(f.harvests),
+      ],
     };
   }
 
@@ -388,10 +458,19 @@ function build(id: ReportId, f: any): Built {
             rows: cats.map((c) => ({ ...c, _key: c.category })),
           }
         : undefined,
-      csv: {
-        headers: ['Month', `Revenue (${f.currency})`, `Expenses (${f.currency})`, `Net (${f.currency})`, 'Margin (%)'],
-        rows: months.map((r: any) => [r.month, round1(r.revenue), round1(r.expenses), round1(r.net), Math.round(r.margin)]),
-      },
+      tables: [
+        {
+          title: `Revenue and expenses by month (${f.currency})`,
+          headers: ['Month', 'Revenue', 'Expenses', 'Net', 'Margin (%)'],
+          rows: [
+            ...months.map((r: any) => [monthLabel(r.month), round1(r.revenue), round1(r.expenses), round1(r.net), Math.round(r.margin)]),
+            ...(months.length ? [['Total', round1(totRev), round1(totExp), round1(net), totRev ? Math.round((net / totRev) * 100) : 0]] : []),
+          ],
+        },
+        { title: `Expense breakdown (${f.currency})`, headers: ['Category', 'Amount', 'Share (%)'], rows: cats.map((c) => [c.category, round1(c.amount), totExp ? Math.round((c.amount / totExp) * 100) : 0]) },
+        saleTable(f.sales, f.currency),
+        expenseTable(f.expenses, f.currency),
+      ],
     };
   }
 
@@ -424,12 +503,6 @@ function build(id: ReportId, f: any): Built {
       { key: 'area_planted', label: 'Area (ha)', align: 'right', render: (r) => (r.area_planted ? round1(r.area_planted).toLocaleString() : '—') },
     ],
     rows: rows.map((r: any) => ({ ...r, _key: r.id })),
-    csv: {
-      headers: ['Crop', 'Farm', 'Field', 'Season', 'Status', 'Planted', 'Expected Harvest', 'Area (ha)', 'Expected (kg)', 'Actual (kg)'],
-      rows: rows.map((r: any) => [
-        r.crops?.name || '', r.farms?.name || '', r.fields?.name || '', r.seasons?.name || '', r.status || '',
-        r.planting_date || '', r.expected_harvest_date || '', n(r.area_planted), Math.round(n(r.expected_production)), Math.round(n(r.actual_production)),
-      ]),
-    },
+    tables: [cycleTable(f.cycles)],
   };
 }

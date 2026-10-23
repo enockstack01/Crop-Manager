@@ -116,7 +116,7 @@ export default function CalculatorDetail() {
   const download = async () => {
     const { downloadCalculatorPdf } = await import('../lib/pdfReport.js');
     await downloadCalculatorPdf({
-      calc, inputs: inputRows(), results: result, report, owner: displayName(profile), field: field?.name,
+      calc, inputs: inputRows(), results: result, report, owner: [displayName(profile), profile?.public_id].filter(Boolean).join(' · '), field: field?.name,
       fileName: `cropmanager-${type}-${new Date().toISOString().slice(0, 10)}.pdf`,
     });
   };

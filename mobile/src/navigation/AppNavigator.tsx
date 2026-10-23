@@ -13,6 +13,7 @@ import { CalculatorsScreen } from '../screens/CalculatorsScreen';
 import { CalculatorDetailScreen } from '../screens/CalculatorDetailScreen';
 import { ReportsScreen } from '../screens/ReportsScreen';
 import { CalendarScreen } from '../screens/CalendarScreen';
+import { WeatherScreen } from '../screens/WeatherScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
 
@@ -66,6 +67,7 @@ export function AppNavigator() {
       <Drawer.Screen name="calculators" component={CalculatorsStack} options={{ title: 'Calculators' }} />
       <Drawer.Screen name="reports" component={ReportsScreen} options={{ title: 'Reports' }} />
       <Drawer.Screen name="calendar" component={CalendarScreen} options={{ title: 'Calendar' }} />
+      <Drawer.Screen name="weather" component={WeatherScreen} options={{ title: 'Weather' }} />
       <Drawer.Screen name="settings" component={SettingsScreen} options={{ title: 'Settings' }} />
     </Drawer.Navigator>
   );

@@ -161,9 +161,20 @@ npm start              # serves the API; deploy client/dist to any static host
 
 ## AI assistant
 
-The AI features run on the server only. Set `AI_API_KEY` in `server/.env` (or the host's environment) and restart the server; no code change is needed. Optional: `AI_MODEL`, `AI_DAILY_LIMIT` (default 40 requests per user per day) and `AI_HOURLY_LIMIT` (default 15). `AI_MOCK=1` returns canned answers for development.
+The AI features run on the server only. Set `AI_API_KEY` in `server/.env` (or the host's environment) and restart the server; never commit the key. Which model answers is chosen by an administrator under **System admin > AI** (Fast, Balanced, Advanced and Expert levels, one per kind of task, plus per-user hourly and daily limits and a usage and failure monitor); the model names are never shown in the apps. `AI_DAILY_LIMIT` (default 40 requests per user per day) and `AI_HOURLY_LIMIT` (default 15) are the starting limits. `AI_MOCK=1` returns canned answers for development.
 
-Features (web and mobile, answered in the interface language): diagnosis report from a scouting photo (cause, treatment, medication, how to give it), farm insights, plans and advice (inputs, planting, fertiliser, irrigation, protection, harvest), lender-ready season summary, quick record entry in plain words, and a farm-aware chat. Farm records are sent to the AI service with each request; usage is logged per user in the `aiusages` collection.
+Features (web and mobile, answered in the interface language): chat that looks up the farmer's own records and the weather, farm insights, plans and advice, lender-ready season summary, quick record entry in plain words, **plant check from the camera** (up to three photos; finds the infected part, names the problem, treatment and medication, with a PDF report), and **calculator reports** (see below). Farm records are sent to the AI service with each request; usage is logged per user in the `aiusages` collection.
+
+## Weather, calculators, calendar, reports and exports
+
+- **Weather** (`/weather`): the farm's location comes from a field's GPS or, failing that, the farm's place name. Data comes from OpenWeatherMap when `OPENWEATHER_API_KEY` is set (a new key can take a couple of hours to activate), otherwise from the free Open-Meteo service. The page shows now, the next hours, seven days, rule-based advice for the crops in the ground, a water plan (crop water use against useful rain) and an AI weekly briefing.
+- **Calculators**: pick one of your fields to fill the area, use the weather water plan for irrigation and rainfall, then "Explain with my farm data" for an AI report (what each result means, other estimates, steps, links to your records and the weather) and download it as a branded PDF.
+- **Calendar** (`/calendar`, `GET /api/calendar`): month, week and agenda views, colour-coded by kind (planting, harvest, field work, irrigation, fertiliser, protection, scouting, equipment service), with alerts for overdue harvests, low or expiring stock, service due and heavy rain, heat or frost.
+- **Reports**: filters for farm, crop, season and dates; a crop filter shows only that crop (sections with no records are left out). Every table is exported in full (PDF, Excel or CSV): wide tables switch to landscape and columns share the width, so nothing is cut off.
+- **Exports** (`GET /api/export/:path?format=pdf|xlsx|csv`, `GET /api/export` for everything, `POST /api/export/tables` for a report built on the device): every records page has an Export button, and Settings has "Export all my records". The same server code serves the web and the mobile app.
+- **User ID**: every account has a stable ID such as `Crop384512`, shown in the top bar and Settings and printed on reports.
+- **Search**: the top bar searches pages and all your records; records pages open with their own search filled in.
+- **Languages**: English, French, Kinyarwanda, Swahili, Arabic (right to left), German, Spanish, Hindi, Portuguese and Chinese. `python scripts/i18n/build.py` collects the strings, `node scripts/i18n/ai_translate.mjs <codes>` fills gaps with the AI service, then run build.py again.
 
 ## Organizations and farmer referrals
 

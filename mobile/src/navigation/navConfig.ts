@@ -62,6 +62,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { route: 'reports', label: 'Reports', icon: 'file-lines' },
       { route: 'calendar', label: 'Calendar', icon: 'calendar-check' },
+      { route: 'weather', label: 'Weather', icon: 'cloud-sun' },
     ],
   },
   {

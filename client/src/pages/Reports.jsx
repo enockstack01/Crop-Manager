@@ -530,7 +530,7 @@ export default function Reports() {
     await downloadDocPdf({
       kind: t('Report'),
       title: reportTitle,
-      meta: [profile?.full_name, filterLabel()],
+      meta: [[profile?.full_name, profile?.public_id].filter(Boolean).join(' · '), filterLabel()],
       fileName: `CropManager-${active}${cropName ? `-${cropName}` : ''}-report-${stamp()}.pdf`,
       sections: [
         { type: 'tiles', tiles: report.tiles },
@@ -601,7 +601,7 @@ export default function Reports() {
       <div className="print-only" style={{ marginBottom: 12 }}>
         <h1 className="page-title">{reportTitle}</h1>
         <p className="page-subtitle">
-          {profile?.full_name ? `${profile.full_name} · ` : ''}{filterLabel()} · {t('generated {{date}}', { date: formatDate(new Date().toISOString()) })}
+          {[profile?.full_name, profile?.public_id].filter(Boolean).join(' · ') ? `${[profile?.full_name, profile?.public_id].filter(Boolean).join(' · ')} · ` : ''}{filterLabel()} · {t('generated {{date}}', { date: formatDate(new Date().toISOString()) })}
         </p>
       </div>
 

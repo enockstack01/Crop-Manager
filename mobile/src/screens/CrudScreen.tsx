@@ -1,6 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, TextInput, View } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 import { Icon } from '../components/Icon';
+import { ExportButton } from '../components/ExportSheet';
+import { shareExport } from '../lib/exports';
 import { useList, useResourceMutations } from '../lib/useResource';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
@@ -34,8 +37,14 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const filters: FilterDef[] = config.useFilters ? config.useFilters() : [];
 
   const [page, setPage] = useState(1);
-  const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
+  const route = useRoute<any>();
+  const fromSearch: string = route.params?.q || '';
+  const [q, setQ] = useState(fromSearch);
+  const [search, setSearch] = useState(fromSearch);
+  React.useEffect(() => {
+    // the top bar search opens a page with its box already filled in
+    if (route.params?.q !== undefined) { setQ(route.params.q); setSearch(route.params.q); setPage(1); }
+  }, [route.params?.q]);
   const [searchFocused, setSearchFocused] = useState(false);
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [form, setForm] = useState<{ editing: any | null } | null>(null);
@@ -87,7 +96,12 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
       <PageHeader
         title={config.title}
         subtitle={config.subtitle}
-        action={<Button title={addLabel} icon="plus" onPress={() => setForm({ editing: null })} />}
+        action={(
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <ExportButton run={(format) => shareExport(config.resource, format, { ...(q ? { q } : {}), ...Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v)) })} />
+            <Button title={addLabel} icon="plus" onPress={() => setForm({ editing: null })} />
+          </View>
+        )}
       />
       <View style={{ gap: 10, marginBottom: 16 }}>
         {config.searchable !== false ? (

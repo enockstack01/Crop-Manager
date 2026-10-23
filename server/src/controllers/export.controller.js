@@ -3,6 +3,7 @@ import createHttpError from '../lib/httpError.js';
 import { resources } from '../resources.js';
 import { FORMATS, render, tableFor } from '../lib/export.js';
 
+const ownerOf = (req) => [req.profile?.full_name, req.profile?.public_id].filter(Boolean).join(' · ');
 const stamp = () => new Date().toISOString().slice(0, 10);
 const safe = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'export';
 const plural = (r) => (r.path === 'equipment' ? 'Equipment' : `${r.name}s`);
@@ -28,7 +29,7 @@ export const exportResource = asyncHandler(async (req, res) => {
   const table = await tableFor(resource.path, req.userId, req.query);
   const q = String(req.query.q || '').trim();
   const t = { title: plural(resource), headers: table.headers, rows: table.rows };
-  const buf = await render(format, [t], { kind: 'Records', title: plural(resource), owner: req.profile?.full_name || '', subtitle: `${table.rows.length} ${table.rows.length === 1 ? 'record' : 'records'}${q ? ` · "${q}"` : ''}` });
+  const buf = await render(format, [t], { kind: 'Records', title: plural(resource), owner: ownerOf(req), subtitle: `${table.rows.length} ${table.rows.length === 1 ? 'record' : 'records'}${q ? ` · "${q}"` : ''}` });
   send(res, format, buf, safe(resource.path));
 });
 
@@ -42,7 +43,7 @@ export const exportAll = asyncHandler(async (req, res) => {
     if (t?.rows.length) tables.push({ title: plural(r), headers: t.headers, rows: t.rows });
   }
   if (!tables.length) throw createHttpError(404, 'There are no records to export yet.');
-  const buf = await render(format, tables, { kind: 'All records', title: 'All records', owner: req.profile?.full_name || '', subtitle: `${tables.length} kinds of records` });
+  const buf = await render(format, tables, { kind: 'All records', title: 'All records', owner: ownerOf(req), subtitle: `${tables.length} kinds of records` });
   send(res, format, buf, 'cropmanager-all-records');
 });
 
@@ -56,6 +57,6 @@ export const exportTables = asyncHandler(async (req, res) => {
     rows: (Array.isArray(t.rows) ? t.rows : []).slice(0, 20000).map((r) => (Array.isArray(r) ? r.slice(0, 40).map((c) => (c === null || c === undefined ? '' : typeof c === 'object' ? JSON.stringify(c) : c)) : [])),
   })).filter((t) => t.headers.length && t.rows.length);
   if (!tables.length) throw createHttpError(400, 'There is nothing to export.');
-  const buf = await render(format, tables, { kind: String(b.kind || 'Report').slice(0, 40), title: String(b.title || 'Report').slice(0, 120), owner: req.profile?.full_name || '', subtitle: String(b.subtitle || '').slice(0, 200) });
+  const buf = await render(format, tables, { kind: String(b.kind || 'Report').slice(0, 40), title: String(b.title || 'Report').slice(0, 120), owner: ownerOf(req), subtitle: String(b.subtitle || '').slice(0, 200) });
   send(res, format, buf, safe(b.title || 'report'));
 });

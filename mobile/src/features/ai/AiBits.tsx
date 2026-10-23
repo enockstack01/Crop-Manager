@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Image, View } from 'react-native';
+import { mediaUrl } from '../../env';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius } from '../../theme/theme';
 import { AppText, Badge } from '../../components/ui';
@@ -89,7 +90,7 @@ function Section({ icon, title, text }: { icon: string; title: string; text?: st
 }
 
 /** Diagnosis-to-treatment report: cause, treatment, medication, how to give it. */
-export function DiagnosisReport({ report: r }: { report: any }) {
+export function DiagnosisReport({ report: r, photos = [] }: { report: any; photos?: string[] }) {
   const { colors } = useTheme();
   return (
     <View style={{ gap: 12, marginTop: 16 }}>
@@ -104,6 +105,15 @@ export function DiagnosisReport({ report: r }: { report: any }) {
           <AppText weight="700" style={{ fontSize: 13 }}>{t('The photo or notes are not enough for a sure answer.')}</AppText> {r.photo_tips}
         </Note>
       ) : null}
+      {photos.length ? (
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {photos.slice(0, 3).map((u) => (
+            <Image key={u} source={{ uri: mediaUrl(u) }} style={{ width: 90, height: 90, borderRadius: 8, borderWidth: 1, borderColor: colors.border }} resizeMode="cover" />
+          ))}
+        </View>
+      ) : null}
+      <Section icon="leaf" title="Affected part" text={r.affected_part} />
+      {r.visible_signs?.length ? <Section icon="eye" title="What the photo shows" text={r.visible_signs.join(' · ')} /> : null}
       <Section icon="magnifying-glass" title="Cause" text={r.cause} />
       <Section icon="hand-holding-medical" title="Treatment" text={r.treatment} />
       <Section icon="prescription-bottle-medical" title="Medication" text={r.medication} />

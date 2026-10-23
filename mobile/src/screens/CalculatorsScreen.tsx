@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { TextInput, View } from 'react-native';
 import { Icon } from '../components/Icon';
 import { CALCULATORS } from '../lib/calculators';
 import { useList, useResourceMutations } from '../lib/useResource';
@@ -7,7 +7,7 @@ import { formatDateTime } from '../lib/format';
 import { useConfirm } from '../components/Confirm';
 import { useToast } from '../components/Toast';
 import { useTheme } from '../theme/ThemeProvider';
-import { radius, shadow } from '../theme/theme';
+import { ff, radius, shadow } from '../theme/theme';
 import { AppText, ChartCard, Grid, IconButton, PageHeader, Screen, useLayout } from '../components/ui';
 import { PressableScale } from '../components/PressableScale';
 import { t } from '../i18n';
@@ -21,13 +21,20 @@ export function CalculatorsScreen({ navigation }: any) {
   const { data } = useList('calculation-history', { perPage: 20, sort: 'created_at', order: 'desc' });
   const { remove } = useResourceMutations('calculation-history');
   const history = data?.data ?? [];
+  const [q, setQ] = useState('');
+  const shown = CALCULATORS.filter((c) => !q.trim() || `${t(c.title)} ${t(c.desc)} ${c.title}`.toLowerCase().includes(q.trim().toLowerCase()));
 
   return (
     <Screen>
       <PageHeader title="Agricultural Calculators" subtitle="Quick field-planning tools." />
 
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, minHeight: 42, marginBottom: 16 }}>
+        <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
+        <TextInput value={q} onChangeText={setQ} placeholder={t('Search calculators...')} placeholderTextColor={colors.placeholder} style={{ flex: 1, paddingVertical: 8, color: colors.text, fontSize: 13, fontFamily: ff('400') }} />
+      </View>
+      {shown.length === 0 ? <AppText style={{ fontSize: 13, color: colors.textLight, marginBottom: 12 }}>{t('No calculator matches your search.')}</AppText> : null}
       <Grid columns={columns} gap={16}>
-        {CALCULATORS.map((c) => (
+        {shown.map((c) => (
           <PressableScale
             key={c.type}
             onPress={() => navigation.navigate('calculator-detail', { type: c.type })}
@@ -44,6 +51,9 @@ export function CalculatorsScreen({ navigation }: any) {
             </View>
             <AppText weight="600" style={{ fontSize: 14, textAlign: 'center', marginBottom: 6 }}>{c.title}</AppText>
             <AppText style={{ fontSize: 12, lineHeight: 18, color: colors.textLight, textAlign: 'center' }}>{c.desc}</AppText>
+            <View style={{ marginTop: 8, backgroundColor: colors.orange, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+              <AppText weight="700" style={{ fontSize: 10, color: '#1C2B1E' }}>{t('Fills from your farm, explains the result')}</AppText>
+            </View>
           </PressableScale>
         ))}
       </Grid>

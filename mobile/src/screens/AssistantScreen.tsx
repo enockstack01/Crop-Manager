@@ -11,6 +11,7 @@ import { useResourceMutations } from '../lib/useResource';
 import { formatCurrency } from '../lib/format';
 import { aiAdvice, aiChat, aiInsights, aiParseRecord, aiSeasonSummary } from '../lib/ai';
 import { AiDisclaimer, AiStatusBar, ErrorNote, Note, Thinking } from '../features/ai/AiBits';
+import { DiagnoseSheet } from '../features/ai/DiagnoseSheet';
 import { t } from '../i18n';
 
 const TABS = [
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'plans', icon: 'list-check', label: 'Plans and advice' },
   { id: 'summary', icon: 'file-signature', label: 'Season summary' },
   { id: 'record', icon: 'pen-to-square', label: 'Quick record' },
+  { id: 'photo', icon: 'camera', label: 'Check a plant' },
 ] as const;
 
 /** Runs an AI call and keeps its loading, error and result state. */
@@ -337,6 +339,22 @@ function Row({ k, v, first }: { k: string; v: string; first?: boolean }) {
   );
 }
 
+/* ------------------------------------------------------------ check a plant */
+function PlantCheck() {
+  const { colors } = useTheme();
+  const [mode, setMode] = useState<null | 'camera' | 'files'>(null);
+  return (
+    <View style={{ gap: 12 }}>
+      <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('Take a photo of the sick leaf, stem or fruit. The assistant finds the infected part, names the problem and tells you how to treat it.')}</AppText>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        <Button title="Take a photo" icon="camera" onPress={() => setMode('camera')} />
+        <Button title="Choose photos" kind="secondary" icon="image" onPress={() => setMode('files')} />
+      </View>
+      {mode ? <DiagnoseSheet key={mode} visible onClose={() => setMode(null)} input={{}} autoCamera={mode === 'camera'} /> : null}
+    </View>
+  );
+}
+
 /* --------------------------------------------------------------- page */
 export function AssistantScreen({ navigation }: { navigation: any }) {
   const { colors } = useTheme();
@@ -367,6 +385,7 @@ export function AssistantScreen({ navigation }: { navigation: any }) {
         {tab === 'plans' ? <Plans /> : null}
         {tab === 'summary' ? <Summary /> : null}
         {tab === 'record' ? <QuickRecord /> : null}
+        {tab === 'photo' ? <PlantCheck /> : null}
       </View>
       <AiDisclaimer />
     </Screen>

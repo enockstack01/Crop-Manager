@@ -11,6 +11,7 @@ import { haptics } from '../lib/haptics';
 import { Icon } from '../components/Icon';
 import { AppText } from '../components/ui';
 import { Sheet } from '../components/Sheet';
+import { SearchSheet } from '../components/SearchSheet';
 import { useToast } from '../components/Toast';
 import { t } from '../i18n';
 
@@ -59,6 +60,7 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
   const toast = useToast();
   const qc = useQueryClient();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const { data } = useList('notifications', { is_read: false, perPage: 10, sort: 'created_at', order: 'desc' });
   const notifs: any[] = data?.data ?? [];
@@ -83,7 +85,15 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
     >
       <View style={{ height: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: 4 }}>
         {showMenu ? <TopbarButton icon="bars" label="Open menu" onPress={() => navigation.openDrawer()} /> : null}
-        <View style={{ flex: 1 }} />
+        <Pressable
+          onPress={() => { haptics.select(); setSearchOpen(true); }}
+          accessibilityRole="search"
+          accessibilityLabel={t('Search')}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, marginHorizontal: 6, paddingHorizontal: 12, borderRadius: radius.md, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border }}
+        >
+          <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
+          <Text style={{ color: colors.placeholder, fontSize: 13, fontFamily: ff('400') }} numberOfLines={1}>{t('Search...')}</Text>
+        </Pressable>
         <TopbarButton icon={isDark ? 'sun' : 'moon'} label="Toggle dark mode" onPress={() => setMode(isDark ? 'light' : 'dark')} />
         <TopbarButton icon="bell" label="Notifications" badge={notifs.length} onPress={() => setNotifOpen(true)} />
         <Pressable
@@ -102,6 +112,7 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
         </Pressable>
       </View>
 
+      <SearchSheet visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
       <Sheet visible={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" size="sm"
         footer={notifs.length ? (
           <Pressable onPress={markAllRead} hitSlop={8} accessibilityRole="button">
