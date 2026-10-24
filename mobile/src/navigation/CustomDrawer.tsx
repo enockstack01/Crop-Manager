@@ -51,6 +51,7 @@ export function CustomDrawer(props: DrawerContentComponentProps & { sections?: N
   const go = (route: string) => {
     haptics.select();
     props.navigation.navigate(route);
+    props.navigation.closeDrawer();
   };
 
   const onSignOut = async () => {
