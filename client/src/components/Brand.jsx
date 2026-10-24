@@ -15,10 +15,6 @@ export function BrandPanel() {
       <img className="auth-brand-logo" src="/brand/cropmanager-icon.png" alt="CropManager" width="112" height="112" />
       <h1>{t('CropManager')}</h1>
       <p className="auth-brand-tagline">{t(TAGLINE)}</p>
-      <p>
-        {t('Streamline your crop production. Track farms, fields, crop cycles, activities, harvests, inventory and finances, all in one place.')}
-      </p>
-      <div className="auth-brand-footer">CropManager · by Agricoders</div>
     </div>
   );
 }
@@ -30,7 +26,6 @@ export function MobileBrand() {
       <img src="/brand/cropmanager-icon.png" alt="" width="42" height="42" />
       <span>
         {t('CropManager')}
-        <small>by Agricoders</small>
       </span>
     </div>
   );

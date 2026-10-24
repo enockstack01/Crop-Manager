@@ -66,7 +66,6 @@ export function AuthLayout({
               <Image source={GLYPH} style={{ width: 42, height: 42, borderRadius: 10 }} accessibilityLabel="CropManager" />
               <View>
                 <Text style={{ fontSize: 20, fontFamily: ff('700'), color: colors.primaryDark }}>CropManager</Text>
-                <Text style={{ fontSize: 11, fontFamily: ff('400'), color: colors.textLight }}>by Agricoders</Text>
               </View>
             </View>
 
