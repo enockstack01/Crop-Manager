@@ -13,7 +13,8 @@ import { AppText } from '../components/ui';
 import { Sheet } from '../components/Sheet';
 import { SearchSheet } from '../components/SearchSheet';
 import { useToast } from '../components/Toast';
-import { t } from '../i18n';
+import i18n, { LANGUAGES, setLanguage, t } from '../i18n';
+import { api } from '../lib/api';
 
 /** web .topbar-btn: 38px, radius 8, muted icon */
 function TopbarButton({ icon, onPress, label, badge }: { icon: string; onPress: () => void; label: string; badge?: number }) {
@@ -61,6 +62,14 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
   const qc = useQueryClient();
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const pickLanguage = (code: string) => {
+    // keep the cached profile in step, or the app would switch straight back
+    qc.setQueryData(['profile'], (p: any) => (p ? { ...p, language: code } : p));
+    api.put('/profile', { language: code }).catch(() => {});
+    setLanguage(code);
+    setLangOpen(false);
+  };
 
   const { data } = useList('notifications', { is_read: false, perPage: 10, sort: 'created_at', order: 'desc' });
   const notifs: any[] = data?.data ?? [];
@@ -94,6 +103,7 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
           <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
           <Text style={{ color: colors.placeholder, fontSize: 13, fontFamily: ff('400') }} numberOfLines={1}>{t('Search...')}</Text>
         </Pressable>
+        <TopbarButton icon="globe" label={t('Language')} onPress={() => setLangOpen(true)} />
         <TopbarButton icon={isDark ? 'sun' : 'moon'} label="Toggle dark mode" onPress={() => setMode(isDark ? 'light' : 'dark')} />
         <TopbarButton icon="bell" label="Notifications" badge={notifs.length} onPress={() => setNotifOpen(true)} />
         <Pressable
@@ -112,6 +122,19 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
         </Pressable>
       </View>
 
+      <Sheet visible={langOpen} onClose={() => setLangOpen(false)} title="Language" size="sm">
+        {LANGUAGES.map((l) => (
+          <Pressable
+            key={l.code}
+            onPress={() => pickLanguage(l.code)}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 8, backgroundColor: pressed ? colors.bg : 'transparent' })}
+          >
+            <Icon name={i18n.language === l.code ? 'circle-check' : 'circle'} size={14} color={i18n.language === l.code ? colors.primary : colors.textLight} />
+            <AppText weight={i18n.language === l.code ? '700' : '400'} style={{ fontSize: 14 }}>{l.label}</AppText>
+          </Pressable>
+        ))}
+      </Sheet>
       <SearchSheet visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
       <Sheet visible={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" size="sm"
         footer={notifs.length ? (

@@ -71,6 +71,20 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+/** Platform administration (web sidebar "Administration"), shown to system administrators only. */
+export const ADMIN_SECTION: NavSection = {
+  label: 'Administration',
+  items: [
+    { route: 'admin-overview', label: 'Admin Overview', icon: 'gauge-high' },
+    { route: 'admin-users', label: 'User Management', icon: 'users-gear' },
+    { route: 'admin-orgs', label: 'Organizations', icon: 'building' },
+    { route: 'admin-audit', label: 'Audit log', icon: 'clipboard-list' },
+    { route: 'admin-ai', label: 'AI assistant', icon: 'wand-magic-sparkles' },
+    { route: 'admin-data', label: 'Data Browser', icon: 'database' },
+    { route: 'admin-settings', label: 'System Settings', icon: 'sliders' },
+  ],
+};
+
 /** Organization workspace (mirrors the web sidebar for organization users). */
 const ORG_BASE: NavItem[] = [
   { route: 'org-dashboard', label: 'Overview', icon: 'table-cells-large' },

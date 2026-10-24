@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshControl, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius } from '../../theme/theme';
 import { AppText, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen, StatTile, useLayout } from '../../components/ui';
@@ -66,6 +66,29 @@ function Body({ org, navigation }: { org: any; navigation: any }) {
         {d.land.by_district.length ? (
           <HBars data={d.land.by_district.slice(0, 8).map((x: any) => ({ label: x.district, value: Math.round(x.ha * 10) / 10 }))} unit=" ha" />
         ) : <AppText variant="subtitle" style={{ fontSize: 13 }}>{t('No farms recorded yet.')}</AppText>}
+      </ChartCard>
+
+      <View style={{ height: 16 }} />
+      <ChartCard title="Map of field locations" icon="location-dot">
+        {d.land.points?.length ? (
+          <View>
+            {d.land.points.slice(0, 40).map((p: any, i: number) => (
+              <Pressable
+                key={`${p.lat},${p.lng},${i}`}
+                onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`)}
+                accessibilityRole="link"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, borderBottomWidth: i === Math.min(d.land.points.length, 40) - 1 ? 0 : 1, borderBottomColor: colors.border }}
+              >
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#2E7D32', borderWidth: 1, borderColor: '#14532D' }} />
+                <View style={{ flex: 1 }}>
+                  <AppText weight="700" style={{ fontSize: 13 }}>{p.name}</AppText>
+                  <AppText style={{ fontSize: 12, color: colors.textLight }}>{[p.farm, `${Math.round(p.ha * 10) / 10} ha`, `${Number(p.lat).toFixed(4)}, ${Number(p.lng).toFixed(4)}`].filter(Boolean).join(' · ')}</AppText>
+                </View>
+                <AppText style={{ fontSize: 12, color: colors.primary }}>{t('Open map')}</AppText>
+              </Pressable>
+            ))}
+          </View>
+        ) : <AppText variant="subtitle" style={{ fontSize: 13 }}>{t('No field locations recorded yet. Fields with latitude and longitude appear here.')}</AppText>}
       </ChartCard>
 
       <View style={{ height: 16 }} />
