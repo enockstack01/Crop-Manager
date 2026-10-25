@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import createHttpError from '../httpError.js';
 import { AuditLog, FarmerOrganization, Notification, Organization, OrganizationMember, Profile, ReferralLink, SystemSetting } from '../../models/index.js';
-import { statusPatch } from '../accountStatus.js';
+import { notifyAdmins, statusPatch } from '../accountStatus.js';
 
 /* ------------------------------------------------------------------ settings */
 const KEY = 'org_settings';
@@ -188,13 +188,32 @@ export async function detachFarmer({ farmerId, orgId = null, status, by, reason 
   return row;
 }
 
-/** Makes a farmer's account usable straight away when they arrive through an organization link. */
-export async function activateReferredFarmer(profile) {
-  if (profile.account_status === 'active') return;
-  await Profile.updateOne(
-    { user_id: profile.user_id, account_status: { $in: ['new', 'pending'] } },
-    { $set: { ...statusPatch('active', 'system:referral'), approved_at: new Date() } }
+/**
+ * A farmer who arrives through an organization link is linked to the organization but is NOT let in: a
+ * system administrator still approves every account. A brand-new account goes into the approval queue with
+ * its request filled in from the organization, and the administrators are told.
+ */
+export async function queueReferredFarmer(profile, org) {
+  if (profile.account_status !== 'new') return; // already approved, or already waiting
+  const done = await Profile.updateOne(
+    { user_id: profile.user_id, account_status: 'new' },
+    {
+      $set: {
+        ...statusPatch('pending', 'system:referral'),
+        onboarded: true,
+        access_request: {
+          account_type: 'Farmer',
+          organization: org.name,
+          country: org.country || '',
+          message: `Joined through a referral link of ${org.name}.`,
+          submitted_at: new Date(),
+        },
+      },
+    }
   );
+  if (done.modifiedCount) {
+    await notifyAdmins({ type: 'info', title: 'New farmer account to approve', message: `${profile.full_name || profile.email || 'A farmer'} joined through ${org.name} and is waiting for approval.` });
+  }
 }
 
 /* ------------------------------------------------------------ user context */

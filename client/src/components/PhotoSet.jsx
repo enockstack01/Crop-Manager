@@ -63,8 +63,8 @@ export function PhotoSet({ label = 'Photos of the affected plant', urls = [], on
         </div>
       )}
       <div className="form-hint">{t('Up to {{n}} photos: the sick leaf, the stem, the whole plant.', { n: max })}</div>
-      <input ref={pick} type="file" accept="image/*" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
-      <input ref={snap} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
+      <input ref={pick} type="file" accept="image/*,.heic,.heif,.hif,.avif,.webp,.gif,.tif,.tiff,.bmp,.jfif,.svg" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
+      <input ref={snap} type="file" accept="image/*,.heic,.heif,.hif,.avif,.webp,.gif,.tif,.tiff,.bmp,.jfif,.svg" capture="environment" hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
       {camera && <CameraCapture onClose={() => setCamera(false)} onCapture={(file) => upload([file])} />}
     </div>
   );

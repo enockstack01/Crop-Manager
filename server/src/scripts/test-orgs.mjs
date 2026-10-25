@@ -120,7 +120,13 @@ try {
   ok(lnk.use_count === 2, 'the link use count matches the farmers who joined', String(lnk.use_count));
   const winners = results.map((r, i) => (r.status === 200 ? `farmer${i}` : null)).filter(Boolean);
   const prof = await M.Profile.findOne({ user_id: U(winners[0]) }).lean();
-  ok(prof.account_status === 'active', 'a referred farmer is approved automatically');
+  ok(prof.account_status === 'pending' && prof.access_request?.organization, 'a referred farmer waits for the administrator, with the request filled in');
+  const early2 = await call(winners[0], 'GET', '/farms');
+  ok(early2.status === 403, 'and cannot open any farm data before approval', String(early2.status));
+  ok((await M.Notification.countDocuments({ user_id: U('sysadmin'), title: /approve/i })) >= 1, 'the administrators are told');
+  const okd = await call('sysadmin', 'PATCH', `/admin/users/${U(winners[0])}`, { account_status: 'active' });
+  ok(okd.status === 200, 'the administrator approves the account', String(okd.status));
+  ok((await call(winners[0], 'GET', '/farms')).status === 200, 'after approval the farmer can open farm data');
   const notes = await M.Notification.find({ title: /limit/i, user_id: U('orgA') }).lean();
   ok(notes.length >= 2, 'the organization admin is told at 80 and 100 percent of the limit', String(notes.length));
 
@@ -178,7 +184,7 @@ try {
   const staffRemove = await call('staff', 'DELETE', `/organizations/${orgA}/farmers/${U(winners[1])}`);
   ok(staffRemove.status === 403, 'staff cannot remove farmers');
   ok((await call('staff', 'POST', `/organizations/${orgA}/members`, { email: 'x@test.local' })).status === 403, 'staff cannot manage the team');
-  ok((await call(winners[1], 'GET', `/organizations/${orgA}/farmers`)).status === 404, 'a farmer cannot open organization routes');
+  ok([403, 404].includes((await call(winners[1], 'GET', `/organizations/${orgA}/farmers`)).status), 'a farmer cannot open organization routes');
   const rm = await call('orgA', 'DELETE', `/organizations/${orgA}/farmers/${U(winners[1])}`);
   ok(rm.status === 200 && (await M.Organization.findById(orgA).lean()).farmer_count === 0, 'the organization admin removes a farmer');
 
@@ -195,7 +201,7 @@ try {
   ok((await call('orgA', 'GET', `/organizations/${orgA}/dashboard`)).status === 200, 'a suspended organization can still view data');
   const w = await call('orgA', 'POST', `/organizations/${orgA}/referral-links`, {});
   ok(w.status === 403, 'but cannot change anything');
-  ok((await M.Profile.findOne({ user_id: U('farmerX') }).lean()).account_status === 'active', 'farmer accounts are not disabled by a suspension');
+  ok((await M.Profile.findOne({ user_id: U('farmerX') }).lean()).account_status === 'pending', 'a suspension does not change farmer accounts (this one still waits for approval)');
   await call('sysadmin', 'PATCH', `/admin/organizations/${orgA}`, { action: 'reactivate' });
   ok((await call('orgA', 'POST', `/organizations/${orgA}/referral-links`, {})).status === 201, 'a reactivated organization works again');
 

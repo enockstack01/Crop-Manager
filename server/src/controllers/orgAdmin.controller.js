@@ -1,11 +1,10 @@
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
-import { statusPatch } from '../lib/accountStatus.js';
 import {
   AuditLog, Farm, FarmerOrganization, Organization, OrganizationMember, Profile, ReferralLink,
 } from '../models/index.js';
 import {
-  attachFarmer, audit, getOrgSettings, notifyUsers, orgAdminIds, orgView, setOrgSettings, joinError,
+  attachFarmer, audit, getOrgSettings, notifyUsers, orgAdminIds, orgView, queueReferredFarmer, setOrgSettings, joinError,
 } from '../lib/orgs/core.js';
 
 const str = (v, max = 200) => (v === undefined || v === null ? '' : String(v).trim().slice(0, max));
@@ -169,9 +168,7 @@ export const importFarmers = asyncHandler(async (req, res) => {
     if (profile.is_admin || profile.user_type === 'org') { result.rows.push({ email, result: 'not_a_farmer' }); continue; }
     try {
       await attachFarmer({ farmerId: profile.user_id, org, consentSource: 'bulk_import' });
-      if (profile.account_status !== 'active') {
-        await Profile.updateOne({ user_id: profile.user_id, account_status: { $in: ['new', 'pending'] } }, { $set: { ...statusPatch('active', 'system:import'), approved_at: new Date() } });
-      }
+      await queueReferredFarmer(profile, org); // linked to the organization, still waits for the administrator's approval
       result.joined += 1;
       result.rows.push({ email, result: 'joined' });
     } catch (err) {

@@ -33,9 +33,9 @@ export function PhotoUpload({ label = 'Photo', value, onChange }) {
       <label className="form-label">{label}</label>
       <div className="photo-actions">
         <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => (cameraSupported() ? setCamera(true) : snap.current?.click())}><i className="fas fa-camera" /> {t('Take photo')}</button>
-        <input type="file" accept="image/*" className="form-control" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
+        <input type="file" accept="image/*,.heic,.heif,.hif,.avif,.webp,.gif,.tif,.tiff,.bmp,.jfif,.svg" className="form-control" onChange={(e) => upload(e.target.files?.[0])} disabled={busy} />
       </div>
-      <input ref={snap} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+      <input ref={snap} type="file" accept="image/*,.heic,.heif,.hif,.avif,.webp,.gif,.tif,.tiff,.bmp,.jfif,.svg" capture="environment" hidden onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
       {camera && <CameraCapture onClose={() => setCamera(false)} onCapture={upload} />}
       {busy && <div className="form-hint">{t('Uploading…')}</div>}
       {value && (

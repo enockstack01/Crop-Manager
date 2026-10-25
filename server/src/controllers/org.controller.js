@@ -6,7 +6,7 @@ import {
   FarmerOrganization, Organization, OrganizationMember, Profile, ReferralLink,
 } from '../models/index.js';
 import {
-  activateReferredFarmer, attachFarmer, audit, checkLink, detachFarmer, getOrgSettings, hashToken, joinError, newToken,
+  queueReferredFarmer, attachFarmer, audit, checkLink, detachFarmer, getOrgSettings, hashToken, joinError, newToken,
   notifyUsers, orgAdminIds, orgContextFor, orgView,
 } from '../lib/orgs/core.js';
 import { buildDashboard, listFarmers } from '../lib/orgs/dashboard.js';
@@ -225,7 +225,7 @@ export const joinOrganization = asyncHandler(async (req, res) => {
 
   const { link, org } = await checkLink(req.params.token);
   await attachFarmer({ farmerId: me.user_id, org, link });
-  await activateReferredFarmer(me);
+  await queueReferredFarmer(me, org);
   await audit(req, 'farmer.joined', { target_type: 'farmer', target_id: me.user_id, organization_id: org._id, details: { referral_link_id: String(link._id) } });
   await notifyUsers([me.user_id], { type: 'success', title: 'You joined an organization', message: `You are now linked to ${org.name}. They can see a summary of your crop activity.` });
   res.json({ joined: true, organization: { id: String(org._id), name: org.name } });
