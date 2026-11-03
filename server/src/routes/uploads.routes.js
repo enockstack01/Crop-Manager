@@ -25,6 +25,17 @@ const upload = multer({
   },
 });
 
+/** Deletes every picture a person uploaded (used when their account is deleted). Returns how many files went. */
+export async function removeUploadsOf(userId) {
+  const prefix = `${userId}-`;
+  let removed = 0;
+  for (const f of await fs.promises.readdir(UPLOAD_DIR)) {
+    if (!f.startsWith(prefix)) continue;
+    await fs.promises.unlink(path.join(UPLOAD_DIR, f)).then(() => { removed += 1; }, () => {});
+  }
+  return removed;
+}
+
 const router = Router();
 
 // POST /api/uploads  (field name: "file")  -> { url }   any picture format; stored as an upright JPEG

@@ -13,6 +13,7 @@ import { STATUS_NOTICES, statusPatch } from '../lib/accountStatus.js';
 import * as M from '../models/index.js';
 import { getLimits, setLimits, usageSummary } from '../lib/ai/usage.js';
 import { audit, detachFarmer } from '../lib/orgs/core.js';
+import { removeUploadsOf } from '../routes/uploads.routes.js';
 
 const ROLES = ['Farmer', 'Farm Manager', 'Agronomist', 'Cooperative Manager', 'Administrator'];
 const emailKey = (e) => String(e || '').trim().toLowerCase();
@@ -263,6 +264,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
   await M.OrganizationMember.updateMany({ user_id: userId }, { $set: { status: 'removed' } });
   await audit(req, 'user.deleted', { target_type: 'user', target_id: userId, details: { name: target?.full_name || '', email: target?.email || '', public_id: target?.public_id || '' } });
   const deletedDocs = await clearUser(userId);
+  const picturesRemoved = await removeUploadsOf(userId); // the pictures go with the account
   await M.Profile.deleteOne({ user_id: userId });
   let clerkDeleted = false;
   try {
@@ -272,7 +274,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
     /* Clerk user may already be gone */
   }
 
-  res.json({ user_id: userId, deleted: true, documents_removed: deletedDocs, clerk_user_deleted: clerkDeleted });
+  res.json({ user_id: userId, deleted: true, documents_removed: deletedDocs, pictures_removed: picturesRemoved, clerk_user_deleted: clerkDeleted });
 });
 
 // ---- GET /api/admin/data/:resource ----

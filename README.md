@@ -187,5 +187,8 @@ Cooperatives, NGOs, companies and programmes can have their own accounts, bring 
 - **Limits:** the farmer limit and each link's cap are taken with atomic updates, so simultaneous sign-ups cannot exceed them. Links are validated with server time when opened and again when submitted. Link tokens are stored only as hashes.
 - **Settings** (System Settings, organization settings): link validity (default 6 hours), default farmer limit, default farmers per link, days before a farmer counts as inactive.
 - **Migration:** `npm run migrate-orgs --workspace server` (add `-- --dry` to preview, `-- --rollback --yes` to undo). Existing users stay independent farmers.
+- **Platform management and authority:** `docs/CropManager - Platform Management and Authority.docx` is the full reference for roles, onboarding and approval of accounts and organisations, administrator rules, data and privacy, security controls, the audit log, running the platform and incident procedures.
+- **Security tests:** with the API running (`ALLOW_DEV_AUTH=1 AI_MOCK=1 PORT=5075 node server/src/index.js`) run `npm run test:security --workspace server` (who can reach what, approval, organisations, administrators, the audit trail, uploads, export periods, account deletion). `npm run test:images --workspace server <a .heic file>` checks every picture format.
+- **Exports by period:** `GET /api/export/:path?format=pdf|xlsx|csv&from=YYYY-MM-DD&to=YYYY-MM-DD` (and `GET /api/export` for everything). Leave `from` and `to` out for all time.
 - **Tests:** with the API running (`ALLOW_DEV_AUTH=1 PORT=5075 node server/src/index.js`) run `npm run test:orgs --workspace server`.
 - **Public link address:** set `PUBLIC_APP_URL` (default `https://crop.agricoders.com` in production).

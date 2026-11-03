@@ -41,6 +41,8 @@ const cleanup = async () => {
     M.AuditLog.deleteMany({ $or: [{ organization_id: { $in: ids } }, { actor_id: new RegExp(`^${PREFIX}`) }, { target_id: new RegExp(`^${PREFIX}`) }] }),
     M.Notification.deleteMany({ user_id: new RegExp(`^${PREFIX}`) }),
     M.Profile.deleteMany({ user_id: new RegExp(`^${PREFIX}`) }),
+    M.Expense.deleteMany({ user_id: new RegExp(`^${PREFIX}`) }),
+    M.Farm.deleteMany({ user_id: new RegExp(`^${PREFIX}`) }),
   ]);
   for (const f of fs.readdirSync(new URL('../../uploads/', import.meta.url))) if (f.startsWith(PREFIX)) fs.unlinkSync(new URL(`../../uploads/${f}`, import.meta.url));
 };
@@ -195,6 +197,18 @@ try {
   ok(await farms(`&from=${today}&to=${today}`), 'records without a date of their own follow the day they were created (inside the period)');
   ok(!(await farms('&from=2020-01-01&to=2020-12-31')), 'and stay out of an earlier period');
   await farmToday.deleteOne();
+
+  console.log('7. Deleting an account removes everything of theirs');
+  await mk('leaver', { full_name: 'Leaver' });
+  const pic = await up('leaver');
+  const picFile = new URL(`../../uploads/${pic.data.url.split('/').pop()}`, import.meta.url);
+  await M.Farm.create({ user_id: U('leaver'), name: 'Leaver farm' });
+  ok(fs.existsSync(picFile), 'the picture is on the server before deletion');
+  const gone = await call('admin2', 'DELETE', `/admin/users/${U('leaver')}`);
+  ok(gone.status === 200 && gone.data.pictures_removed >= 1, 'the account is deleted and says how many pictures went', JSON.stringify(gone.data));
+  ok(!fs.existsSync(picFile), 'the picture file is gone from the server');
+  ok((await M.Farm.countDocuments({ user_id: U('leaver') })) === 0 && !(await M.Profile.exists({ user_id: U('leaver') })), 'their records and profile are gone');
+  ok((await M.AuditLog.exists({ action: 'user.deleted', target_id: U('leaver') })) !== null, 'and the deletion is recorded with who did it');
 } finally {
   await cleanup();
   await disconnectDB();
