@@ -8,6 +8,7 @@ const ACTIONS = [
   'organization.registered', 'organization.created', 'organization.approved', 'organization.suspended', 'organization.reactivated',
   'organization.limit_changed', 'organization.updated', 'organization.deleted', 'referral_link.created', 'referral_link.revoked',
   'farmer.joined', 'farmer.left', 'farmer.removed', 'farmers.imported', 'farmers.exported', 'member.invited', 'member.removed', 'settings.updated', 'user.deleted',
+  'user.viewed', 'user.status_changed', 'user.role_changed', 'user.admin_granted', 'user.admin_revoked', 'user.ai_limit_changed', 'user.reseeded', 'data.record_viewed', 'data.record_deleted', 'admin_allowlist.added', 'admin_allowlist.removed', 'ai.limits_updated', 'ai.models_updated',
 ];
 const PER = 25;
 

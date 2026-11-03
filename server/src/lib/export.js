@@ -64,12 +64,46 @@ export function tableFrom(records) {
   return { headers, rows: flat.map((m) => headers.map((h) => (m.has(h) ? m.get(h) : ''))) };
 }
 
-/** All of one resource for a user, narrowed by the same query string the list screen uses. */
+/** The date a record is "recorded" on, per kind. Kinds not listed use the day the record was created. */
+const DATE_FIELD = {
+  'crop-cycles': 'planting_date', 'planting-records': 'planting_date', 'field-activities': 'activity_date', 'irrigation-records': 'irrigation_date',
+  'fertilizer-applications': 'application_date', 'crop-protection-records': 'protection_date', 'crop-scouting-records': 'scouting_date',
+  'harvest-records': 'harvest_date', 'equipment-maintenance': 'maintenance_date', expenses: 'expense_date', sales: 'sale_date',
+};
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Reads and checks ?from=YYYY-MM-DD&to=YYYY-MM-DD. Empty means everything. Throws a plain Error with a message for the user. */
+export function periodFrom(query = {}) {
+  const from = String(query.from || '').trim();
+  const to = String(query.to || '').trim();
+  if ((from && !DAY.test(from)) || (to && !DAY.test(to))) throw Object.assign(new Error('Dates must look like 2026-01-31.'), { status: 400 });
+  if (from && to && from > to) throw Object.assign(new Error('The start of the period is after its end.'), { status: 400 });
+  const label = from && to ? `Period: ${from} to ${to}` : from ? `From ${from}` : to ? `Up to ${to}` : 'All records';
+  return { from, to, label };
+}
+
+/** Mongo condition for a period: the record's own date, or the day it was created when it has none. null = everything. */
+function periodFilter(resourcePath, model, { from, to }) {
+  if (!from && !to) return null;
+  const range = {};
+  if (from) range.$gte = from;
+  if (to) range.$lte = to;
+  const created = {};
+  if (from) created.$gte = new Date(`${from}T00:00:00.000Z`);
+  if (to) created.$lte = new Date(`${to}T23:59:59.999Z`);
+  const f = DATE_FIELD[resourcePath];
+  if (f && model.schema.path(f)) return { $or: [{ [f]: range }, { [f]: { $in: [null, ''] }, created_at: created }] };
+  return { created_at: created };
+}
+
+/** All of one resource for a user, narrowed by the same query string the list screen uses, and by the period (default: everything). */
 export async function tableFor(resourcePath, userId, query = {}) {
   const resource = resourceByPath[resourcePath];
   if (!resource) return null;
   const { filter, sort } = buildQuery(query, resource, userId);
   delete filter.user_id;
+  const pf = periodFilter(resourcePath, resource.model, periodFrom(query));
+  if (pf) filter.$and = [...(filter.$and || []), pf];
   const records = await recordLoader(resourcePath, { filter, sort, limit: 20000 })(userId);
   return { name: resource.name, ...tableFrom(records) };
 }

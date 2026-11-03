@@ -176,7 +176,7 @@ try {
   ok((await call('orgA', 'GET', `/organizations/${orgA}/farmers`)).data.total === 1, 'and from the farmer list');
   const staffInvite = await call('orgA', 'POST', `/organizations/${orgA}/members`, { email: 'staff@test.local', role: 'org_staff' });
   ok(staffInvite.status === 201, 'the organization admin invites staff');
-  await M.Profile.create({ user_id: U('staff'), email: 'staff@test.local', account_status: 'new' });
+  await M.Profile.create({ user_id: U('staff'), email: 'staff@test.local', email_verified: true, account_status: 'new' });
   const staffCtx = await call('staff', 'GET', '/profile');
   ok(staffCtx.data.org_context?.membership?.role === 'org_staff', 'invited staff join when they sign in', JSON.stringify(staffCtx.data.org_context));
   ok((await call('staff', 'POST', `/organizations/${orgA}/referral-links`, {})).status === 201, 'staff can create referral links');

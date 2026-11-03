@@ -98,7 +98,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
         subtitle={config.subtitle}
         action={(
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <ExportButton run={(format) => shareExport(config.resource, format, { ...(q ? { q } : {}), ...Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v)) })} />
+            <ExportButton period run={(format, period) => shareExport(config.resource, format, { ...period, ...(q ? { q } : {}), ...Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v)) })} />
             <Button title={addLabel} icon="plus" onPress={() => setForm({ editing: null })} />
           </View>
         )}

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
@@ -35,7 +36,7 @@ router.post('/', upload.single('file'), asyncHandler(async (req, res) => {
   } catch {
     throw createHttpError(400, 'That picture could not be read. Try another one, or take a new photo.', { code: 'unreadable_image' });
   }
-  const name = `${req.userId}-${Date.now()}.jpg`;
+  const name = `${req.userId}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.jpg`; // the random part keeps other people from guessing a picture's address
   await fs.promises.writeFile(path.join(UPLOAD_DIR, name), jpeg);
   res.status(201).json({ url: `/uploads/${name}`, bytes: jpeg.length });
 }));

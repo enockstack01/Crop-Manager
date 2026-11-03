@@ -14,6 +14,13 @@ import * as M from '../models/index.js';
 import { getLimits, setLimits, usageSummary } from '../lib/ai/usage.js';
 import { audit, detachFarmer } from '../lib/orgs/core.js';
 
+const ROLES = ['Farmer', 'Farm Manager', 'Agronomist', 'Cooperative Manager', 'Administrator'];
+const emailKey = (e) => String(e || '').trim().toLowerCase();
+const exactEmail = (e) => new RegExp(`^${String(e).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+/** Other administrators who can still sign in. The platform must never be left without one. */
+const otherAdmins = (exceptUserId) => M.Profile.countDocuments({ is_admin: true, user_id: { $ne: exceptUserId }, account_status: 'active' });
+
+
 const COUNT_MODELS = OWNED_MODELS.map((model) => [model.modelName, model]);
 
 async function countsFor(userIds) {
@@ -143,6 +150,7 @@ export const getUser = asyncHandler(async (req, res) => {
   const profile = await M.Profile.findOne({ user_id: userId }).lean();
   if (!profile) throw createHttpError(404, 'User not found');
 
+  await audit(req, 'user.viewed', { target_type: 'user', target_id: userId });
   const [counts, clerk] = await Promise.all([countsFor([userId]), clerkMap([userId])]);
   const [harvests, activities] = await Promise.all([
     M.HarvestRecord.find({ user_id: userId }).sort({ harvest_date: -1 }).limit(5).populate('crop_id', 'name').lean(),
@@ -163,31 +171,66 @@ export const updateUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const current = await M.Profile.findOne({ user_id: userId }).lean();
   if (!current) throw createHttpError(404, 'User not found');
-
+  const b = req.body || {};
   const patch = {};
-  for (const key of ['is_admin', 'role']) {
-    if (req.body[key] !== undefined) patch[key] = req.body[key];
+  const events = []; // written to the audit log once the change is saved
+
+  if (b.role !== undefined) {
+    if (!ROLES.includes(b.role)) throw createHttpError(400, `Unknown account type: ${b.role}`);
+    if (b.role !== current.role) {
+      patch.role = b.role;
+      events.push(['user.role_changed', { from: current.role, to: b.role }]);
+    }
   }
-  if (req.body.ai_daily_limit !== undefined) {
-    const v = req.body.ai_daily_limit;
-    if (v === null || v === '') patch.ai_daily_limit = null; // back to the platform default
-    else if (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 10000) patch.ai_daily_limit = Number(v);
+
+  if (b.is_admin !== undefined) {
+    if (typeof b.is_admin !== 'boolean') throw createHttpError(400, 'is_admin must be true or false');
+    if (b.is_admin !== !!current.is_admin) {
+      if (userId === req.userId) throw createHttpError(400, 'You cannot change your own admin access');
+      if (b.is_admin === false) {
+        if (!(await otherAdmins(userId))) {
+          throw createHttpError(400, 'This is the last administrator. Make someone else an administrator first.', { code: 'last_admin' });
+        }
+        const mail = emailKey(current.email);
+        if (mail && env.adminEmails.includes(mail)) {
+          throw createHttpError(400, 'This administrator is set in the server settings (ADMIN_EMAILS). Remove the email there first, then revoke the access.', { code: 'admin_in_env' });
+        }
+        // an address on the managed list would grant admin again at the next sign-in
+        if (mail && (await getDbAdminEmails()).includes(mail)) await removeEmail(mail, req.userId);
+      }
+      patch.is_admin = b.is_admin;
+      events.push([b.is_admin ? 'user.admin_granted' : 'user.admin_revoked', {}]);
+    }
+  }
+
+  if (b.ai_daily_limit !== undefined) {
+    const v = b.ai_daily_limit;
+    let next;
+    if (v === null || v === '') next = null; // back to the platform default
+    else if (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 10000) next = Number(v);
     else throw createHttpError(400, 'AI requests per day must be a whole number from 0 to 10000');
+    if (next !== (current.ai_daily_limit ?? null)) {
+      patch.ai_daily_limit = next;
+      events.push(['user.ai_limit_changed', { from: current.ai_daily_limit ?? null, to: next }]);
+    }
   }
-  // legacy toggle from older clients: is_active true/false → active/deactivated
-  let status = req.body.account_status;
-  if (status === undefined && req.body.is_active !== undefined) status = req.body.is_active ? 'active' : 'deactivated';
+
+  // legacy toggle from older clients: is_active true/false -> active/deactivated
+  let status = b.account_status;
+  if (status === undefined && b.is_active !== undefined) status = b.is_active ? 'active' : 'deactivated';
   if (status !== undefined && !Object.keys(STATUS_NOTICES).includes(status)) {
     throw createHttpError(400, `Unknown account status: ${status}`);
   }
-
-  if (userId === req.userId && (patch.is_admin === false || (status && status !== 'active'))) {
-    throw createHttpError(400, 'You cannot revoke your own admin access or change your own account status');
+  if (userId === req.userId && status && status !== 'active') {
+    throw createHttpError(400, 'You cannot change your own account status');
+  }
+  if (status && status !== 'active' && current.is_admin && patch.is_admin !== false) {
+    throw createHttpError(400, 'Administrators always have access. Revoke their admin access first.');
   }
 
   const changedStatus = status !== undefined && status !== current.account_status;
   if (changedStatus) {
-    Object.assign(patch, statusPatch(status, req.userId, String(req.body.reason || '').trim().slice(0, 500)));
+    Object.assign(patch, statusPatch(status, req.userId, String(b.reason || '').trim().slice(0, 500)));
     // the first approval grants the account type the user asked for (unless the admin set one)
     if (status === 'active' && !current.approved_at) {
       patch.approved_at = new Date();
@@ -198,7 +241,9 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   const profile = await M.Profile.findOneAndUpdate({ user_id: userId }, { $set: patch }, { new: true }).lean();
 
+  for (const [action, details] of events) await audit(req, action, { target_type: 'user', target_id: userId, details });
   if (changedStatus) {
+    await audit(req, 'user.status_changed', { target_type: 'user', target_id: userId, details: { from: current.account_status, to: status, reason: profile.status_reason || '' } });
     const notice = STATUS_NOTICES[status];
     const reason = profile.status_reason ? ` Reason: ${profile.status_reason}` : '';
     await M.Notification.create({ user_id: userId, type: notice.type, title: notice.title, message: notice.message + reason });
@@ -210,11 +255,13 @@ export const updateUser = asyncHandler(async (req, res) => {
 export const deleteUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   if (userId === req.userId) throw createHttpError(400, 'You cannot delete your own account here');
+  const target = await M.Profile.findOne({ user_id: userId }, 'is_admin email full_name public_id').lean();
+  if (target?.is_admin) throw createHttpError(400, 'Revoke this administrator\'s access before deleting the account.', { code: 'admin_account' });
 
   // leave no dangling organization links behind (the farmer count of their organization goes down)
   await detachFarmer({ farmerId: userId, status: 'removed', by: req.userId, reason: 'account deleted' });
   await M.OrganizationMember.updateMany({ user_id: userId }, { $set: { status: 'removed' } });
-  await audit(req, 'user.deleted', { target_type: 'user', target_id: userId });
+  await audit(req, 'user.deleted', { target_type: 'user', target_id: userId, details: { name: target?.full_name || '', email: target?.email || '', public_id: target?.public_id || '' } });
   const deletedDocs = await clearUser(userId);
   await M.Profile.deleteOne({ user_id: userId });
   let clerkDeleted = false;
@@ -274,6 +321,7 @@ export const getRecord = asyncHandler(async (req, res) => {
   if (!doc) throw createHttpError(404, 'Record not found');
 
   const shaped = reshape(serialize(doc), resource.relations || []);
+  await audit(req, 'data.record_viewed', { target_type: resource.path, target_id: req.params.id, details: { owner: shaped.user_id } });
   const owner = await M.Profile.findOne({ user_id: shaped.user_id }, 'user_id full_name email').lean();
   res.json({ ...shaped, owner: owner ? { full_name: owner.full_name, email: owner.email } : null });
 });
@@ -284,6 +332,7 @@ export const deleteRecord = asyncHandler(async (req, res) => {
   if (!resource) throw createHttpError(404, `Unknown resource: ${req.params.resource}`);
   const doc = await resource.model.findByIdAndDelete(req.params.id);
   if (!doc) throw createHttpError(404, 'Record not found');
+  await audit(req, 'data.record_deleted', { target_type: resource.path, target_id: req.params.id, details: { owner: doc.user_id } });
   res.json({ id: req.params.id, resource: resource.path, deleted: true });
 });
 
@@ -294,6 +343,7 @@ export const reseedUser = asyncHandler(async (req, res) => {
   const counts = await seedUser(req.params.userId, {
     profile: { full_name: profile.full_name, role: profile.role, location: profile.location, phone: profile.phone },
   });
+  await audit(req, 'user.reseeded', { target_type: 'user', target_id: req.params.userId });
   res.json({ user_id: req.params.userId, counts, total: Object.values(counts).reduce((s, n) => s + n, 0) });
 });
 
@@ -349,7 +399,10 @@ export const setAiLimits = asyncHandler(async (req, res) => {
   const ok = (v) => Number.isInteger(v) && v >= 0 && v <= 10000;
   if (!ok(daily) || !ok(hourly)) throw createHttpError(400, 'Limits must be whole numbers from 0 to 10000');
   if (hourly > daily) throw createHttpError(400, 'The hourly limit cannot be higher than the daily limit');
-  res.json(await setLimits({ daily, hourly }, req.userId));
+  const before = await getLimits();
+  const after = await setLimits({ daily, hourly }, req.userId);
+  await audit(req, 'ai.limits_updated', { target_type: 'ai_limits', details: { before, after } });
+  res.json(after);
 });
 
 // ---- POST /api/admin/settings/admins  { email } ----
@@ -357,8 +410,9 @@ export const addAdminEmail = asyncHandler(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw createHttpError(400, 'Enter a valid email address');
   const managed = await addEmail(email, req.userId);
-  // if that user already signed up, promote them now
-  await M.Profile.updateOne({ email }, { $set: { is_admin: true, ...statusPatch('active', req.userId) } });
+  // if that person already signed up with this verified address, promote them now
+  const promoted = await M.Profile.updateOne({ email: exactEmail(email), email_verified: true }, { $set: { is_admin: true, ...statusPatch('active', req.userId) } });
+  await audit(req, 'admin_allowlist.added', { target_type: 'admin_email', target_id: email, details: { promoted_now: promoted.modifiedCount > 0 } });
   res.json({ managed });
 });
 
@@ -368,6 +422,17 @@ export const removeAdminEmail = asyncHandler(async (req, res) => {
   if (env.adminEmails.includes(email)) {
     throw createHttpError(400, 'This admin is configured in server/.env and cannot be removed here');
   }
+  // taking an address off the list also ends that person's administrator access, unless it would leave none
+  const target = await M.Profile.findOne({ email: exactEmail(email), is_admin: true }, 'user_id').lean();
+  if (target) {
+    if (target.user_id === req.userId) throw createHttpError(400, 'You cannot remove your own administrator access');
+    if (!(await otherAdmins(target.user_id))) throw createHttpError(400, 'This is the last administrator. Make someone else an administrator first.', { code: 'last_admin' });
+  }
   const managed = await removeEmail(email, req.userId);
+  if (target) {
+    await M.Profile.updateOne({ user_id: target.user_id }, { $set: { is_admin: false } });
+    await audit(req, 'user.admin_revoked', { target_type: 'user', target_id: target.user_id, details: { via: 'admin_list' } });
+  }
+  await audit(req, 'admin_allowlist.removed', { target_type: 'admin_email', target_id: email });
   res.json({ managed });
 });

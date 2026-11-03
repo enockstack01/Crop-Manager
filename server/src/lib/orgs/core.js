@@ -225,8 +225,8 @@ export async function orgContextFor(profile) {
     farmer_org: null,
   };
   if (profile.user_type === 'org' || profile.email) {
-    // staff invited by email join the moment they sign in
-    if (profile.email) {
+    // staff invited by email join the moment they sign in with a verified address
+    if (profile.email && profile.email_verified) {
       const invites = await OrganizationMember.find({ user_id: null, invited_email: profile.email.toLowerCase(), status: 'invited' });
       for (const inv of invites) {
         const convertible = profile.user_type === 'org' || profile.account_status === 'new';

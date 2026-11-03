@@ -16,6 +16,11 @@ function required(name) {
   return value;
 }
 
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEV_AUTH === '1') {
+  console.error('\n[config] ALLOW_DEV_AUTH=1 is a testing switch and must not be set in production. Remove it and start again.\n');
+  process.exit(1);
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 5000),

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { loadProfile, requireActiveAccount } from '../middleware/profile.js';
+import { farmerOnly, loadProfile, requireActiveAccount } from '../middleware/profile.js';
 import { resources } from '../resources.js';
 import { genericRouter } from './generic.routes.js';
 import { getDashboard } from '../controllers/dashboard.controller.js';
@@ -41,6 +41,11 @@ api.use('/admin', adminRouter);
 // farm data: approved (active) accounts only
 api.use(requireActiveAccount);
 
+// organization workspace and notifications are the only things an organization account reaches below
+api.use('/organizations', orgRouter);
+
+api.use(['/dashboard', '/export', '/calendar', '/weather', '/calculators', '/search', '/uploads', '/ai', '/inventory-items'], farmerOnly);
+
 api.get('/dashboard', getDashboard);
 api.get('/export', exportAll);
 api.post('/export/tables', exportTables);
@@ -50,9 +55,6 @@ api.get('/weather', getWeather);
 api.get('/calculators/context', calculatorContext);
 api.get('/weather/geocode', findPlace);
 api.get('/search', search);
-
-// organization workspace (membership and role are checked inside)
-api.use('/organizations', orgRouter);
 
 api.use('/uploads', uploadsRouter);
 
@@ -64,6 +66,7 @@ api.post('/inventory-items/:id/stock', adjustStock);
 
 // generic CRUD for every declared resource
 for (const resource of resources) {
+  if (resource.path !== 'notifications') api.use(`/${resource.path}`, farmerOnly);
   api.use(`/${resource.path}`, genericRouter(resource).router);
 }
 

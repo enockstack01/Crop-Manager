@@ -37,13 +37,18 @@ export const getMe = asyncHandler(async (req, res) => {
       clerkUser.primaryEmailAddress?.emailAddress ||
       clerkUser.emailAddresses?.[0]?.emailAddress ||
       undefined;
-    if (email) set.email = email;
+    if (email) {
+      set.email = email;
+      // only an address the sign-in service has verified can accept an invitation or claim an admin email
+      const primary = clerkUser.emailAddresses?.find((e) => e.id === clerkUser.primaryEmailAddressId) || clerkUser.primaryEmailAddress;
+      set.email_verified = primary?.verification?.status === 'verified';
+    }
     if (clerkUser.imageUrl) set.avatar_url = clerkUser.imageUrl;
   }
 
   // bootstrap platform admins from the allowlist (env + DB-managed): they never
   // need to request access
-  if (email && (await isAllowlistedAdmin(email))) {
+  if (email && set.email_verified && (await isAllowlistedAdmin(email))) {
     set.is_admin = true;
     set.is_active = true;
     set.account_status = 'active';

@@ -38,3 +38,16 @@ export function requireActiveAccount(req, _res, next) {
   err.details = { account_status: status };
   next(err);
 }
+
+/**
+ * Organization accounts (staff and administrators of an organization) work in the organization workspace.
+ * They have no farm records of their own, so the farm modules, uploads, AI and exports are closed to them.
+ * Platform administrators pass.
+ */
+export function farmerOnly(req, _res, next) {
+  const { is_admin: isAdmin, user_type: type } = req.profile || {};
+  if (isAdmin || type !== 'org') return next();
+  const err = createHttpError(403, 'Organization accounts use the organization workspace.');
+  err.details = { code: 'org_account' };
+  next(err);
+}

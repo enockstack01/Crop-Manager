@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { requireAdmin } from '../middleware/admin.js';
 import { orgAccess } from '../lib/orgs/access.js';
 import * as oa from '../controllers/orgAdmin.controller.js';
@@ -22,6 +23,8 @@ import {
 
 const router = Router();
 router.use(requireAdmin);
+// reading is generous, changing things is slowed down so a stolen session cannot be used to wipe the platform quickly
+router.use(rateLimit({ windowMs: 60_000, max: 40, standardHeaders: true, legacyHeaders: false, skip: (req) => req.method === 'GET', keyGenerator: (req) => req.userId || req.ip, message: { message: 'Too many changes in a short time. Please wait a minute.' } }));
 
 router.get('/overview', overview);
 router.get('/resources', resourceList);

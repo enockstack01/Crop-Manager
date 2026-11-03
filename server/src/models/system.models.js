@@ -13,6 +13,7 @@ export const ACCOUNT_STATUSES = ['new', 'pending', 'active', 'on_hold', 'rejecte
 const ProfileSchema = ownedSchema({
   full_name: { type: String, trim: true },
   email: { type: String, trim: true },
+  email_verified: { type: Boolean, default: false }, // the sign-in service has confirmed this address; invitations and the admin list rely on it
   phone: { type: String, trim: true },
   location: { type: String, trim: true },
   role: { type: String, default: 'Farmer' }, // account type, changed only by an admin

@@ -152,8 +152,8 @@ export default function Settings() {
           </h3>
         </div>
         <div className="card-body">
-          <p className="org-muted" style={{ marginBottom: 12 }}>{t('Download everything you have recorded: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.')}</p>
-          <ExportMenu label="Export all my records" run={(format) => downloadExport('/export', { format }, `cropmanager-all-records.${format}`)} />
+          <p className="org-muted" style={{ marginBottom: 12 }}>{t('Download everything you have recorded, or only a period: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.')}</p>
+          <ExportMenu label="Export all my records" run={(format, period) => downloadExport('/export', { format, ...period }, `cropmanager-all-records.${format}`)} />
         </div>
       </div>
 

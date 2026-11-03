@@ -138,9 +138,9 @@ export function SettingsScreen() {
         ) : null}
 
         <ChartCard title="Your data" icon="database">
-          <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight, marginBottom: 12 }}>{t('Download everything you have recorded: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.')}</AppText>
+          <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight, marginBottom: 12 }}>{t('Download everything you have recorded, or only a period: one sheet per kind of record in Excel, or one PDF. Each records page also has its own Export button.')}</AppText>
           <View style={{ alignSelf: 'flex-start' }}>
-            <ExportButton run={(format) => shareExport('', format)} />
+            <ExportButton period run={(format, period) => shareExport('', format, period)} />
           </View>
         </ChartCard>
 

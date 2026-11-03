@@ -114,7 +114,7 @@ export function CrudPage({
         action={(
           <div className="page-actions">
             <ExportMenu
-              run={(format) => downloadExport(`/export/${resource}`, { format, ...(q ? { q } : {}), ...filterValues }, `${resource}.${format}`)}
+              run={(format, period) => downloadExport(`/export/${resource}`, { format, ...period, ...(q ? { q } : {}), ...filterValues }, `${resource}.${format}`)}
             />
             {FormComponent && (
               <button className="btn btn-primary" onClick={() => setFormState({ editing: null })}>

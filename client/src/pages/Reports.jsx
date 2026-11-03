@@ -600,7 +600,7 @@ export default function Reports() {
         ))}
         <div style={{ flex: 1 }} />
         <div className="table-search"><i className="fas fa-search" /><input type="text" value={rq} placeholder={t('Search this report...')} onChange={(e) => setRq(e.target.value)} /></div>
-        <ExportMenu run={exportReport} disabled={report.empty} />
+        <ExportMenu run={exportReport} disabled={report.empty} period={false} />
         <button className="btn btn-sm btn-secondary" onClick={() => window.print()}>
           <i className="fas fa-print" /> {t('Print')}
         </button>

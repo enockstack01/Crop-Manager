@@ -1,7 +1,7 @@
 import { asyncHandler } from '../lib/asyncHandler.js';
 import createHttpError from '../lib/httpError.js';
 import { resources } from '../resources.js';
-import { FORMATS, render, tableFor } from '../lib/export.js';
+import { FORMATS, periodFrom, render, tableFor } from '../lib/export.js';
 
 const ownerOf = (req) => [req.profile?.full_name, req.profile?.public_id].filter(Boolean).join(' · ');
 const stamp = () => new Date().toISOString().slice(0, 10);
@@ -15,6 +15,14 @@ function send(res, format, buf, base) {
   res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
   res.send(buf);
 }
+/** The period from the query string; a bad one is a 400 with a message the person can read. */
+const periodOf = (req) => {
+  try {
+    return periodFrom(req.query);
+  } catch (e) {
+    throw createHttpError(400, e.message);
+  }
+};
 const formatOf = (req) => {
   const f = String(req.query.format || req.body?.format || 'csv').toLowerCase();
   if (!FORMATS[f]) throw createHttpError(400, 'Choose csv, xlsx or pdf.');
@@ -26,24 +34,26 @@ export const exportResource = asyncHandler(async (req, res) => {
   const resource = resources.find((r) => r.path === req.params.path);
   if (!resource) throw createHttpError(404, 'Unknown records.');
   const format = formatOf(req);
+  const period = periodOf(req);
   const table = await tableFor(resource.path, req.userId, req.query);
   const q = String(req.query.q || '').trim();
   const t = { title: plural(resource), headers: table.headers, rows: table.rows };
-  const buf = await render(format, [t], { kind: 'Records', title: plural(resource), owner: ownerOf(req), subtitle: `${table.rows.length} ${table.rows.length === 1 ? 'record' : 'records'}${q ? ` · "${q}"` : ''}` });
+  const buf = await render(format, [t], { kind: 'Records', title: plural(resource), owner: ownerOf(req), subtitle: `${table.rows.length} ${table.rows.length === 1 ? 'record' : 'records'} · ${period.label}${q ? ` · "${q}"` : ''}` });
   send(res, format, buf, safe(resource.path));
 });
 
 /** GET /api/export?format=xlsx|pdf  Everything the farmer has recorded, one sheet (or section) per kind. */
 export const exportAll = asyncHandler(async (req, res) => {
   const format = formatOf(req);
+  const period = periodOf(req);
   const tables = [];
   for (const r of resources) {
     if (['calculation-history', 'notifications'].includes(r.path)) continue;
-    const t = await tableFor(r.path, req.userId, {});
+    const t = await tableFor(r.path, req.userId, { from: period.from, to: period.to });
     if (t?.rows.length) tables.push({ title: plural(r), headers: t.headers, rows: t.rows });
   }
-  if (!tables.length) throw createHttpError(404, 'There are no records to export yet.');
-  const buf = await render(format, tables, { kind: 'All records', title: 'All records', owner: ownerOf(req), subtitle: `${tables.length} kinds of records` });
+  if (!tables.length) throw createHttpError(404, period.from || period.to ? 'There are no records in this period.' : 'There are no records to export yet.');
+  const buf = await render(format, tables, { kind: 'All records', title: 'All records', owner: ownerOf(req), subtitle: `${tables.length} kinds of records · ${period.label}` });
   send(res, format, buf, 'cropmanager-all-records');
 });
 
