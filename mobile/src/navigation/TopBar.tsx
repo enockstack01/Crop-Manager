@@ -50,9 +50,9 @@ export type LeftAction = 'none' | 'back' | 'close';
 
 /**
  * App bar: solid forest green with the screen title, so you always know where you are. It has an
- * optional back button on the left, then search and the notification bell on the right. On tablets,
- * where the bottom tab bar is replaced by the side menu, it also holds the language and dark mode
- * buttons and the profile picture.
+ * optional back button on the left, then search, the language switcher and the notification bell on
+ * the right. On tablets, where the bottom tab bar is replaced by the side menu, it also holds the
+ * dark mode button and the profile picture.
  */
 export function TopBar({
   title,
@@ -105,7 +105,7 @@ export function TopBar({
             {t(title)}
           </Text>
           <BarButton icon="magnifying-glass" label={t('Search')} onPress={() => setSearchOpen(true)} />
-          {isTablet ? <BarButton icon="globe" label={t('Language')} onPress={() => setLangOpen(true)} /> : null}
+          <BarButton icon="globe" label={t('Language')} onPress={() => setLangOpen(true)} />
           {isTablet ? <BarButton icon={isDark ? 'sun' : 'moon'} label="Toggle dark mode" onPress={() => setMode(isDark ? 'light' : 'dark')} /> : null}
           <BarButton icon="bell" label="Notifications" badge={notifs.length} onPress={() => setNotifOpen(true)} />
           {isTablet ? (
