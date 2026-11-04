@@ -18,7 +18,7 @@ export const findPlace = asyncHandler(async (req, res) => {
 });
 
 /** The tool the assistant calls to see the weather and the water balance on the farmer's land. */
-export function weatherTool(userId) {
+export function weatherTool(userId, here) {
   return {
     tools: [{
       name: 'get_weather',
@@ -27,7 +27,7 @@ export function weatherTool(userId) {
     }],
     handlers: {
       get_weather: async (input) => {
-        const w = await weatherForUser(userId, { farm_id: input?.farm_id });
+        const w = await weatherForUser(userId, input?.farm_id ? { farm_id: input.farm_id } : { lat: here?.lat, lon: here?.lon });
         if (!w.located) return { error: 'No farm location is known. Ask the farmer to add a farm location.' };
         return { location: w.location, current: w.current, next_days: w.daily.slice(0, 7), rain_past_7d_mm: w.rain_past_7d_mm, water_balance: w.water, advice: w.advice };
       },

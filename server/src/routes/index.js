@@ -15,6 +15,7 @@ import uploadsRouter from './uploads.routes.js';
 import adminRouter from './admin.routes.js';
 import { orgRouter, publicJoin, selfRouter } from './org.routes.js';
 import aiRouter from './ai.routes.js';
+import { markAllRead } from '../controllers/notifications.controller.js';
 
 const api = Router();
 
@@ -63,6 +64,9 @@ api.use('/ai', aiRouter);
 
 // resource-specific extras
 api.post('/inventory-items/:id/stock', adjustStock);
+
+// notifications: mark them all read in one request (before the generic /:id routes)
+api.put('/notifications/read-all', markAllRead);
 
 // generic CRUD for every declared resource
 for (const resource of resources) {

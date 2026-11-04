@@ -11,7 +11,7 @@ export const aiInsights = () => post('insights');
 export const aiAdvice = (topic: string, question: string) => post('advice', { topic, question });
 export const aiSeasonSummary = (scope: string) => post('season-summary', { scope });
 export const aiParseRecord = (text: string) => post('parse-record', { text });
-export const aiWeatherBriefing = () => post('weather-briefing');
+export const aiWeatherBriefing = (here?: { lat: number; lon: number } | null) => post('weather-briefing', here ? { here } : {});
 export const aiCalculatorReport = (body: Record<string, unknown>) => post('calculator-report', body);
 export const aiChat = (messages: { role: string; content: string }[]) => post('chat', { messages });
 

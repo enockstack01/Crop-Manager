@@ -217,7 +217,9 @@ export const weatherBriefing = asyncHandler(async (req, res) => {
 /** Runs the chat agent for one conversation: the farm snapshot plus tools that look up the detail. */
 export async function runChat(req, turns, { extraSystem = '', extra } = {}) {
   const { ctx } = await buildFarmContext(req.userId, req.profile);
-  const w = weatherTool(req.userId);
+  const h = req.body?.here;
+  const here = h && Number.isFinite(Number(h.lat)) && Number.isFinite(Number(h.lon)) && Math.abs(h.lat) <= 90 && Math.abs(h.lon) <= 180 ? { lat: Number(h.lat), lon: Number(h.lon) } : undefined; // the phone's position, when shared
+  const w = weatherTool(req.userId, here);
   const { tools, handlers } = farmTools(req.userId, extra ? { tools: [...w.tools, ...extra.tools], handlers: { ...w.handlers, ...extra.handlers } } : w);
   try {
     const out = await askAgent({

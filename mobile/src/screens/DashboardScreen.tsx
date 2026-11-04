@@ -23,6 +23,7 @@ import { FarmProfileCard } from '../features/dashboard/FarmProfileCard';
 import { InsightTiles } from '../features/dashboard/InsightTiles';
 import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed';
 import { computeActivity, computeAlerts, computeInsights, computeUpcoming } from '../features/dashboard/insights';
+import { LocationAskSheet } from '../components/LocationPrompt';
 import { t } from '../i18n';
 
 /*
@@ -67,6 +68,7 @@ export function DashboardScreen({ navigation }: any) {
         <AppText weight="700" style={{ fontSize: 26, lineHeight: 32 }}>{`${t(getGreeting())}, ${displayName(profile)}`}</AppText>
         <AppText variant="subtitle" style={{ fontSize: 15, marginTop: 2 }}>{t("Here's what's happening across your farm today.")}</AppText>
       </View>
+      <LocationAskSheet />
       <View style={{ marginBottom: 16, marginHorizontal: -16 }}>
         <View style={{ paddingLeft: 16 }}>
           <QuickActions onOpen={(r) => navigation.navigate(r)} />

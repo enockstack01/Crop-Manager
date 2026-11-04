@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeProvider';
-import { AMBER, FOREST, ff, spacing } from '../theme/theme';
-import { useList, useProfile, useResourceMutations } from '../lib/useResource';
-import { displayName, formatDate } from '../lib/format';
+import { AMBER, FOREST, ff } from '../theme/theme';
+import { useProfile } from '../lib/useResource';
+import { displayName } from '../lib/format';
 import { haptics } from '../lib/haptics';
 import { Icon } from '../components/Icon';
-import { AppText, useLayout } from '../components/ui';
-import { Sheet } from '../components/Sheet';
+import { useLayout } from '../components/ui';
+import { NotificationsSheet, useUnreadCount } from '../components/NotificationsSheet';
 import { SearchSheet } from '../components/SearchSheet';
-import { useToast } from '../components/Toast';
 import { t } from '../i18n';
 import { LanguageSheet } from '../components/LanguageSheet';
 
@@ -39,7 +37,7 @@ function BarButton({ icon, onPress, label, badge }: { icon: string; onPress: () 
             backgroundColor: AMBER, alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#111611', fontSize: 12, lineHeight: 15, fontFamily: ff('700') }}>{badge > 9 ? '9+' : badge}</Text>
+          <Text style={{ color: '#111611', fontSize: 12, lineHeight: 15, fontFamily: ff('700') }}>{badge > 99 ? '99+' : badge}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -70,21 +68,10 @@ export function TopBar({
   const insets = useSafeAreaInsets();
   const { user } = useUser();
   const { profile } = useProfile();
-  const toast = useToast();
-  const qc = useQueryClient();
-  const { colors } = useTheme();
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const { data } = useList('notifications', { is_read: false, perPage: 10, sort: 'created_at', order: 'desc' });
-  const notifs: any[] = data?.data ?? [];
-  const { update } = useResourceMutations('notifications');
-
-  const markAllRead = async () => {
-    await Promise.all(notifs.map((n) => update.mutateAsync({ id: n.id, is_read: true })));
-    qc.invalidateQueries({ queryKey: ['notifications'] });
-    toast('All notifications marked as read', 'info');
-  };
+  const unread = useUnreadCount();
 
   const name = displayName(profile);
   const initials = (name.match(/w/g) || ['U']).slice(0, 2).join('').toUpperCase();
@@ -107,7 +94,7 @@ export function TopBar({
           <BarButton icon="magnifying-glass" label={t('Search')} onPress={() => setSearchOpen(true)} />
           <BarButton icon="globe" label={t('Language')} onPress={() => setLangOpen(true)} />
           {isTablet ? <BarButton icon={isDark ? 'sun' : 'moon'} label="Toggle dark mode" onPress={() => setMode(isDark ? 'light' : 'dark')} /> : null}
-          <BarButton icon="bell" label="Notifications" badge={notifs.length} onPress={() => setNotifOpen(true)} />
+          <BarButton icon="bell" label="Notifications" badge={unread} onPress={() => setNotifOpen(true)} />
           {isTablet ? (
             <Pressable
               onPress={() => navigation.navigate('settings')}
@@ -129,35 +116,7 @@ export function TopBar({
 
       <LanguageSheet visible={langOpen} onClose={() => setLangOpen(false)} />
       <SearchSheet visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
-      <Sheet visible={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" size="sm"
-        footer={notifs.length ? (
-          <Pressable onPress={markAllRead} hitSlop={8} accessibilityRole="button">
-            <AppText weight="600" style={{ fontSize: 12, color: colors.primary }}>{t('Mark all read')}</AppText>
-          </Pressable>
-        ) : undefined}
-      >
-        {notifs.length === 0 ? (
-          <AppText variant="subtitle" style={{ fontSize: 13, textAlign: 'center', paddingVertical: spacing.lg }}>{t('No new notifications')}</AppText>
-        ) : (
-          notifs.map((n, i) => (
-            <View
-              key={n.id}
-              style={{
-                flexDirection: 'row', gap: 12, paddingBottom: 12,
-                borderBottomWidth: i < notifs.length - 1 ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border,
-              }}
-            >
-              <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="bell" size={13} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText style={{ fontSize: 13 }}>{n.message || n.title}</AppText>
-                <AppText variant="caption" style={{ marginTop: 2 }}>{formatDate(n.created_at)}</AppText>
-              </View>
-            </View>
-          ))
-        )}
-      </Sheet>
+      <NotificationsSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
     </View>
   );
 }

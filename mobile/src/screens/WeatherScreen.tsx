@@ -9,17 +9,22 @@ import { AppText, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen } fro
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
 import { SelectField } from '../components/fields';
+import { LocationCard } from '../components/LocationPrompt';
+import { useDeviceLocation, Coords } from '../lib/location';
 import { t } from '../i18n';
+
+/** Select value meaning "where I am now" (the phone's position) instead of one of the farms. */
+const HERE = 'here';
 
 export const WEATHER_ICON: Record<string, string> = {
   clear: 'sun', partly: 'cloud-sun', clouds: 'cloud', fog: 'smog', drizzle: 'cloud-rain', rain: 'cloud-showers-heavy', storm: 'bolt', snow: 'snowflake',
 };
 const LEVEL_ICON: Record<string, string> = { warn: 'triangle-exclamation', watch: 'eye', info: 'circle-check' };
 
-export const useWeather = (farmId?: string) =>
+export const useWeather = (farmId?: string, here?: Coords | null) =>
   useQuery({
-    queryKey: ['weather', farmId || ''],
-    queryFn: () => api.get('/weather', { params: farmId ? { farm_id: farmId } : {} }).then((r) => r.data),
+    queryKey: ['weather', farmId || '', here?.lat ?? '', here?.lon ?? ''],
+    queryFn: () => api.get('/weather', { params: here ? { lat: here.lat, lon: here.lon } : farmId ? { farm_id: farmId } : {} }).then((r) => r.data),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -29,8 +34,12 @@ const hour = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour
 /** Weather for the farm: now, next hours, 7 days, advice for the farm's crops and the water plan. */
 export function WeatherScreen() {
   const { colors } = useTheme();
-  const [farmId, setFarmId] = useState('');
-  const { data, isLoading, isError, refetch, isFetching } = useWeather(farmId || undefined);
+  // '' = automatic: the phone's position when location is on, else the first farm
+  const [choice, setChoice] = useState('');
+  const loc = useDeviceLocation();
+  const useHere = !!loc.coords && (choice === HERE || choice === '');
+  const farmId = choice && choice !== HERE ? choice : '';
+  const { data, isLoading, isError, refetch, isFetching } = useWeather(farmId || undefined, useHere ? loc.coords : null);
   const [briefing, setBriefing] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -39,7 +48,7 @@ export function WeatherScreen() {
     setBusy(true);
     setErr('');
     try {
-      setBriefing((await aiWeatherBriefing()).briefing);
+      setBriefing((await aiWeatherBriefing(useHere ? loc.coords : null)).briefing);
     } catch (e: any) {
       setErr(e?.message || t('Could not get the briefing'));
     } finally {
@@ -52,7 +61,12 @@ export function WeatherScreen() {
     return <EmptyState icon="cloud" title="Weather is not available right now" description="Check your connection and try again." actionLabel="Try again" onAction={refetch} />;
   }
   if (!data.located) {
-    return <EmptyState icon="location-dot" title="Add your farm location" description="Add a farm with its location (district, province, country) or a field with GPS coordinates, and the weather for your land will appear here." />;
+    return (
+      <Screen>
+        <LocationCard />
+        <EmptyState icon="location-dot" title="Add your farm location" description="Add a farm with its location (district, province, country) or a field with GPS coordinates, and the weather for your land will appear here." />
+      </Screen>
+    );
   }
 
   const c = data.current;
@@ -63,9 +77,16 @@ export function WeatherScreen() {
     <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
       <PageHeader title="Weather" subtitle="Forecast and advice for your farm." />
 
-      {data.farms.length > 1 ? (
+      <LocationCard />
+
+      {data.farms.length > 1 || loc.coords ? (
         <View style={{ marginBottom: 14 }}>
-          <SelectField value={farmId || data.farm_id || ''} onChangeValue={setFarmId} placeholder="" options={data.farms.map((f: any) => ({ value: f.id, label: f.name }))} />
+          <SelectField
+            value={useHere ? HERE : farmId || data.farm_id || ''}
+            onChangeValue={setChoice}
+            placeholder=""
+            options={[...(loc.coords ? [{ value: HERE, label: t('My current location') }] : []), ...data.farms.map((f: any) => ({ value: f.id, label: f.name }))]}
+          />
         </View>
       ) : null}
 

@@ -24,7 +24,9 @@
         "backgroundColor": "#2E7D32"
       },
       "permissions": [
-        "CAMERA"
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
       ],
       "intentFilters": [
         {
@@ -63,6 +65,12 @@
         {
           "photosPermission": "CropManager needs access to your photos to attach field scouting images.",
           "cameraPermission": "CropManager needs camera access to capture field scouting photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "CropManager uses your location to show the weather and farm advice for where you are."
         }
       ],
       "@react-native-community/datetimepicker",
