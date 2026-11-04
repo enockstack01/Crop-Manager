@@ -99,7 +99,7 @@ export function WeatherScreen() {
 
       <View style={{ gap: 20 }}>
         <ChartCard title={t('Next hours')} icon="clock" bodyStyle={{ padding: 12 }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <ScrollView horizontal style={{ flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {data.hourly.slice(0, 8).map((h: any) => (
               <View key={h.time} style={{ width: 76, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: 10 }}>
                 <AppText style={{ fontSize: 11, color: colors.textLight }}>{hour(h.time)}</AppText>
@@ -112,7 +112,7 @@ export function WeatherScreen() {
         </ChartCard>
 
         <ChartCard title={t('Forecast')} icon="calendar-week" bodyStyle={{ padding: 12 }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <ScrollView horizontal style={{ flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {data.daily.slice(0, 7).map((d: any, i: number) => (
               <View key={d.date} style={{ width: 84, alignItems: 'center', gap: 5, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: 10 }}>
                 <AppText weight="600" style={{ fontSize: 12, color: colors.textLight }}>{i === 0 ? t('Today') : day(d.date, { weekday: 'short' })}</AppText>

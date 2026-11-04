@@ -65,11 +65,11 @@ export function AuthLayout({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 }}>
               <Image source={GLYPH} style={{ width: 42, height: 42, borderRadius: 10 }} accessibilityLabel="CropManager" />
               <View>
-                <Text style={{ fontSize: 20, fontFamily: ff('700'), color: colors.primaryDark }}>CropManager</Text>
+                <Text style={{ fontSize: 19, fontFamily: ff('700'), color: colors.primary, letterSpacing: 3, textTransform: 'uppercase' }}>CropManager</Text>
               </View>
             </View>
 
-            <AppText weight="700" style={{ fontSize: isTablet ? 28 : 26, lineHeight: 34 }}>{t(heading)}</AppText>
+            <AppText weight="700" style={{ fontSize: isTablet ? 30 : 28, lineHeight: 36, color: colors.primary }}>{t(heading)}</AppText>
             <AppText variant="subtitle" style={{ marginTop: 6, marginBottom: 30 }}>{t(intro)}</AppText>
 
             {/* Clerk-style card */}
@@ -143,11 +143,11 @@ export function AuthError({ message }: { message: string }) {
     <View
       accessibilityRole="alert"
       style={{
-        backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderRadius: radius.md, padding: spacing.md,
-        borderWidth: 1, borderColor: '#C62828',
+        backgroundColor: isDark ? '#3D1A1A' : '#FFEBEE', borderRadius: radius.md, padding: spacing.md,
+        borderLeftWidth: 3, borderLeftColor: '#D32F2F',
       }}
     >
-      <AppText style={{ fontSize: 13, color: isDark ? '#FFFFFF' : '#C62828' }}>{message}</AppText>
+      <AppText style={{ fontSize: 13, color: isDark ? '#FFCDD2' : '#C62828' }}>{message}</AppText>
     </View>
   );
 }

@@ -134,28 +134,28 @@ export function FarmProfileCard({
   const hasLand = p.total > 0 || p.scopeFields.length > 0;
 
   return (
-    <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadow(2) }}>
+    <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadow(1) }}>
       {/* profile banner */}
-      <View style={{ backgroundColor: '#1B5E20', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 16 }}>
+      <View style={{ backgroundColor: '#1B5E20', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 18 }}>
         <View style={{ position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.06)', top: -70, right: -50 }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Icon name="map-location-dot" size={13} color="rgba(255,255,255,0.85)" />
-          <Text style={{ fontFamily: ff('700'), fontSize: 11, letterSpacing: 1, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>
+          <Icon name="map-location-dot" size={13} color="#F9A825" />
+          <Text style={{ fontFamily: ff('700'), fontSize: 12, letterSpacing: 2, color: '#F9A825', textTransform: 'uppercase' }}>
             {t('Farm Profile · Overview')}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: ff('800'), fontSize: 20, lineHeight: 25, color: '#fff' }} numberOfLines={2}>
+            <Text style={{ fontFamily: ff('800'), fontSize: 22, lineHeight: 27, color: '#fff' }} numberOfLines={2}>
               {p.farm ? p.farm.name : t('All Farms')}
             </Text>
-            <Text style={{ fontFamily: ff('400'), fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 }} numberOfLines={1}>
+            <Text style={{ fontFamily: ff('400'), fontSize: 13, color: 'rgba(255,255,255,0.88)', marginTop: 2 }} numberOfLines={1}>
               {place || '—'}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontFamily: ff('800'), fontSize: 20, color: '#fff' }}>{ha(p.total)}</Text>
-            <Text style={{ fontFamily: ff('500'), fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+            <Text style={{ fontFamily: ff('800'), fontSize: 22, color: '#fff' }}>{ha(p.total)}</Text>
+            <Text style={{ fontFamily: ff('500'), fontSize: 12, color: 'rgba(255,255,255,0.88)' }}>
               {p.farm?.farm_type ? `${t(p.farm.farm_type)} · ${t('total area')}` : t('total area')}
             </Text>
           </View>

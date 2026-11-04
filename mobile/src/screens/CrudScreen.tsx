@@ -109,8 +109,8 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 10,
               backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1,
-              borderColor: searchFocused ? colors.primary : colors.border, paddingHorizontal: 13, minHeight: 42,
-              ...(searchFocused ? { boxShadow: '0 0 0 2px #2E7D32' as any } : null),
+              borderColor: searchFocused ? colors.primary : colors.border, paddingHorizontal: 14, minHeight: 48,
+              ...(searchFocused ? { boxShadow: `0 0 0 2px ${colors.primary}` as any } : null),
             }}
           >
             <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
@@ -122,7 +122,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               returnKeyType="search"
-              style={{ flex: 1, paddingVertical: 10, color: colors.text, fontSize: 13, fontFamily: ff('400') }}
+              style={{ flex: 1, paddingVertical: 10, color: colors.text, fontSize: 15, fontFamily: ff('400') }}
             />
             {search ? (
               <Pressable onPress={() => { haptics.select(); onSearch(''); }} hitSlop={10} accessibilityLabel="Clear search">
@@ -149,32 +149,27 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   );
 
   /* ---------- one table row ---------- */
-  const renderItem = ({ item, index }: { item: any; index: number }) => {
+  const renderItem = ({ item }: { item: any }) => {
     const view = config.row(item);
-    const first = index === 0;
-    const last = index === rows.length - 1;
     return (
       <Pressable
         onPress={() => { haptics.tap(); setViewRow(item); }}
         accessibilityRole="button"
         accessibilityLabel={String(view.title)}
         style={({ pressed }) => ({
-          flexDirection: 'row', alignItems: 'center', gap: 8,
-          paddingVertical: 12, paddingLeft: 16, paddingRight: 8,
+          flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
+          paddingVertical: 14, paddingLeft: 16, paddingRight: 6,
           backgroundColor: pressed ? colors.tableHover : colors.card,
-          borderLeftWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderColor: colors.border,
-          borderTopWidth: first ? 1 : 0,
-          borderTopLeftRadius: first ? radius.lg : 0, borderTopRightRadius: first ? radius.lg : 0,
-          borderBottomLeftRadius: last ? radius.lg : 0, borderBottomRightRadius: last ? radius.lg : 0,
+          borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg,
         })}
       >
         <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
-          <AppText weight="600" style={{ fontSize: 13 }} numberOfLines={2}>{view.title}</AppText>
-          {view.subtitle ? <AppText style={{ fontSize: 12, color: colors.textLight }} numberOfLines={2}>{view.subtitle}</AppText> : null}
+          <AppText weight="700" style={{ fontSize: 16, lineHeight: 22 }} numberOfLines={2}>{view.title}</AppText>
+          {view.subtitle ? <AppText style={{ fontSize: 14, color: colors.textLight }} numberOfLines={2}>{view.subtitle}</AppText> : null}
           {view.badge || view.right ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
               {view.badge ? <Badge label={view.badge.label} tone={view.badge.tone} /> : null}
-              {view.right ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{view.right}</AppText> : null}
+              {view.right ? <AppText style={{ fontSize: 13, color: colors.textLight }}>{view.right}</AppText> : null}
             </View>
           ) : null}
         </View>
@@ -195,7 +190,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const footer =
     totalPages > 1 ? (
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, gap: 8 }}>
-        <AppText style={{ fontSize: 12, color: colors.textLight }}>
+        <AppText style={{ fontSize: 13, color: colors.textLight }}>
           Page {page} of {totalPages} · {total} records
         </AppText>
         <View style={{ flexDirection: 'row', gap: 8 }}>

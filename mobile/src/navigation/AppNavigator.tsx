@@ -1,11 +1,13 @@
 import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeProvider';
-import { ff } from '../theme/theme';
 import { useLayout } from '../components/ui';
 import { CustomDrawer } from './CustomDrawer';
 import { TopBar } from './TopBar';
+import { BottomBar, FARMER_TABS } from './BottomBar';
+import { screenHeader, useStackScreenOptions } from './headers';
 import { MODULES } from './modules';
 import { CrudScreen } from '../screens/CrudScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -16,6 +18,7 @@ import { CalendarScreen } from '../screens/CalendarScreen';
 import { WeatherScreen } from '../screens/WeatherScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
+import { MoreScreen } from '../screens/MoreScreen';
 import { useProfile } from '../lib/useResource';
 import { NAV_SECTIONS, ADMIN_SECTION } from './navConfig';
 import { AdminOverviewScreen } from '../screens/admin/AdminOverviewScreen';
@@ -28,105 +31,118 @@ import { AdminAuditScreen } from '../screens/admin/AdminAuditScreen';
 import { AdminDataScreen } from '../screens/admin/AdminDataScreen';
 import { AdminSettingsScreen } from '../screens/admin/AdminSettingsScreen';
 
+const Tabs = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
 function CalculatorsStack() {
-  const { colors } = useTheme();
+  const opts = useStackScreenOptions();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.card },
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontFamily: ff('600'), fontSize: 16 },
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: colors.bg },
-      }}
-    >
-      <Stack.Screen name="calculators-list" component={CalculatorsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="calculator-detail" component={CalculatorDetailScreen} options={{ title: '' }} />
+    <Stack.Navigator screenOptions={opts}>
+      <Stack.Screen name="calculators-list" component={CalculatorsScreen} options={{ title: 'Calculators' }} />
+      <Stack.Screen name="calculator-detail" component={CalculatorDetailScreen} options={{ title: 'Calculators' }} />
     </Stack.Navigator>
   );
 }
 
-function useStackOptions() {
-  const { colors } = useTheme();
-  return {
-    headerStyle: { backgroundColor: colors.card },
-    headerTintColor: colors.text,
-    headerTitleStyle: { fontFamily: ff('600'), fontSize: 16 },
-    headerShadowVisible: false,
-    contentStyle: { backgroundColor: colors.bg },
-  } as const;
-}
-
 /** User management: the list, then one user. */
 function AdminUsersStack() {
-  const opts = useStackOptions();
+  const opts = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={opts}>
-      <Stack.Screen name="admin-users-list" component={AdminUsersScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="admin-user" component={AdminUserDetailScreen} options={{ title: '' }} />
+      <Stack.Screen name="admin-users-list" component={AdminUsersScreen} options={{ title: 'User Management' }} />
+      <Stack.Screen name="admin-user" component={AdminUserDetailScreen} options={{ title: 'User' }} />
     </Stack.Navigator>
   );
 }
 
 /** Organizations: the list, then one organization. */
 function AdminOrgsStack() {
-  const opts = useStackOptions();
+  const opts = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={opts}>
-      <Stack.Screen name="admin-orgs-list" component={AdminOrganizationsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="admin-org" component={AdminOrganizationDetailScreen} options={{ title: '' }} />
+      <Stack.Screen name="admin-orgs-list" component={AdminOrganizationsScreen} options={{ title: 'Organizations' }} />
+      <Stack.Screen name="admin-org" component={AdminOrganizationDetailScreen} options={{ title: 'Organization' }} />
     </Stack.Navigator>
+  );
+}
+
+/** Every page of the app, shared by the phone tabs and the tablet side menu. */
+function screens(Nav: typeof Tabs | typeof Drawer, isAdmin: boolean) {
+  const S: any = Nav.Screen;
+  return (
+    <>
+      <S name="dashboard" component={DashboardScreen} options={{ title: 'Home' }} />
+
+      {MODULES.map((m) => (
+        <S key={m.key} name={m.key} options={{ title: m.title }}>
+          {() => <CrudScreen config={m} />}
+        </S>
+      ))}
+
+      <S name="assistant" component={AssistantScreen} options={{ title: 'AI Assistant' }} />
+      <S name="calculators" component={CalculatorsStack} options={{ title: 'Calculators', headerShown: false }} />
+      <S name="reports" component={ReportsScreen} options={{ title: 'Reports' }} />
+      <S name="calendar" component={CalendarScreen} options={{ title: 'Calendar' }} />
+      <S name="weather" component={WeatherScreen} options={{ title: 'Weather' }} />
+      <S name="settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+
+      {isAdmin ? (
+        <>
+          <S name="admin-overview" component={AdminOverviewScreen} options={{ title: 'Admin Overview' }} />
+          <S name="admin-users" component={AdminUsersStack} options={{ title: 'User Management', headerShown: false }} />
+          <S name="admin-orgs" component={AdminOrgsStack} options={{ title: 'Organizations', headerShown: false }} />
+          <S name="admin-audit" component={AdminAuditScreen} options={{ title: 'Audit log' }} />
+          <S name="admin-ai" component={AdminAIScreen} options={{ title: 'AI assistant' }} />
+          <S name="admin-data" component={AdminDataScreen} options={{ title: 'Data Browser' }} />
+          <S name="admin-settings" component={AdminSettingsScreen} options={{ title: 'System Settings' }} />
+        </>
+      ) : null}
+    </>
   );
 }
 
 export function AppNavigator() {
   const { colors } = useTheme();
-  // web: the sidebar is fixed from 768px up and becomes a slide-out menu below it
+  // the side menu stays on tablets (web: fixed from 768px up); phones get the bottom tab bar
   const { isTablet } = useLayout();
   const { profile } = useProfile();
-  const sections = profile?.is_admin ? [...NAV_SECTIONS, ADMIN_SECTION] : NAV_SECTIONS;
+  const isAdmin = !!profile?.is_admin;
+  const sections = isAdmin ? [...NAV_SECTIONS, ADMIN_SECTION] : NAV_SECTIONS;
+
+  if (!isTablet) {
+    return (
+      <Tabs.Navigator
+        initialRouteName="dashboard"
+        backBehavior="history"
+        tabBar={(props) => <BottomBar {...props} tabs={FARMER_TABS} />}
+        screenOptions={{
+          sceneStyle: { backgroundColor: colors.bg },
+          header: screenHeader(FARMER_TABS),
+        }}
+      >
+        {screens(Tabs, isAdmin)}
+        <Tabs.Screen name="more" options={{ title: 'More' }}>
+          {({ navigation }) => <MoreScreen navigation={navigation} sections={sections} />}
+        </Tabs.Screen>
+      </Tabs.Navigator>
+    );
+  }
+
   return (
     <Drawer.Navigator
       initialRouteName="dashboard"
       drawerContent={(props) => <CustomDrawer {...props} sections={sections} />}
       screenOptions={({ navigation }) => ({
-        header: () => <TopBar navigation={navigation} showMenu={!isTablet} />,
-        drawerType: isTablet ? 'permanent' : 'front',
-        drawerStyle: { width: 260, backgroundColor: '#14532D', borderRightWidth: 0 },
+        header: ({ options }) => <TopBar title={String(options.title ?? '')} navigation={navigation} />,
+        drawerType: 'permanent',
+        drawerStyle: { width: 260, backgroundColor: '#1B5E20', borderRightWidth: 0 },
         overlayColor: 'rgba(15,31,20,0.55)',
         sceneStyle: { backgroundColor: colors.bg },
         swipeEdgeWidth: 40,
       })}
     >
-      <Drawer.Screen name="dashboard" component={DashboardScreen} options={{ title: 'Dashboard' }} />
-
-      {MODULES.map((m) => (
-        <Drawer.Screen key={m.key} name={m.key} options={{ title: m.title }}>
-          {() => <CrudScreen config={m} />}
-        </Drawer.Screen>
-      ))}
-
-      <Drawer.Screen name="assistant" component={AssistantScreen} options={{ title: 'AI Assistant' }} />
-      <Drawer.Screen name="calculators" component={CalculatorsStack} options={{ title: 'Calculators' }} />
-      <Drawer.Screen name="reports" component={ReportsScreen} options={{ title: 'Reports' }} />
-      <Drawer.Screen name="calendar" component={CalendarScreen} options={{ title: 'Calendar' }} />
-      <Drawer.Screen name="weather" component={WeatherScreen} options={{ title: 'Weather' }} />
-      <Drawer.Screen name="settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-
-      {profile?.is_admin ? (
-        <>
-          <Drawer.Screen name="admin-overview" component={AdminOverviewScreen} options={{ title: 'Admin Overview' }} />
-          <Drawer.Screen name="admin-users" component={AdminUsersStack} options={{ title: 'User Management' }} />
-          <Drawer.Screen name="admin-orgs" component={AdminOrgsStack} options={{ title: 'Organizations' }} />
-          <Drawer.Screen name="admin-audit" component={AdminAuditScreen} options={{ title: 'Audit log' }} />
-          <Drawer.Screen name="admin-ai" component={AdminAIScreen} options={{ title: 'AI assistant' }} />
-          <Drawer.Screen name="admin-data" component={AdminDataScreen} options={{ title: 'Data Browser' }} />
-          <Drawer.Screen name="admin-settings" component={AdminSettingsScreen} options={{ title: 'System Settings' }} />
-        </>
-      ) : null}
+      {screens(Drawer, isAdmin)}
     </Drawer.Navigator>
   );
 }

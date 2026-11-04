@@ -79,19 +79,21 @@ export function Screen({
   contentStyle?: any;
 }) {
   const { colors } = useTheme();
-  const { gutter, isWide } = useLayout();
+  const { gutter, isWide, isTablet } = useLayout();
+  // on phones the bottom tab bar already sits above the gesture bar, so only tablets need the inset
+  const edges = isTablet ? (['bottom'] as const) : ([] as const);
   const pad = padded ? { paddingHorizontal: gutter, paddingTop: 20 } : null;
   // web .main-content-inner caps content at 1400px
   const cap = isWide ? { maxWidth: 1400, width: '100%' as const, alignSelf: 'center' as const } : null;
   if (!scroll) {
     return (
-      <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: colors.bg }}>
         <View style={[{ flex: 1 }, pad, cap, contentStyle]}>{children}</View>
       </SafeAreaView>
     );
   }
   return (
-    <SafeAreaView edges={['bottom']} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         contentContainerStyle={[{ flexGrow: 1, paddingBottom: spacing.xxl }, pad, cap, contentStyle]}
         keyboardShouldPersistTaps="handled"
@@ -106,7 +108,7 @@ export function Screen({
 /** Horizontal scroll container for wide content (charts, tables). */
 export function ScreenScrollHost({ children }: { children: React.ReactNode }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: spacing.md }}>
+    <ScrollView horizontal style={{ flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: spacing.md }}>
       {children}
     </ScrollView>
   );
@@ -153,14 +155,18 @@ export function AppText({
 }
 
 /* ------------------------------------------------------------ PageHeader */
-/** web .page-title + .page-subtitle (+ an optional action under it, like "Add Farm"). */
+/**
+ * Lead in for a screen: a short intro line and the main actions. The screen title itself is shown
+ * in the app bar at the top (see navigation/TopBar), so it is not repeated here, but it is kept as the
+ * accessibility heading for screen readers.
+ */
 export function PageHeader({ title, subtitle, action, right }: { title: string; subtitle?: string; action?: React.ReactNode; right?: React.ReactNode }) {
+  if (!subtitle && !action && !right) return <View accessible accessibilityRole="header" accessibilityLabel={t(title)} style={{ height: 0 }} />;
   return (
-    <View style={{ marginBottom: 20, gap: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+    <View style={{ marginBottom: 16, gap: 12 }}>
+      <View accessible accessibilityRole="header" accessibilityLabel={t(title)} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
         <View style={{ flex: 1 }}>
-          <AppText variant="title" style={{ lineHeight: 31 }}>{t(title)}</AppText>
-          {subtitle ? <AppText variant="subtitle" style={{ marginTop: 4 }}>{t(subtitle)}</AppText> : null}
+          {subtitle ? <AppText variant="subtitle" style={{ fontSize: 15, lineHeight: 22 }}>{t(subtitle)}</AppText> : null}
         </View>
         {right}
       </View>
@@ -170,7 +176,7 @@ export function PageHeader({ title, subtitle, action, right }: { title: string; 
 }
 
 /* ------------------------------------------------------------------ Card */
-/** web .card: white, 1px border, radius 10, soft shadow */
+/** Card: white, 1px border, 16 radius, flat */
 export function Card({ style, children, ...rest }: ViewProps) {
   const { colors } = useTheme();
   return (
@@ -226,7 +232,7 @@ export function ChartCard({
         }}
       >
         {icon ? <Icon name={icon} size={15} color={iconColor ?? colors.primary} /> : null}
-        <AppText weight="600" style={{ fontSize: 15, flex: 1 }} numberOfLines={2}>{t(title)}</AppText>
+        <AppText weight="700" style={{ fontSize: 17, flex: 1, color: colors.primary }} numberOfLines={2}>{t(title)}</AppText>
         {right}
       </View>
       <View style={[{ padding: 20 }, bodyStyle]}>{children}</View>
@@ -234,7 +240,7 @@ export function ChartCard({
   );
 }
 
-/** web .kpi-card: coloured icon square, label, large value; tappable. */
+/** Compact stat: a round icon, the number and what it counts. Tap to open the related screen. */
 export function KpiCard({
   icon,
   tone = 'green',
@@ -254,23 +260,19 @@ export function KpiCard({
     <PressableScale
       onPress={onPress}
       disabled={!onPress}
-      scaleTo={0.98}
+      scaleTo={0.97}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={`${t(label)}: ${value}`}
-      style={{
-        flexDirection: 'row', alignItems: 'flex-start', gap: 14,
-        backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-        paddingVertical: 18, paddingHorizontal: 20, ...shadow(1),
-      }}
+      style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 10 }}
     >
-      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={icon} size={17} color={fg} />
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isDark ? bgDark : bgLight, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={16} color={fg} />
       </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <AppText weight="500" style={{ fontSize: 12, color: colors.textLight, marginBottom: 4 }} numberOfLines={1}>{t(label)}</AppText>
-        <AppText weight="700" style={{ fontSize: 24, lineHeight: 29 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
+      <View>
+        <AppText weight="700" style={{ fontSize: 26, lineHeight: 32, color: colors.primary }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
           {String(value)}
         </AppText>
+        <AppText variant="subtitle" style={{ fontSize: 14 }} numberOfLines={1}>{t(label)}</AppText>
       </View>
     </PressableScale>
   );
@@ -281,19 +283,19 @@ export function StatTile({ label, value, sub, color }: { label: string; value: s
   const { colors } = useTheme();
   return (
     <View style={{ backgroundColor: colors.bg, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center' }}>
-      <AppText weight="600" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={2}>
+      <AppText weight="600" style={{ fontSize: 12, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={2}>
         {t(label)}
       </AppText>
       <AppText weight="800" style={{ fontSize: 22, lineHeight: 28, color: color ?? colors.text, marginTop: 6 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
         {String(value)}
       </AppText>
-      {sub ? <AppText style={{ fontSize: 11, color: colors.textLight }}>{t(sub)}</AppText> : null}
+      {sub ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{t(sub)}</AppText> : null}
     </View>
   );
 }
 
 /* ----------------------------------------------------------------- Badge */
-/** web .badge-*: fully rounded pills — white on Forest, Ink on Amber, white on Alert Red (guide 6.4) */
+/** Status pill with a tinted background (solid Amber and Red only for warnings and errors) */
 export function Badge({
   label,
   tone = 'neutral',
@@ -301,18 +303,18 @@ export function Badge({
   label: string;
   tone?: 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'neutral';
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const tones: Record<string, [string, string]> = {
-    success: ['#1B5E20', '#FFFFFF'],
-    warning: ['#F9A825', '#1C2B1E'],
-    danger: ['#C62828', '#FFFFFF'],
-    info: [colors.primaryLight, colors.primaryDark],
-    primary: ['#1B5E20', '#FFFFFF'],
-    neutral: [colors.primaryLight, colors.textLight],
+    success: [isDark ? '#1A3D1E' : '#E8F3E9', isDark ? '#81C784' : '#2E7D32'],
+    warning: [isDark ? '#3D3420' : '#FFF8E1', isDark ? '#FFD54F' : '#8A5A00'],
+    danger: [isDark ? '#3D1A1A' : '#FFEBEE', isDark ? '#EF9A9A' : '#C62828'],
+    info: [isDark ? '#1C2B1F' : '#EEF3EE', isDark ? '#A5D6A7' : '#1B5E20'],
+    primary: [colors.primaryLight, isDark ? '#81C784' : colors.primary],
+    neutral: [colors.bg, colors.textLight],
   };
   const [bg, fg] = tones[tone] ?? tones.neutral;
   return (
-    <View style={{ alignSelf: 'flex-start', backgroundColor: bg, paddingHorizontal: 11, paddingVertical: 4, borderRadius: radius.pill, borderWidth: tone === 'info' || tone === 'neutral' ? 1 : 0, borderColor: colors.border }}>
+    <View style={{ alignSelf: 'flex-start', backgroundColor: bg, paddingHorizontal: 12, paddingVertical: 4, borderRadius: radius.pill }}>
       <Text style={{ color: fg, fontSize: 12, fontFamily: ff('700') }}>{t(label)}</Text>
     </View>
   );
@@ -443,7 +445,7 @@ export function EmptyState({
           accessibilityRole="button"
           style={{
             marginTop: spacing.md, backgroundColor: colors.primary, paddingHorizontal: 18,
-            minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: radius.md,
+            minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: radius.pill,
           }}
         >
           <Icon name="plus" size={13} color="#fff" />
@@ -479,11 +481,11 @@ export function IconButton({
         onPress();
       }}
       disabled={disabled}
-      hitSlop={6}
+      hitSlop={4}
       accessibilityRole="button"
       accessibilityLabel={label ?? name}
       style={({ pressed }) => ({
-        width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+        width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
         opacity: disabled ? 0.35 : 1, backgroundColor: pressed ? colors.bg : 'transparent',
       })}
     >

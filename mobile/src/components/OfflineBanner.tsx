@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { flushOutbox, useOfflineState } from '../lib/offline';
 import { ff } from '../theme/theme';
 import { t } from '../i18n';
+import { useLayout } from './ui';
 import { Icon } from './Icon';
 
 /**
@@ -15,6 +16,7 @@ import { Icon } from './Icon';
 export function OfflineBanner() {
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const { isPhone } = useLayout();
   const { online, pending, syncing } = useOfflineState();
   if (online && !pending) return null;
 
@@ -27,7 +29,7 @@ export function OfflineBanner() {
       : t('{{count}} change(s) waiting to sync: tap to retry', { count: pending });
 
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 12, alignItems: 'center' }}>
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 12 + (isPhone ? 64 : 0), alignItems: 'center' }}>
       <Pressable
         onPress={() => online && flushOutbox(qc)}
         accessibilityRole={online ? 'button' : 'text'}

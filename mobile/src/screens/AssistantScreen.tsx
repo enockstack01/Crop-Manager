@@ -364,7 +364,7 @@ export function AssistantScreen({ navigation }: { navigation: any }) {
     <Screen>
       <PageHeader title="AI Assistant" subtitle="Advice from your own farm records, in your language." />
       <AiStatusBar />
-      <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 14 }}>
+      <ScrollView ref={scroll} horizontal style={{ flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 14 }}>
         {TABS.map((x) => (
           <Pressable
             key={x.id}

@@ -4,21 +4,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeProvider';
-import { ff, radius, spacing } from '../theme/theme';
+import { AMBER, FOREST, ff, spacing } from '../theme/theme';
 import { useList, useProfile, useResourceMutations } from '../lib/useResource';
 import { displayName, formatDate } from '../lib/format';
 import { haptics } from '../lib/haptics';
 import { Icon } from '../components/Icon';
-import { AppText } from '../components/ui';
+import { AppText, useLayout } from '../components/ui';
 import { Sheet } from '../components/Sheet';
 import { SearchSheet } from '../components/SearchSheet';
 import { useToast } from '../components/Toast';
-import i18n, { LANGUAGES, setLanguage, t } from '../i18n';
-import { api } from '../lib/api';
+import { t } from '../i18n';
+import { LanguageSheet } from '../components/LanguageSheet';
 
-/** web .topbar-btn: 38px, radius 8, muted icon */
-function TopbarButton({ icon, onPress, label, badge }: { icon: string; onPress: () => void; label: string; badge?: number }) {
-  const { colors } = useTheme();
+/** 48 px touch target with a white icon, for use on the forest app bar. */
+function BarButton({ icon, onPress, label, badge }: { icon: string; onPress: () => void; label: string; badge?: number }) {
   return (
     <Pressable
       onPress={() => {
@@ -26,51 +25,57 @@ function TopbarButton({ icon, onPress, label, badge }: { icon: string; onPress: 
         onPress();
       }}
       accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={4}
+      accessibilityLabel={badge ? `${label}, ${badge}` : label}
       style={({ pressed }) => ({
-        width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: pressed ? colors.bg : 'transparent',
+        width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: pressed ? 'rgba(255,255,255,0.14)' : 'transparent',
       })}
     >
-      <Icon name={icon} size={17} color={colors.textLight} />
+      <Icon name={icon} size={19} color="#FFFFFF" />
       {badge ? (
         <View
           style={{
-            position: 'absolute', top: 4, right: 4, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
-            backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center',
+            position: 'absolute', top: 4, right: 3, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
+            backgroundColor: AMBER, alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 10, fontFamily: ff('700') }}>{badge > 99 ? '99+' : badge}</Text>
+          <Text style={{ color: '#111611', fontSize: 12, lineHeight: 15, fontFamily: ff('700') }}>{badge > 9 ? '9+' : badge}</Text>
         </View>
       ) : null}
     </Pressable>
   );
 }
 
+export type LeftAction = 'none' | 'back' | 'close';
+
 /**
- * The web app's .topbar: white bar with the menu button (phones), dark-mode toggle,
- * notifications bell with unread count, and the user's avatar. Page titles live in
- * the page body, as on the web.
+ * App bar: solid forest green with the screen title, so you always know where you are. It has an
+ * optional back button on the left, then search and the notification bell on the right. On tablets,
+ * where the bottom tab bar is replaced by the side menu, it also holds the language and dark mode
+ * buttons and the profile picture.
  */
-export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: boolean }) {
-  const { colors, isDark, setMode } = useTheme();
+export function TopBar({
+  title,
+  navigation,
+  left = 'none',
+  onLeft,
+}: {
+  title: string;
+  navigation: any;
+  left?: LeftAction;
+  onLeft?: () => void;
+}) {
+  const { isDark, setMode } = useTheme();
+  const { isTablet } = useLayout();
   const insets = useSafeAreaInsets();
   const { user } = useUser();
   const { profile } = useProfile();
   const toast = useToast();
   const qc = useQueryClient();
+  const { colors } = useTheme();
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const pickLanguage = (code: string) => {
-    // keep the cached profile in step, or the app would switch straight back
-    qc.setQueryData(['profile'], (p: any) => (p ? { ...p, language: code } : p));
-    api.put('/profile', { language: code }).catch(() => {});
-    setLanguage(code);
-    setLangOpen(false);
-  };
-
   const { data } = useList('notifications', { is_read: false, perPage: 10, sort: 'created_at', order: 'desc' });
   const notifs: any[] = data?.data ?? [];
   const { update } = useResourceMutations('notifications');
@@ -82,59 +87,47 @@ export function TopBar({ navigation, showMenu }: { navigation: any; showMenu: bo
   };
 
   const name = displayName(profile);
-  const initials = (name.match(/\b\w/g) || ['U']).slice(0, 2).join('').toUpperCase();
+  const initials = (name.match(/w/g) || ['U']).slice(0, 2).join('').toUpperCase();
   const avatar = profile?.avatar_url || (user?.hasImage ? user.imageUrl : null);
 
   return (
-    <View
-      style={{
-        paddingTop: insets.top, backgroundColor: colors.card,
-        borderBottomWidth: 1, borderBottomColor: colors.border,
-      }}
-    >
-      <View style={{ height: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: 4 }}>
-        {showMenu ? <TopbarButton icon="bars" label="Open menu" onPress={() => navigation.openDrawer()} /> : null}
-        <Pressable
-          onPress={() => { haptics.select(); setSearchOpen(true); }}
-          accessibilityRole="search"
-          accessibilityLabel={t('Search')}
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, marginHorizontal: 6, paddingHorizontal: 12, borderRadius: radius.md, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border }}
-        >
-          <Icon name="magnifying-glass" size={13} color={colors.placeholder} />
-          <Text style={{ color: colors.placeholder, fontSize: 13, fontFamily: ff('400') }} numberOfLines={1}>{t('Search...')}</Text>
-        </Pressable>
-        <TopbarButton icon="globe" label={t('Language')} onPress={() => setLangOpen(true)} />
-        <TopbarButton icon={isDark ? 'sun' : 'moon'} label="Toggle dark mode" onPress={() => setMode(isDark ? 'light' : 'dark')} />
-        <TopbarButton icon="bell" label="Notifications" badge={notifs.length} onPress={() => setNotifOpen(true)} />
-        <Pressable
-          onPress={() => navigation.navigate('settings')}
-          accessibilityRole="button"
-          accessibilityLabel="Profile settings"
-          style={({ pressed }) => ({ marginLeft: 6, borderRadius: 17, opacity: pressed ? 0.8 : 1 })}
-        >
-          {avatar ? (
-            <Image source={{ uri: avatar }} style={{ width: 34, height: 34, borderRadius: 17 }} />
-          ) : (
-            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: colors.primary, fontFamily: ff('700'), fontSize: 14 }}>{initials}</Text>
-            </View>
-          )}
-        </Pressable>
+    <View style={{ backgroundColor: FOREST }}>
+      <View style={{ paddingTop: insets.top }}>
+        <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: left === 'none' ? 20 : 4, paddingRight: 4, gap: 2 }}>
+          {left !== 'none' ? (
+            <BarButton icon={left === 'close' ? 'xmark' : 'arrow-left'} label={left === 'close' ? 'Close' : 'Back'} onPress={() => onLeft?.()} />
+          ) : null}
+          <Text
+            accessibilityRole="header"
+            numberOfLines={1}
+            style={{ flex: 1, color: '#FFFFFF', fontSize: 21, fontFamily: ff('700'), marginLeft: left === 'none' ? 0 : 4 }}
+          >
+            {t(title)}
+          </Text>
+          <BarButton icon="magnifying-glass" label={t('Search')} onPress={() => setSearchOpen(true)} />
+          {isTablet ? <BarButton icon="globe" label={t('Language')} onPress={() => setLangOpen(true)} /> : null}
+          {isTablet ? <BarButton icon={isDark ? 'sun' : 'moon'} label="Toggle dark mode" onPress={() => setMode(isDark ? 'light' : 'dark')} /> : null}
+          <BarButton icon="bell" label="Notifications" badge={notifs.length} onPress={() => setNotifOpen(true)} />
+          {isTablet ? (
+            <Pressable
+              onPress={() => navigation.navigate('settings')}
+              accessibilityRole="button"
+              accessibilityLabel="Profile settings"
+              style={({ pressed }) => ({ marginHorizontal: 6, opacity: pressed ? 0.8 : 1 })}
+            >
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+              ) : (
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: FOREST, fontFamily: ff('700'), fontSize: 14 }}>{initials}</Text>
+                </View>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
-      <Sheet visible={langOpen} onClose={() => setLangOpen(false)} title="Language" size="sm">
-        {LANGUAGES.map((l) => (
-          <Pressable
-            key={l.code}
-            onPress={() => pickLanguage(l.code)}
-            accessibilityRole="button"
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 8, backgroundColor: pressed ? colors.bg : 'transparent' })}
-          >
-            <Icon name={i18n.language === l.code ? 'circle-check' : 'circle'} size={14} color={i18n.language === l.code ? colors.primary : colors.textLight} />
-            <AppText weight={i18n.language === l.code ? '700' : '400'} style={{ fontSize: 14 }}>{l.label}</AppText>
-          </Pressable>
-        ))}
-      </Sheet>
+      <LanguageSheet visible={langOpen} onClose={() => setLangOpen(false)} />
       <SearchSheet visible={searchOpen} onClose={() => setSearchOpen(false)} navigation={navigation} />
       <Sheet visible={notifOpen} onClose={() => setNotifOpen(false)} title="Notifications" size="sm"
         footer={notifs.length ? (

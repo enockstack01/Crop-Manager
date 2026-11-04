@@ -53,9 +53,9 @@ function Field({
   return (
     <View style={{ gap: 6 }}>
       {label ? (
-        <AppText variant="label">
+        <AppText weight="700" style={{ fontSize: 14 }}>
           {t(label)}
-          {required ? <AppText variant="label" style={{ color: colors.red }}> *</AppText> : null}
+          {required ? <AppText weight="700" style={{ fontSize: 14, color: colors.red }}> *</AppText> : null}
         </AppText>
       ) : null}
       {children}
@@ -71,8 +71,8 @@ const inputStyle = (colors: any) => ({
   borderRadius: radius.md,
   paddingHorizontal: 14,
   paddingVertical: 10,
-  minHeight: 42,
-  fontSize: 13,
+  minHeight: 48,
+  fontSize: 15,
   fontFamily: ff('400'),
   color: colors.text,
 });
@@ -135,8 +135,8 @@ export function TextField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={[
-            { flex: 1, fontSize: 13, fontFamily: ff('400'), color: colors.text, paddingVertical: Platform.OS === 'ios' ? 11 : 9 },
-            multiline ? { minHeight: 84, textAlignVertical: 'top' } : null,
+            { flex: 1, fontSize: 15, fontFamily: ff('400'), color: colors.text, paddingVertical: Platform.OS === 'ios' ? 12 : 10 },
+            multiline ? { minHeight: 96, textAlignVertical: 'top' } : null,
           ]}
         />
         {isSecret ? (
@@ -206,7 +206,7 @@ export function SelectField({
         onPress={() => setOpen(true)}
         style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
       >
-        <AppText style={{ fontSize: 13, color: display ? colors.text : colors.placeholder, flex: 1 }} numberOfLines={1}>{t(display) || t(placeholder)}</AppText>
+        <AppText style={{ fontSize: 15, color: display ? colors.text : colors.placeholder, flex: 1 }} numberOfLines={1}>{t(display) || t(placeholder)}</AppText>
         <Icon name="chevron-down" size={11} color={colors.textLight} />
       </Pressable>
 
@@ -234,12 +234,12 @@ function SelectRow({ label, selected, onPress }: { label: string; selected: bool
       onPress={onPress}
       style={({ pressed }) => ({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingVertical: spacing.md, paddingHorizontal: spacing.sm, borderRadius: radius.sm,
+        paddingVertical: spacing.md, paddingHorizontal: spacing.sm, borderRadius: radius.sm, minHeight: 50,
         backgroundColor: pressed ? colors.bg : 'transparent',
         borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
       })}
     >
-      <AppText weight={selected ? '600' : '400'} style={{ fontSize: 14, color: selected ? colors.primary : colors.text }}>
+      <AppText weight={selected ? '700' : '400'} style={{ fontSize: 15, color: selected ? colors.primary : colors.text }}>
         {label}
       </AppText>
       {selected ? <Icon name="check" size={13} color={colors.primary} /> : null}
@@ -263,7 +263,7 @@ export function DateField({
         onPress={() => setShow(true)}
         style={[inputStyle(colors), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
       >
-        <AppText style={{ fontSize: 13, color: value ? colors.text : colors.placeholder }}>
+        <AppText style={{ fontSize: 15, color: value ? colors.text : colors.placeholder }}>
           {value ? formatDate(value) : 'mm/dd/yyyy'}
         </AppText>
         <Icon name="calendar" size={13} color={colors.textLight} />

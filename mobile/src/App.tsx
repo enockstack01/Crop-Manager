@@ -123,11 +123,13 @@ function NavRoot() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
       <SignedIn>
+        {/* light icons on the forest green app bar */}
+        <StatusBar style="light" />
         <RootGate />
       </SignedIn>
       <SignedOut>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <SplashReadyOnMount />
         <AuthNavigator />
       </SignedOut>

@@ -49,21 +49,23 @@ export const light: Palette = {
   headerText: '#FFFFFF',
 };
 
-// the web's .dark-mode only overrides surfaces and text; brand colours stay the same
+// dark mode: deep green surfaces with softer brand greens, as in the Agriplan app
 export const dark: Palette = {
   ...light,
-  primaryLight: '#2A2A2A',
-  bg: '#0F1F14',            // Night Field
-  card: '#1E1E1E',
-  surface: '#1E1E1E',
-  input: '#2A2A2A',
-  text: '#FFFFFF',
-  textLight: 'rgba(255,255,255,0.72)',
-  placeholder: 'rgba(255,255,255,0.5)',
-  border: '#3A3A3A',
+  primary: '#81C784',
+  primaryLight: '#1B3A1D',
+  primaryDark: '#A5D6A7',
+  bg: '#0C140D',
+  card: '#111814',
+  surface: '#111814',
+  input: '#182019',
+  text: '#E6EEE7',
+  textLight: '#9AA79B',
+  placeholder: '#6B776C',
+  border: '#26332A',
   overlay: 'rgba(0,0,0,0.7)',
-  stripe: '#252525',
-  tableHover: 'rgba(255,255,255,0.06)',
+  stripe: '#141C15',
+  tableHover: '#1B2A1D',
 };
 
 export const spacing = {
@@ -75,37 +77,42 @@ export const spacing = {
   xxl: 32,
 };
 
-/** web: --radius 10px (cards), 8px (buttons, inputs), 6px (badges) */
+/** Agriplan app style: 16 radius cards, pill buttons and badges, 12 radius inputs */
 export const radius = {
-  sm: 6,
-  md: 8,
-  lg: 10,
-  xl: 16,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
   pill: 999,
 };
 
-/** web: --shadow 0 2px 8px rgba(0,0,0,.08) / --shadow-lg 0 8px 30px rgba(0,0,0,.12) */
+/** Cards are flat (level 1 has no shadow); only floating sheets and buttons lift. */
 export function shadow(level: 1 | 2 | 3 = 1) {
-  const y = [0, 2, 4, 8][level];
+  const y = [0, 0, 4, 8][level];
   return {
     shadowColor: '#000000',
-    shadowOpacity: [0, 0.08, 0.1, 0.12][level],
-    shadowRadius: [0, 8, 12, 30][level] / 2,
+    shadowOpacity: [0, 0, 0.1, 0.12][level],
+    shadowRadius: [0, 0, 12, 30][level] / 2,
     shadowOffset: { width: 0, height: y },
-    elevation: [0, 2, 4, 8][level],
+    elevation: [0, 0, 4, 8][level],
   };
 }
 
+/** Calibri sets slightly smaller than other fonts, so the scale sits one point higher. */
 export const font = {
-  xs: 11,
-  sm: 12,
-  md: 13,
-  base: 14,
-  lg: 15,
-  xl: 16,
-  xxl: 24,
-  huge: 34,
+  xs: 12,
+  sm: 13,
+  md: 14,
+  base: 15,
+  lg: 16,
+  xl: 17,
+  xxl: 26,
+  huge: 36,
 };
+
+/** The forest green of the app bar, the hero card and the side menu. */
+export const FOREST = '#1B5E20';
+export const AMBER = '#F9A825';
 
 /** Carlito, the metric-compatible Calibri (loaded in App.tsx via @expo-google-fonts/carlito); Regular and Bold only */
 export const FONTS = {

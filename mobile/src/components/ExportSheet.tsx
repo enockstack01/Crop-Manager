@@ -58,7 +58,7 @@ export function ExportButton({
           {period ? (
             <View style={{ gap: 8, marginBottom: 6 }}>
               <AppText weight="700" style={{ fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.textLight }}>{t('Recording period')}</AppText>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              <ScrollView horizontal style={{ flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {PERIODS.map((p) => (
                   <Pressable
                     key={p.id}

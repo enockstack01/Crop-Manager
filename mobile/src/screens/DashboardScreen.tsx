@@ -10,7 +10,6 @@ import {
   ChartCard,
   EmptyState,
   Grid,
-  PageHeader,
   Screen,
   Skeleton,
   StatTile,
@@ -19,6 +18,7 @@ import {
 import { Icon } from '../components/Icon';
 import { Bars, HBars, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';
+import { QuickActions } from '../features/dashboard/QuickActions';
 import { FarmProfileCard } from '../features/dashboard/FarmProfileCard';
 import { InsightTiles } from '../features/dashboard/InsightTiles';
 import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed';
@@ -63,7 +63,15 @@ export function DashboardScreen({ navigation }: any) {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
-      <PageHeader title={`${t(getGreeting())}, ${displayName(profile)}`} subtitle="Here's what's happening across your farm today." />
+      <View accessible accessibilityRole="header" accessibilityLabel={`${t(getGreeting())}, ${displayName(profile)}`} style={{ marginBottom: 16 }}>
+        <AppText weight="700" style={{ fontSize: 26, lineHeight: 32 }}>{`${t(getGreeting())}, ${displayName(profile)}`}</AppText>
+        <AppText variant="subtitle" style={{ fontSize: 15, marginTop: 2 }}>{t("Here's what's happening across your farm today.")}</AppText>
+      </View>
+      <View style={{ marginBottom: 16, marginHorizontal: -16 }}>
+        <View style={{ paddingLeft: 16 }}>
+          <QuickActions onOpen={(r) => navigation.navigate(r)} />
+        </View>
+      </View>
 
       {/* the homepage opens with the farm profile + land utilization */}
       <View style={{ marginBottom: 20 }}>

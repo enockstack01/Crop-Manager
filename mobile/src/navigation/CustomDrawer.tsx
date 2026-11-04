@@ -30,14 +30,15 @@ function NavItem({ icon, label, active, onPress, danger }: { icon: string; label
       accessibilityState={{ selected: !!active }}
       style={({ pressed }) => ({
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingVertical: 11, paddingLeft: 20, paddingRight: 20,
+        paddingVertical: 11, paddingLeft: 17, paddingRight: 20,
+        borderLeftWidth: 3, borderLeftColor: active ? '#F9A825' : 'transparent',
         backgroundColor: active ? ACTIVE_BG : pressed ? PRESSED_BG : 'transparent',
       })}
     >
       <View style={{ width: 20, alignItems: 'center' }}>
         <Icon name={icon} size={14} color={color} />
       </View>
-      <Text style={{ color, fontSize: 13, fontFamily: ff('500') }} numberOfLines={1}>{t(label)}</Text>
+      <Text style={{ color, fontSize: 14, fontFamily: ff('500') }} numberOfLines={1}>{t(label)}</Text>
     </Pressable>
   );
 }
@@ -60,7 +61,7 @@ export function CustomDrawer(props: DrawerContentComponentProps & { sections?: N
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#14532D' }}>
+    <View style={{ flex: 1, backgroundColor: '#1B5E20' }}>
       {/* .sidebar-header */}
       <View
         style={{
@@ -83,8 +84,8 @@ export function CustomDrawer(props: DrawerContentComponentProps & { sections?: N
             {section.label ? (
               <Text
                 style={{
-                  fontSize: 10, fontFamily: ff('700'), textTransform: 'uppercase', letterSpacing: 1.2,
-                  color: 'rgba(255,255,255,0.62)', paddingTop: 16, paddingBottom: 6, paddingHorizontal: 20,
+                  fontSize: 12, fontFamily: ff('700'), textTransform: 'uppercase', letterSpacing: 1.2,
+                  color: 'rgba(255,255,255,0.55)', paddingTop: 16, paddingBottom: 6, paddingHorizontal: 20,
                 }}
               >
                 {t(section.label)}
