@@ -26,7 +26,7 @@ function getClient() {
   if (!apiKey()) {
     throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
   }
-  if (!client) client = new Anthropic({ apiKey: apiKey(), maxRetries: 2, timeout: 120_000 });
+  if (!client) client = new Anthropic({ apiKey: apiKey(), maxRetries: 1, timeout: 60_000 });
   return client;
 }
 
@@ -77,8 +77,12 @@ export async function askTool({ task = 'report', system, messages, tool, maxToke
   try {
     let usage = { ...ZERO };
     let convo = messages;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system: sys, messages: convo, tools: [tool], ...tuning(tier) });
+    const started = Date.now(); // the apps wait 90 s, so no new attempt starts after 45 s
+    let hint = ''; // after an incomplete reply: which fields to fill this time
+    let partial = null; // the most complete reply so far, used if no attempt is complete
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const system = hint ? [...sys, { type: 'text', text: hint }] : sys;
+      const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system, messages: convo, tools: [tool], ...tuning(tier) });
       usage = addUsage(usage, usageOf(msg));
       const block = msg.content.find((b) => b.type === 'tool_use' && b.name === tool.name);
       if (block) {
@@ -86,7 +90,15 @@ export async function askTool({ task = 'report', system, messages, tool, maxToke
         const missing = (tool.input_schema?.required || []).filter((k) => block.input?.[k] === undefined || block.input[k] === '');
         const cut = msg.stop_reason === 'max_tokens';
         if (!cut && !missing.length) return { data: block.input, usage, tier };
-        if (attempt === 0) { console.warn(`[ai] ${task}: ${cut ? 'reply cut off' : `reply missing ${missing.join(', ')}`}; asking again`); continue; }
+        if (!cut && (!partial || missing.length < partial.missing)) partial = { data: block.input, missing: missing.length };
+        if (attempt < 2 && Date.now() - started < 45_000) {
+          console.warn(`[ai] ${task}: ${cut ? 'reply cut off' : `reply missing ${missing.join(', ')}`}; asking again`);
+          hint = cut
+            ? 'Your last answer was too long and was cut off. Keep every field short and still fill every required field.'
+            : `Your last answer left out required fields: ${missing.join(', ')}. Fill EVERY required field this time, keeping each one short.`;
+          continue;
+        }
+        if (partial) return { data: partial.data, usage, tier };
         if (cut) throw new Error('reply was cut off');
         return { data: block.input, usage, tier };
       }

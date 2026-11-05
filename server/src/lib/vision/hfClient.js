@@ -54,6 +54,18 @@ function note(reason) {
   console.warn(`[vision] classifier unavailable: ${msg}`);
 }
 
+/**
+ * The Gradio client can fail in a background step (for example "Connection errored out. fetch failed" while it uploads
+ * the photo) that nothing awaits, so the error escapes as an unhandled rejection and Node would stop the whole API.
+ * Rejections that come from that library are noted and absorbed (the call then times out and falls back); the
+ * connection is dropped so the next call reconnects. Any other unhandled rejection is thrown again, as Node would.
+ */
+process.on('unhandledRejection', (reason) => {
+  if (!String(reason?.stack || '').includes('@gradio/client')) throw reason;
+  conn = null;
+  note(reason);
+});
+
 function acquire() {
   if (running < CONCURRENCY) { running += 1; return Promise.resolve(true); }
   return new Promise((resolve) => {

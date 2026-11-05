@@ -30,7 +30,7 @@ const PER_CROP = Number(PER) || 25;
 const crops = CROPS.split(',').map((c) => c.trim()).filter(Boolean);
 fs.mkdirSync(path.join(OUT, 'photos'), { recursive: true });
 
-const PORT = 5078;
+const PORT = Number(process.env.REVIEW_PORT) || 5078;
 const BASE = `http://localhost:${PORT}/api`;
 const USER = 'photoreview_farmer';
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
@@ -97,7 +97,10 @@ for (const crop of crops) {
     console.log(`  ${id} ${rec.status} ${(rec.ms / 1000).toFixed(1)}s ${rec.detection?.source || '-'} ${p1 ? `${p1.crop}: ${p1.disease} ${Math.round(p1.confidence * 100)}%` : ''}`);
   }
 }
+const exited = child.exitCode !== null; // the API stopping on its own is a bug worth knowing about
 child.kill();
+fs.writeFileSync(path.join(OUT, 'server.log'), serverLog.slice(-20000));
+if (exited) console.log(`NOTE: the API process exited on its own (code ${child.exitCode}); see ${path.join(OUT, 'server.log')}`);
 
 const header = ['id', 'crop', 'folder_label (truth)', 'status', 'seconds', 'source', 'confident', 'unrecognised', 'top1 label', 'top1 %', 'top1 matches folder', 'top2 label', 'top2 %', 'top3 label', 'top3 %', 'report title', 'report confidence', 'severity', 'need_better_photo', 'treatment (first 200 chars)', 'agronomist verdict (fill in)', 'agronomist notes (fill in)'];
 const rows = results.map((r) => {

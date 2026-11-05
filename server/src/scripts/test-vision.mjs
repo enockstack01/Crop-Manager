@@ -133,6 +133,16 @@ ok(warnings.length > 0 && warnings.every((w) => !w.includes('TESTTOKEN')), 'the 
 ok(warnings.every((w) => w.split('\n').length === 1 && w.length < 260), 'one short line per failure');
 ok((await classify(Buffer.from('not an image'), {})) === null, 'a file that is not an image gives null instead of throwing');
 
+console.log('9. a background failure inside the Gradio client does not stop the API');
+fresh();
+const gradioErr = Object.assign(new Error('Connection errored out. fetch failed'), { stack: 'Error: Connection errored out. fetch failed\n    at Client.upload_files (file:///x/node_modules/@gradio/client/dist/index.js:601:13)' });
+Promise.reject(gradioErr); // nobody awaits it, as in the real failure
+await new Promise((r) => setTimeout(r, 50));
+ok(true, 'the process is still running after an unhandled rejection from the Gradio client');
+ok(warnings.some((w) => w.includes('Connection errored out')), 'it is noted in one line');
+stub(async () => ({ data: [REPLY] }));
+ok((await classify(photo, {}))?.predictions.length === 3, 'and the next classification works');
+
 console.warn = origWarn;
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);
