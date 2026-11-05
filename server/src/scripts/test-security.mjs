@@ -153,8 +153,9 @@ try {
   ok(log.status === 200 && log.data.data.length > 0, 'the audit log is readable by an administrator');
   ok((await call('farmer', 'GET', '/admin/audit-logs')).status === 403, 'and by nobody else');
   ok((await call('admin', 'DELETE', '/admin/audit-logs')).status === 404, 'there is no way to delete the audit log through the API');
-  let limited = 0;
-  for (let i = 0; i < 45; i += 1) if ((await call('admin', 'PATCH', `/admin/users/${U('farmer')}`, { role: 'Agronomist' })).status === 429) limited += 1;
+  // a real burst is concurrent; sent one by one, a slow database would stretch it past the one-minute window
+  const burst = await Promise.all(Array.from({ length: 45 }, () => call('admin', 'PATCH', `/admin/users/${U('farmer')}`, { role: 'Agronomist' })));
+  const limited = burst.filter((r) => r.status === 429).length;
   ok(limited > 0, 'a burst of administrator changes is slowed down', String(limited));
 
   console.log('5. Uploads');
