@@ -3,7 +3,9 @@ import path from 'node:path';
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { UPLOAD_DIR } from '../routes/uploads.routes.js';
-import { CropScoutingRecord } from '../models/index.js';
+import { Crop, CropScoutingRecord } from '../models/index.js';
+import { classify, visionEnabled } from '../lib/vision/hfClient.js';
+import { labelCropFor } from '../lib/vision/cropMap.js';
 import { aiConfigured, aiMock, askAgent, askTool } from '../lib/ai/client.js';
 import { farmTools } from '../lib/ai/farmTools.js';
 import { weatherTool } from './weather.controller.js';
@@ -20,13 +22,13 @@ const langOf = (req) => (LANGS.includes(req.body?.language) ? req.body.language 
 const clip = (v, n = 1500) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 
 /** Runs one structured request: limit check, farm snapshot, model call, usage log. */
-async function runTool(req, { feature, task = 'report', mock = feature, tool, userText, extraSystem = '', withFarm = true, content, maxTokens }) {
+async function runTool(req, { feature, task = 'report', mock = feature, tool, userText, extraSystem = '', withFarm = true, content, maxTokens, detector = '' }) {
   if (!aiConfigured()) {
     throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
   }
   await assertWithinLimit(req.profile);
   if (aiMock()) {
-    await logUsage(req.userId, feature);
+    await logUsage(req.userId, feature, {}, '', detector);
     return { data: mockFor(mock), lists: null };
   }
   const lang = langOf(req);
@@ -42,10 +44,10 @@ async function runTool(req, { feature, task = 'report', mock = feature, tool, us
       messages: [{ role: 'user', content: content || [{ type: 'text', text: userText }] }],
     });
   } catch (err) {
-    await logFailure(req.userId, feature, err.tier, err.details?.code);
+    await logFailure(req.userId, feature, err.tier, err.details?.code, detector);
     throw err;
   }
-  await logUsage(req.userId, feature, out.usage, out.tier);
+  await logUsage(req.userId, feature, out.usage, out.tier, detector);
   return { data: out.data, lists };
 }
 
@@ -58,8 +60,8 @@ export const status = asyncHandler(async (req, res) => {
 /* -------------------------------------------------------------- diagnose */
 const MEDIA = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
 
-/** Loads one of the caller's own uploaded photos as an image block; anything else is refused. */
-function photoBlock(userId, url) {
+/** Reads one of the caller's own uploaded photos; anything else is refused. */
+function readPhoto(userId, url) {
   if (!url) return null;
   const file = path.basename(String(url));
   if (!file.startsWith(`${userId}-`)) throw createHttpError(400, 'That photo does not belong to your account.');
@@ -67,7 +69,16 @@ function photoBlock(userId, url) {
   if (!media) throw createHttpError(400, 'Use a JPG, PNG, WebP or GIF photo.');
   const full = path.join(UPLOAD_DIR, file);
   if (!fs.existsSync(full)) throw createHttpError(404, 'The photo could not be found. Upload it again.');
-  return { type: 'image', source: { type: 'base64', media_type: media, data: fs.readFileSync(full).toString('base64') } };
+  return { media, bytes: fs.readFileSync(full) };
+}
+
+const imageBlock = ({ media, bytes }) => ({ type: 'image', source: { type: 'base64', media_type: media, data: bytes.toString('base64') } });
+
+/** What the specialist model found, as text for the assistant: top three, whether it is sure, and how to treat that. */
+function detectionText(d, farmCrop) {
+  const list = d.predictions.map((p, i) => `${i + 1}. ${p.crop}, ${p.part}: ${p.healthy ? 'healthy' : p.disease} (${Math.round(p.confidence * 100)}%)`).join('\n');
+  const scope = farmCrop ? `ranked among ${farmCrop} diseases only` : "ranked among all crops (the farm's crop is not one the classifier covers)";
+  return `Image classifier result (specialist crop-disease model ${d.model_version || ''}) for the first photo, ${scope}:\n${list}\nconfident: ${d.confident ? 'yes' : 'no'} | unrecognised: ${d.unrecognised ? 'yes' : 'no'}\nRules: if confident, use the top result as the title unless the photo clearly contradicts it, and say so. If not confident or unrecognised, say the match is uncertain, list the top choices under other_possibilities and set need_better_photo.`;
 }
 
 export const diagnose = asyncHandler(async (req, res) => {
@@ -91,20 +102,31 @@ export const diagnose = asyncHandler(async (req, res) => {
     ['Notes', clip(b.notes || rec.notes)],
     ['Affected area or share of plants', clip(b.affected, 120)],
   ].filter(([, v]) => v);
-  const images = urls.map((u) => photoBlock(req.userId, u)).filter(Boolean);
+  const photos = urls.map((u) => readPhoto(req.userId, u)).filter(Boolean);
+  const images = photos.map(imageBlock);
   if (!images.length && !lines.length) throw createHttpError(400, 'Add a photo or describe what you see.');
   try {
     const w = await weatherForUser(req.userId, {});
     if (w.located) lines.push(['Weather at the farm', `now ${w.current.temp}C ${w.current.description}, rain past 7 days ${w.rain_past_7d_mm} mm, next days ${JSON.stringify(w.daily.slice(0, 4).map((d) => ({ date: d.date, min: d.tmin, max: d.tmax, rain_mm: d.rain_mm })))}`]);
   } catch { /* the report works without weather */ }
 
-  const text = `Report what is exactly happening on the farm in the attached photo(s) and notes, then the problem if any: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${images.length ? `\n\n${images.length === 1 ? 'A photo' : `${images.length} photos`} of the plant ${images.length === 1 ? 'is' : 'are'} attached. Find the part that is infected or damaged (leaf, stem, fruit, root or the whole plant), say which part it is, and describe the signs you can see on it.` : '\n\nNo photo was added, so say how sure you can be.'}`;
+  // the specialist model looks at the first photo; if it fails, the assistant reads the photo alone, as before
+  let cropName = clip(b.crop, 80);
+  if (!cropName && rec.crop_id) cropName = (await Crop.findOne({ _id: rec.crop_id, user_id: req.userId }, 'name').lean().catch(() => null))?.name || '';
+  const farmCrop = labelCropFor(cropName);
+  const found = photos.length ? await classify(photos[0].bytes, { crop: farmCrop, lang: langOf(req) }) : null;
+  const detector = !photos.length ? '' : found ? 'classifier' : visionEnabled() ? 'fallback' : 'off';
+  const detection = found
+    ? { source: 'classifier', model_version: found.model_version, confident: found.confident, unrecognised: found.unrecognised, predictions: found.predictions.map((p) => ({ label: p.label, confidence: p.confidence, crop: p.names.crop, disease: p.names.disease, part: p.names.part, healthy: p.healthy })) }
+    : { source: 'claude_only', model_version: '', confident: false, unrecognised: false, predictions: [] };
+
+  const text = `Report what is exactly happening on the farm in the attached photo(s) and notes, then the problem if any: cause, treatment, medication and how to give it.\n\n${lines.map(([k, v]) => `${k}: ${v}`).join('\n')}${found ? `\n\n${detectionText(found, farmCrop)}` : ''}${images.length ? `\n\n${images.length === 1 ? 'A photo' : `${images.length} photos`} of the plant ${images.length === 1 ? 'is' : 'are'} attached. Find the part that is infected or damaged (leaf, stem, fruit, root or the whole plant), say which part it is, and describe the signs you can see on it.` : '\n\nNo photo was added, so say how sure you can be.'}`;
   const content = images.length ? [...images, { type: 'text', text }] : [{ type: 'text', text }];
   const { data } = await runTool(req, {
-    feature: 'diagnose', task: 'vision', tool: DIAGNOSE_TOOL, content, maxTokens: 2500,
+    feature: 'diagnose', task: 'vision', tool: DIAGNOSE_TOOL, content, maxTokens: 2500, detector,
     extraSystem: 'Task: report what is exactly happening on the farm from the photo(s) and notes: first the overview of the scene (crop, stage, condition, soil, weeds, pests, water, anything unusual), then the problem if any, and link it to the farmer\'s records and the weather. The photo may show a whole field, a single plant, a leaf, stock or equipment. Crop disease, pest and nutrient diagnosis: Look at leaf colour, spots, lesions, holes, frass, wilting, growth stage. Prefer the most likely cause for the farm\'s country and season. Be honest about uncertainty.',
   });
-  res.json({ report: data, photo_url: photoUrl });
+  res.json({ report: data, photo_url: photoUrl, detection });
 });
 
 /* ---------------------------------------------------------------- insights */

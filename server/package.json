@@ -14,7 +14,8 @@
     "test:orgs": "node src/scripts/test-orgs.mjs",
     "test:security": "node src/scripts/test-security.mjs",
     "test:images": "node src/scripts/test-images.mjs",
-    "test:vision": "node src/scripts/test-vision.mjs"
+    "test:vision": "node src/scripts/test-vision.mjs",
+    "test:diagnose": "node src/scripts/test-diagnose-vision.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

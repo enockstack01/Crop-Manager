@@ -27,6 +27,10 @@ const BREAKER_MS = 60_000;
 
 const timeoutMs = () => Number(process.env.HF_TIMEOUT_MS) || 25_000;
 const enabled = () => process.env.VISION_ENABLED !== '0' && !!process.env.HF_TOKEN && !!process.env.HF_SPACE_ID;
+/** Tests only: with AI_MOCK=1, VISION_TEST_STUB=ok answers from a canned result and =down behaves like a Space that is down. */
+const stubMode = () => (process.env.AI_MOCK === '1' ? process.env.VISION_TEST_STUB || '' : '');
+/** Whether the classifier is switched on (a failure then counts as a fallback; when off, it does not). */
+export const visionEnabled = () => (stubMode() ? process.env.VISION_ENABLED !== '0' : enabled());
 
 /* ---- state (module level so every request shares it) ---- */
 let conn = null;
@@ -123,6 +127,12 @@ async function callOnce(jpeg, labelCrop) {
  * Returns { model_version, confident, unrecognised, predictions: [{ label, confidence, crop, part, disease, family, healthy, names }] }, or null.
  */
 export async function classify(image, { crop = '', lang = 'en' } = {}) {
+  const stub = stubMode();
+  if (stub && process.env.VISION_ENABLED !== '0') {
+    if (stub === 'down') { note('stubbed: the Space is down'); return null; }
+    const picks = LABELS.filter((l) => !LABEL_CROPS.has(crop) || l.crop === crop).slice(0, 3);
+    return { model_version: 'stub', confident: stub !== 'unsure', unrecognised: stub === 'unrecognised', predictions: picks.map((l, i) => ({ label: l.key, confidence: [0.91, 0.06, 0.02][i], ...describeLabel(l.key, lang) })) };
+  }
   if (!enabled()) return null;
   if (Date.now() < openUntil) return null;
   const labelCrop = LABEL_CROPS.has(crop) ? crop : '';
