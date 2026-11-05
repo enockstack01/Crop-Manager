@@ -1,0 +1,39 @@
+{
+  "build": "2026-11-02T11:54:14",
+  "image_version": "v0005",
+  "text_version": "text_v0001",
+  "image_size": 224,
+  "text_max_len": 64,
+  "image_temperature": 0.7837,
+  "image_ood_floor": 1.5544,
+  "text_temperature": 0.9175,
+  "text_weight": 0.7,
+  "confident": 0.7,
+  "unsure": 0.4,
+  "min_margin_for_confident": 0.25,
+  "image_val_acc": 0.8483,
+  "text_val": {
+    "real": {
+      "n": 4595,
+      "top1": 0.2357,
+      "top3": 0.4231
+    },
+    "generated": {
+      "n": 5725,
+      "top1": 0.4038,
+      "top3": 0.5804
+    }
+  },
+  "languages": [
+    "en",
+    "rw",
+    "sw",
+    "fr",
+    "es",
+    "pt",
+    "ar",
+    "hi",
+    "zh",
+    "id"
+  ]
+}

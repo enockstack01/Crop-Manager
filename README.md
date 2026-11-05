@@ -165,6 +165,17 @@ The AI features run on the server only. Set `AI_API_KEY` in `server/.env` (or th
 
 Features (web and mobile, answered in the interface language): chat that looks up the farmer's own records and the weather, farm insights, plans and advice, lender-ready season summary, quick record entry in plain words, **plant check from the camera** (up to three photos; finds the infected part, names the problem, treatment and medication, with a PDF report), and **calculator reports** (see below). Farm records are sent to the AI service with each request; usage is logged per user in the `aiusages` collection.
 
+### Crop disease detection
+
+`POST /api/ai/diagnose` first sends the photo to a private Hugging Face Space (the CropHealth model: 229 classes, 49 crops, top three results with a confidence), then gives that result to the assistant, which writes the treatment report. The reply is `{ report, photo_url, detection }`; `detection` is `{ source: "classifier" | "claude_only", model_version, confident, unrecognised, predictions: [{ label, confidence, crop, disease, part, healthy }] }`. If the Space is down, slow or not configured, the assistant reads the photo alone and `source` is `"claude_only"`; nothing else changes for the apps.
+
+- Server only, in `server/.env`: `HF_TOKEN` (a read token; the calls use that account's GPU quota), `HF_SPACE_ID`, `HF_TIMEOUT_MS` (25000), `VISION_ENABLED` (set 0 to switch the model off). Never put these in `client/` or `mobile/`.
+- Code: `server/src/lib/vision/hfClient.js` (one shared connection, photo shrunk to 1024 px, 25 s timeout and one retry, 4 calls at a time, 3 failures then 60 s pause, never throws) and `cropMap.js` (the farm's crop name to one of the 49 crops, "" when there is none). `labels.json` beside them is the class list from the Crop-models project.
+- `AiUsage.detector` records `classifier`, `fallback` (the Space failed) or `off` for every photo diagnosis; the admin usage report returns the counts as `diagnosis_detector`.
+- Every other AI task defaults to the Fast tier. A tier saved by an administrator (SystemSetting key `ai_models`) overrides the default, so reset it under System admin > AI on each environment.
+- The mobile app also carries a small on-phone model (`mobile/src/ml`, about 9 MB) that answers when the server cannot be reached; it needs a native build, not Expo Go.
+- Checks: `npm run test:vision -w server` (wrapper, no network), `npm run test:diagnose -w server` (flow with a stubbed model), `node server/src/scripts/check-ai-features.mjs <folder> [photo]` (every AI feature against the real service), `node server/src/scripts/photo-review.mjs <photos> <folder>` (real photos for an agronomist to review).
+
 ## Weather, calculators, calendar, reports and exports
 
 - **Weather** (`/weather`): the farm's location comes from a field's GPS or, failing that, the farm's place name. Data comes from OpenWeatherMap when `OPENWEATHER_API_KEY` is set (a new key can take a couple of hours to activate), otherwise from the free Open-Meteo service. The page shows now, the next hours, seven days, rule-based advice for the crops in the ground, a water plan (crop water use against useful rain) and an AI weekly briefing.

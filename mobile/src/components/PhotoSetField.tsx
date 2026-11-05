@@ -11,6 +11,13 @@ import { Icon } from './Icon';
 import { useToast } from './Toast';
 import { t } from '../i18n';
 
+/** The copy of each picked photo that stays on the phone, so the on-phone model can read it (key: server URL, or the photo itself). */
+const LOCAL = new Map<string, string>();
+/** A photo that could not be uploaded (no signal) and so exists only on this phone. */
+export const isLocalPhoto = (u: string) => /^(file|content):/i.test(u);
+/** The file on this phone for a photo in the list, or null when it is not known (for example after an app restart). */
+export const localPhotoFor = (u: string): string | null => LOCAL.get(u) || (isLocalPhoto(u) ? u : null);
+
 /**
  * Up to `max` photos of a plant (the sick leaf, the stem, the whole plant): taken straight with the camera
  * or picked from the gallery. Each is uploaded and the list of URLs is returned through `onChange`.
@@ -41,8 +48,17 @@ export function PhotoSetField({
       for (const a of assets.slice(0, max - urls.length)) {
         const form = new FormData();
         form.append('file', { uri: a.uri, type: a.mimeType || 'image/jpeg', name: a.fileName || `photo-${Date.now()}.jpg` } as any);
-        const { data } = await api.post('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-        out.push(data.url);
+        try {
+          const { data } = await api.post('/uploads', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+          LOCAL.set(data.url, a.uri);
+          out.push(data.url);
+        } catch (e: any) {
+          // no signal: keep the photo on the phone so it can still be checked with the model on the phone
+          if (!e?.network) throw e;
+          LOCAL.set(a.uri, a.uri);
+          out.push(a.uri);
+          toast(t('No connection. The photo stays on this phone and can be checked offline.'), 'info');
+        }
       }
       onChange([...urls, ...out]);
     } catch (e: any) {

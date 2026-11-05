@@ -74,6 +74,7 @@
         }
       ],
       "@react-native-community/datetimepicker",
+      "onnxruntime-react-native",
       "expo-font",
       "expo-status-bar",
       "expo-web-browser"

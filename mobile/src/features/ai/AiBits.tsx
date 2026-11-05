@@ -138,7 +138,7 @@ export function DiagnosisReport({ report: r, photos = [] }: { report: any; photo
 export function DetectionCard({ detection: d, hasPhoto = true }: { detection?: any; hasPhoto?: boolean }) {
   const { colors } = useTheme();
   if (!d) return null;
-  if (d.source !== 'classifier') {
+  if (d.source !== 'classifier' && d.source !== 'offline') {
     return hasPhoto ? (
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
         <Icon name="circle-info" size={13} color={colors.textLight} />
@@ -150,7 +150,7 @@ export function DetectionCard({ detection: d, hasPhoto = true }: { detection?: a
   return (
     <View style={{ marginTop: 16, padding: 14, gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-        <Badge label={t('Detected by the CropHealth model')} tone="info" />
+        <Badge label={d.source === 'offline' ? t('Detected on this phone') : t('Detected by the CropHealth model')} tone="info" />
         <AppText weight="700" style={{ fontSize: 12, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Most likely matches')}</AppText>
       </View>
       {d.predictions.slice(0, 3).map((p: any) => {
@@ -176,6 +176,40 @@ export function DetectionCard({ detection: d, hasPhoto = true }: { detection?: a
           </AppText>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * An answer worked out on the phone because the server could not be reached: a banner that says it is less accurate,
+ * the three matches, and general advice for that type of problem. There is no AI report offline.
+ * `waiting` is true while the phone is still trying the server, whose full report would replace this.
+ */
+export function OfflineResult({ result, waiting = false }: { result: any; waiting?: boolean }) {
+  const { colors } = useTheme();
+  const a = result.advice;
+  return (
+    <View style={{ marginTop: 16 }}>
+      <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: radius.lg, backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.orange }}>
+        <Icon name="cloud-off-outline" size={16} color={colors.orange} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText weight="700" style={{ fontSize: 14 }}>{t('Offline result, lower accuracy')}</AppText>
+          <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('This result was worked out on your phone. It is less accurate than the full check and has no AI report.')}</AppText>
+          {waiting ? <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('Still waiting for the AI assistant. If it answers, its report replaces this result.')}</AppText> : null}
+        </View>
+      </View>
+      <DetectionCard detection={result} />
+      {a ? (
+        <View style={{ marginTop: 12, gap: 10, padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg }}>
+          <AppText weight="700" style={{ fontSize: 14 }}>{a.about}</AppText>
+          <AppText weight="700" style={{ fontSize: 12, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('What to do')}</AppText>
+          {a.act.map((x: string) => <AppText key={x} style={{ fontSize: 13, lineHeight: 19 }}>{`\u2022 ${x}`}</AppText>)}
+          <AppText weight="700" style={{ fontSize: 12, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('How to prevent it')}</AppText>
+          {a.prevent.map((x: string) => <AppText key={x} style={{ fontSize: 13, lineHeight: 19 }}>{`\u2022 ${x}`}</AppText>)}
+          <AppText variant="caption">{t('General guidance for this type of problem. It is not specific to your crop and has not been reviewed by an agronomist.')}</AppText>
+        </View>
+      ) : null}
+      <AppText style={{ marginTop: 12, fontSize: 13, lineHeight: 19 }}>{result.officer}</AppText>
     </View>
   );
 }

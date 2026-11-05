@@ -13,7 +13,7 @@ export const API_ORIGIN =
 /** Turn a possibly-relative media URL from the API into an absolute one. */
 export function mediaUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  if (/^https?:\/\//i.test(url)) return url;
+  if (/^(https?|file|content|data):/i.test(url)) return url; // a photo still on this phone has a file or content address
   return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
