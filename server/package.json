@@ -13,11 +13,13 @@
     "migrate-orgs": "node src/scripts/migrate-orgs.js",
     "test:orgs": "node src/scripts/test-orgs.mjs",
     "test:security": "node src/scripts/test-security.mjs",
-    "test:images": "node src/scripts/test-images.mjs"
+    "test:images": "node src/scripts/test-images.mjs",
+    "test:vision": "node src/scripts/test-vision.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
     "@clerk/express": "^1.3.4",
+    "@gradio/client": "1.19.1",
     "bmp-js": "^0.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
