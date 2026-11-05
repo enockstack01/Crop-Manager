@@ -106,3 +106,15 @@
 .camera-stage video, .camera-stage img { width: 100%; max-height: 60vh; object-fit: contain; }
 .ai-report-head { flex-wrap: wrap; }
 .ai-report-photo { max-width: 110px; }
+
+/* what the crop-disease model found */
+.ai-detect { margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card-bg, transparent); }
+.ai-detect-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.ai-detect-title { font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .04em; }
+.ai-detect-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ai-detect-row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; margin-bottom: 4px; }
+.ai-detect-name { min-width: 0; overflow-wrap: anywhere; }
+.ai-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.ai-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--primary, #1b5e20); }
+.ai-detect-part { margin-top: 4px; font-size: 12px; color: var(--text-light); }
+.ai-detect-note { margin-top: 16px; font-size: 12.5px; color: var(--text-light); }

@@ -98,3 +98,49 @@ function Section({ icon, title, text }) {
     </div>
   );
 }
+
+/**
+ * What the crop-disease model found in the photo: the three most likely matches with confidence bars and the
+ * plant part, a retake-photo notice when the match is not certain, or a note that only the assistant read the photo.
+ * `detection` is the block the server returns with a diagnosis; `hasPhoto` says whether a photo was sent.
+ */
+export function DetectionCard({ detection: d, hasPhoto = true }) {
+  if (!d) return null;
+  if (d.source !== 'classifier') {
+    return hasPhoto ? (
+      <p className="ai-detect-note">
+        <i className="fas fa-circle-info" /> {t('Only the AI assistant read this photo. The CropHealth model could not be reached.')}
+      </p>
+    ) : null;
+  }
+  const unsure = !d.confident || d.unrecognised;
+  return (
+    <div className="ai-detect">
+      <div className="ai-detect-head">
+        <span className="badge badge-info"><i className="fas fa-microscope" /> {t('Detected by the CropHealth model')}</span>
+        <span className="ai-detect-title">{t('Most likely matches')}</span>
+      </div>
+      <ol className="ai-detect-list">
+        {d.predictions.slice(0, 3).map((p) => {
+          const pct = Math.round(p.confidence * 100);
+          return (
+            <li key={p.label}>
+              <div className="ai-detect-row">
+                <span className="ai-detect-name">{p.healthy ? `${p.crop}: ${t('Healthy plant')}` : `${p.crop}: ${p.disease}`}</span>
+                <b>{pct}%</b>
+              </div>
+              <div className="ai-bar" role="img" aria-label={`${pct}%`}><span style={{ width: `${Math.max(2, pct)}%` }} /></div>
+              {p.part ? <div className="ai-detect-part">{t('Plant part')}: {p.part}</div> : null}
+            </li>
+          );
+        })}
+      </ol>
+      {unsure && (
+        <div className="ai-note" role="alert">
+          <b>{d.unrecognised ? t('This photo does not look like a plant the model knows.') : t('The match is not certain.')}</b>{' '}
+          {t('Retake the photo: one plant, the leaf in focus, in daylight. If the problem continues, ask an extension officer.')}
+        </div>
+      )}
+    </div>
+  );
+}

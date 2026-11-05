@@ -8,7 +8,7 @@ import { useToast } from '../../components/Toast';
 import { aiDiagnose, reportToText } from '../../lib/ai';
 import { shareDiagnosisPdf } from '../../lib/pdfReport';
 import { useProfile } from '../../lib/useResource';
-import { AiDisclaimer, AiStatusBar, DiagnosisReport, ErrorNote, Thinking } from './AiBits';
+import { AiDisclaimer, AiStatusBar, DetectionCard, DiagnosisReport, ErrorNote, Thinking } from './AiBits';
 import { t } from '../../i18n';
 
 /** Scouting diagnosis: photo + notes in, report out. `onUse(text)` saves it as the recommendation. */
@@ -23,13 +23,16 @@ export function DiagnoseSheet({ visible, onClose, input, onUse, autoCamera = fal
   const [pdfBusy, setPdfBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<any>(null);
+  const [detection, setDetection] = useState<any>(null);
   const [error, setError] = useState('');
 
   const run = async () => {
     setBusy(true);
     setError('');
     try {
-      setReport((await aiDiagnose({ ...input, photo_url: photo, photo_urls: photos, symptoms })).report);
+      const r = await aiDiagnose({ ...input, photo_url: photo, photo_urls: photos, symptoms });
+      setReport(r.report);
+      setDetection(r.detection || null);
     } catch (e: any) {
       setError(e?.message || t('The AI assistant could not answer.'));
     } finally {
@@ -79,6 +82,7 @@ export function DiagnoseSheet({ visible, onClose, input, onUse, autoCamera = fal
       />
       {busy ? <Thinking label="Looking at the photo…" /> : null}
       <ErrorNote message={error} />
+      {report && !busy ? <DetectionCard detection={detection} hasPhoto={photos.length > 0} /> : null}
       {report && !busy ? <DiagnosisReport report={report} photos={photos} /> : null}
       <AiDisclaimer />
     </Sheet>

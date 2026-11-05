@@ -4,7 +4,7 @@ import { useToast } from '../../components/Toast.jsx';
 import { PhotoSet } from '../../components/PhotoSet.jsx';
 import { aiDiagnose, reportToText } from '../../lib/ai.js';
 import { useProfile } from '../../components/profile.jsx';
-import { AiDisclaimer, AiStatusBar, DiagnosisReport, Thinking } from './AiBits.jsx';
+import { AiDisclaimer, AiStatusBar, DetectionCard, DiagnosisReport, Thinking } from './AiBits.jsx';
 import { t } from '../../i18n/index.js';
 
 /**
@@ -21,14 +21,16 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
   const [symptoms, setSymptoms] = useState('');
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState(null);
+  const [detection, setDetection] = useState(null);
   const [error, setError] = useState('');
 
   const run = async () => {
     setBusy(true);
     setError('');
     try {
-      const { report: r } = await aiDiagnose({ ...input, photo_url: photo, photo_urls: photos, symptoms });
+      const { report: r, detection: d } = await aiDiagnose({ ...input, photo_url: photo, photo_urls: photos, symptoms });
       setReport(r);
+      setDetection(d || null);
     } catch (err) {
       setError(err.message || t('The AI assistant could not answer.'));
     } finally {
@@ -99,6 +101,7 @@ export function DiagnoseModal({ open, onClose, input = {}, onUse, useLabel = 'Us
       </div>
       {busy && <Thinking label="Looking at the photo…" />}
       {error && <div className="auth-message error show" role="alert">{error}</div>}
+      {report && !busy && <DetectionCard detection={detection} hasPhoto={photos.length > 0} />}
       {report && !busy && <DiagnosisReport report={report} photo={photo} photos={photos} />}
       <AiDisclaimer />
     </Modal>

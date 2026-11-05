@@ -129,3 +129,53 @@ export function DiagnosisReport({ report: r, photos = [] }: { report: any; photo
     </View>
   );
 }
+
+/**
+ * What the crop-disease model found in the photo: the three most likely matches with confidence bars and the
+ * plant part, a retake-photo notice when the match is not certain, or a note that only the assistant read the photo.
+ * `detection` is the block the server returns with a diagnosis; `hasPhoto` says whether a photo was sent.
+ */
+export function DetectionCard({ detection: d, hasPhoto = true }: { detection?: any; hasPhoto?: boolean }) {
+  const { colors } = useTheme();
+  if (!d) return null;
+  if (d.source !== 'classifier') {
+    return hasPhoto ? (
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+        <Icon name="circle-info" size={13} color={colors.textLight} />
+        <AppText style={{ flex: 1, fontSize: 12.5, color: colors.textLight }}>{t('Only the AI assistant read this photo. The CropHealth model could not be reached.')}</AppText>
+      </View>
+    ) : null;
+  }
+  const unsure = !d.confident || d.unrecognised;
+  return (
+    <View style={{ marginTop: 16, padding: 14, gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <Badge label={t('Detected by the CropHealth model')} tone="info" />
+        <AppText weight="700" style={{ fontSize: 12, color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Most likely matches')}</AppText>
+      </View>
+      {d.predictions.slice(0, 3).map((p: any) => {
+        const pct = Math.round(p.confidence * 100);
+        return (
+          <View key={p.label} accessible accessibilityLabel={`${p.healthy ? t('Healthy plant') : p.disease}, ${p.crop}, ${pct}%`}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+              <AppText style={{ flex: 1, fontSize: 14 }}>{p.healthy ? `${p.crop}: ${t('Healthy plant')}` : `${p.crop}: ${p.disease}`}</AppText>
+              <AppText weight="700" style={{ fontSize: 14 }}>{pct}%</AppText>
+            </View>
+            <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' }}>
+              <View style={{ height: 8, borderRadius: 4, width: `${Math.max(2, pct)}%`, backgroundColor: colors.primary }} />
+            </View>
+            {p.part ? <AppText variant="caption" style={{ marginTop: 4 }}>{`${t('Plant part')}: ${p.part}`}</AppText> : null}
+          </View>
+        );
+      })}
+      {unsure ? (
+        <View accessibilityRole="alert" style={{ borderWidth: 1, borderColor: colors.orange, borderRadius: radius.md, padding: 12 }}>
+          <AppText style={{ fontSize: 13, lineHeight: 19 }}>
+            <AppText weight="700" style={{ fontSize: 13 }}>{d.unrecognised ? t('This photo does not look like a plant the model knows.') : t('The match is not certain.')}</AppText>
+            {` ${t('Retake the photo: one plant, the leaf in focus, in daylight. If the problem continues, ask an extension officer.')}`}
+          </AppText>
+        </View>
+      ) : null}
+    </View>
+  );
+}
