@@ -23,7 +23,8 @@ dotenv.config({ path: path.join(ROOT, 'server', '.env') });
 
 const key = process.env.AI_API_KEY || process.env.ANTHROPIC_API_KEY;
 if (!key) { console.error('No AI_API_KEY in server/.env'); process.exit(1); }
-const MODEL = process.env.AI_MODEL_BALANCED || 'claude-sonnet-5-5';
+// the Fast tier (Haiku), like every other AI feature; its hidden reasoning is switched off so the whole budget goes to the translations
+const MODEL = process.env.AI_MODEL_FAST || 'claude-haiku-5-5';
 const client = new Anthropic({ apiKey: key, maxRetries: 3, timeout: 180_000 });
 
 const LANGUAGES = {
@@ -62,7 +63,7 @@ Rules:
 - Translate meaning, not word for word. Use the usual agricultural terms of the language.
 - Reply only through the tool, with one entry per numbered string.`;
   const msg = await client.messages.create({
-    model: MODEL, max_tokens: 8000, system: system + `\nGive your answer only by calling the function ${TOOL.name}.`, tools: [TOOL],
+    model: MODEL, max_tokens: 8000, thinking: { type: 'disabled' }, system: system + `\nGive your answer only by calling the function ${TOOL.name}.`, tools: [TOOL],
     messages: [{ role: 'user', content: `Translate these ${batch.length} UI strings:\n\n${list}` }],
   });
   const block = msg.content.find((b) => b.type === 'tool_use');

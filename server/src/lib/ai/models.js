@@ -24,7 +24,7 @@ export const TASKS = {
 
 export const DEFAULT_MODEL_SETTINGS = {
   enabled: ['fast', 'balanced', 'advanced'],
-  tasks: { chat: 'balanced', vision: 'advanced', report: 'balanced', quick: 'fast', translate: 'balanced' },
+  tasks: { chat: 'fast', vision: 'fast', report: 'fast', quick: 'fast', translate: 'fast' },
 };
 
 const KEY = 'ai_models';

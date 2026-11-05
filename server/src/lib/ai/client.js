@@ -58,6 +58,13 @@ const addUsage = (a, b) => ({
 const ZERO = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0 };
 
 /**
+ * Extra request fields per tier. The Fast tier answers with hidden reasoning switched on by default, which
+ * spends the output budget before the answer starts and often leaves required fields out of a structured reply
+ * (measured: 4 of 8 fields on a season summary). Reasoning is switched off there; the other tiers are unchanged.
+ */
+const tuning = (tier) => (tier === 'fast' ? { thinking: { type: 'disabled' } } : {});
+
+/**
  * Asks the model to answer through one tool, so the reply is structured JSON that matches
  * `tool.input_schema` instead of text that has to be parsed.
  * `system` is an array of text blocks; a block with cache_control keeps the farm data cached
@@ -71,10 +78,18 @@ export async function askTool({ task = 'report', system, messages, tool, maxToke
     let usage = { ...ZERO };
     let convo = messages;
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system: sys, messages: convo, tools: [tool] });
+      const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system: sys, messages: convo, tools: [tool], ...tuning(tier) });
       usage = addUsage(usage, usageOf(msg));
       const block = msg.content.find((b) => b.type === 'tool_use' && b.name === tool.name);
-      if (block) return { data: block.input, usage, tier };
+      if (block) {
+        // a reply that was cut off, or that left out required fields, is asked for once more
+        const missing = (tool.input_schema?.required || []).filter((k) => block.input?.[k] === undefined || block.input[k] === '');
+        const cut = msg.stop_reason === 'max_tokens';
+        if (!cut && !missing.length) return { data: block.input, usage, tier };
+        if (attempt === 0) { console.warn(`[ai] ${task}: ${cut ? 'reply cut off' : `reply missing ${missing.join(', ')}`}; asking again`); continue; }
+        if (cut) throw new Error('reply was cut off');
+        return { data: block.input, usage, tier };
+      }
       if (msg.stop_reason === 'max_tokens') throw new Error('reply was cut off');
       // it answered in words: ask once more for the function call
       convo = [...messages, { role: 'assistant', content: msg.content.length ? msg.content : [{ type: 'text', text: '...' }] }, { role: 'user', content: `Please give that answer by calling the function ${tool.name}.` }];
@@ -89,10 +104,12 @@ export async function askTool({ task = 'report', system, messages, tool, maxToke
 export async function askText({ task = 'chat', system, messages, maxTokens = 1500 }) {
   const { tier, id } = await resolveModel(task);
   try {
-    const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system, messages });
+    const msg = await getClient().messages.create({ model: id, max_tokens: maxTokens, system, messages, ...tuning(tier) });
     const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
     if (!text) throw new Error('empty reply');
-    return { text: clean(text), usage: usageOf(msg), tier };
+    const truncated = msg.stop_reason === 'max_tokens';
+    if (truncated) console.warn(`[ai] ${task} reply hit the ${maxTokens}-token limit and was cut off`);
+    return { text: clean(text), usage: usageOf(msg), tier, truncated };
   } catch (err) {
     throw Object.assign(friendly(err), { tier });
   }
@@ -110,14 +127,16 @@ export async function askAgent({ task = 'chat', system, messages, tools, handler
     for (let round = 0; round < maxRounds; round += 1) {
       const last = round === maxRounds - 1;
       const msg = await getClient().messages.create({
-        model: id, max_tokens: maxTokens, system, messages: convo, tools,
+        model: id, max_tokens: maxTokens, system, messages: convo, tools, ...tuning(tier),
       });
       usage = addUsage(usage, usageOf(msg));
       const calls = msg.content.filter((b) => b.type === 'tool_use');
       if (!calls.length || msg.stop_reason !== 'tool_use') {
         const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
         if (!text) throw new Error('empty reply');
-        return { text: clean(text), usage, tier };
+        const truncated = msg.stop_reason === 'max_tokens';
+        if (truncated) console.warn(`[ai] ${task} reply hit the ${maxTokens}-token limit and was cut off`);
+        return { text: clean(text), usage, tier, truncated };
       }
       convo.push({ role: 'assistant', content: msg.content });
       const results = [];

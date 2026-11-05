@@ -145,7 +145,7 @@ export const advice = asyncHandler(async (req, res) => {
   if (!ADVICE_TOPICS[topic]) throw createHttpError(400, `Topic must be one of: ${Object.keys(ADVICE_TOPICS).join(', ')}`);
   const question = clip(req.body?.question, 600);
   const { data } = await runTool(req, {
-    feature: `advice_${topic}`, mock: 'advice', tool: ADVICE_TOOL, maxTokens: 2500,
+    feature: `advice_${topic}`, mock: 'advice', tool: ADVICE_TOOL, maxTokens: 3500,
     userText: `${ADVICE_TOPICS[topic]}${req.body?.crop_cycle_id ? `\nFocus on the crop cycle with id ${String(req.body.crop_cycle_id).slice(0, 40)} if it appears in the FARM DATA.` : ''}${question ? `\nThe farmer also asks: ${question}` : ''}`,
     extraSystem: 'Task: practical farm planning advice. Give amounts for this farm\'s area, not per hectare only.',
   });
@@ -156,7 +156,7 @@ export const advice = asyncHandler(async (req, res) => {
 export const seasonSummary = asyncHandler(async (req, res) => {
   const scope = clip(req.body?.scope, 200);
   const { data } = await runTool(req, {
-    feature: 'summary', tool: SUMMARY_TOOL, maxTokens: 3000,
+    feature: 'summary', tool: SUMMARY_TOOL, maxTokens: 3500,
     userText: `Write a season summary for a bank or lender from the records.${scope ? ` Cover: ${scope}.` : ' Cover the most recent season and any crop cycles in progress.'} Use real numbers only; where a figure is missing say so.`,
     extraSystem: 'Task: lender-ready summary of production, income, costs and risks. Be factual and neutral. Never promise returns.',
   });
@@ -219,7 +219,7 @@ export const calculatorReport = asyncHandler(async (req, res) => {
   } catch { /* the report still works without weather */ }
   const field = b.field_name ? `\nThey chose the field "${clip(b.field_name, 80)}".` : '';
   const { data } = await runTool(req, {
-    feature: 'calculator', tool: CALC_TOOL, maxTokens: 3000,
+    feature: 'calculator', tool: CALC_TOOL, maxTokens: 4500,
     userText: `The farmer used the "${type}" calculator.\nINPUTS: ${inputs}\nRESULTS:\n${results}${field}${weather}\nExplain the results, work out the other quantities they will need, and give a plan using their own records (fields, crops, stock in inventory, past applications, costs) and the weather. Use the record tools when you need details.`,
     extraSystem: 'Task: farm calculation report. Check the arithmetic yourself; if the inputs look unrealistic for the crop or unit, say so plainly. Name the farmer\'s fields, crops and stock items where they matter.',
   });
