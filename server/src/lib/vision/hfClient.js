@@ -28,7 +28,7 @@ const BREAKER_MS = 60_000;
 const timeoutMs = () => Number(process.env.HF_TIMEOUT_MS) || 25_000;
 const enabled = () => process.env.VISION_ENABLED !== '0' && !!process.env.HF_TOKEN && !!process.env.HF_SPACE_ID;
 /** Tests only: with AI_MOCK=1, VISION_TEST_STUB=ok answers from a canned result and =down behaves like a Space that is down. */
-const stubMode = () => (process.env.AI_MOCK === '1' ? process.env.VISION_TEST_STUB || '' : '');
+const stubMode = () => (process.env.AI_MOCK === '1' && process.env.NODE_ENV !== 'production' ? process.env.VISION_TEST_STUB || '' : '');
 /** Whether the classifier is switched on (a failure then counts as a fallback; when off, it does not). */
 export const visionEnabled = () => (stubMode() ? process.env.VISION_ENABLED !== '0' : enabled());
 
