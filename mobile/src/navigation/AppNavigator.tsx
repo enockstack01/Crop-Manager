@@ -18,6 +18,7 @@ import { CalendarScreen } from '../screens/CalendarScreen';
 import { WeatherScreen } from '../screens/WeatherScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
+import { ScanScreen } from '../screens/ScanScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 import { useProfile } from '../lib/useResource';
 import { NAV_SECTIONS, ADMIN_SECTION } from './navConfig';
@@ -81,6 +82,7 @@ function screens(Nav: typeof Tabs | typeof Drawer, isAdmin: boolean) {
       ))}
 
       <S name="assistant" component={AssistantScreen} options={{ title: 'AI Assistant' }} />
+      <S name="scan" component={ScanScreen} options={{ title: 'Scan a leaf' }} />
       <S name="calculators" component={CalculatorsStack} options={{ title: 'Calculators', headerShown: false }} />
       <S name="reports" component={ReportsScreen} options={{ title: 'Reports' }} />
       <S name="calendar" component={CalendarScreen} options={{ title: 'Calendar' }} />

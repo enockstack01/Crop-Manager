@@ -91,7 +91,9 @@ function RootGate() {
   // the splash covers the first seconds; if the server is still waking up after it
   // fades, say so instead of showing a blank screen
   if (isLoading) return <Loading label="Connecting to CropManager…" />;
-  if (isError || !profile) {
+  // the profile saved on the phone from an earlier visit opens the app without signal (the offline banner says so);
+  // the retry screen is only for a phone that has nothing saved yet
+  if (!profile) {
     return <ConnectionErrorScreen error={error} retrying={isFetching} onRetry={() => refetch()} />;
   }
   const ctx = profile.org_context;

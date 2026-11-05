@@ -54,6 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Tools',
     items: [
       { route: 'assistant', label: 'AI Assistant', icon: 'wand-magic-sparkles' },
+      { route: 'scan', label: 'Scan a leaf', icon: 'leaf' },
       { route: 'calculators', label: 'Agricultural Calculators', icon: 'calculator' },
     ],
   },

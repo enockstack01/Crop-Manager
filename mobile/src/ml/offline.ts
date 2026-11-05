@@ -160,11 +160,14 @@ export const softmax = (a: ArrayLike<number>, T = 1): number[] => {
 };
 
 /** Turns the model's raw scores into the top three, with the same confident / unfamiliar rules as the PlantDx app. */
-export function interpret(logits: ArrayLike<number>, lang = i18n.language): OfflineResult {
+export function interpret(logits: ArrayLike<number>, lang = i18n.language, crop = ''): OfflineResult {
   const raw = Array.from(logits);
-  const probs = softmax(raw, CONFIG.image_temperature);
-  const top = probs
-    .map((p, i) => ({ p, i }))
+  // with a crop chosen, only that crop's classes compete (as the server does with the farm's crop)
+  const allowed = crop ? raw.map((_, i) => i).filter((i) => BY_KEY.get(slug(CLASSES[i]))?.crop === crop) : raw.map((_, i) => i);
+  const pool = allowed.length ? allowed : raw.map((_, i) => i);
+  const sub = softmax(pool.map((i) => raw[i]), CONFIG.image_temperature);
+  const top = sub
+    .map((p, k) => ({ p, i: pool[k] }))
     .sort((a, b) => b.p - a.p)
     .slice(0, 3);
   const unfamiliar = CONFIG.image_ood_floor != null && Math.max(...raw) < CONFIG.image_ood_floor;
@@ -200,13 +203,13 @@ export function interpret(logits: ArrayLike<number>, lang = i18n.language): Offl
 }
 
 /** Runs the on-phone model on a local photo. Throws if the phone cannot load the model (for example, too little memory). */
-export async function diagnoseOffline(uri: string): Promise<OfflineResult> {
+export async function diagnoseOffline(uri: string, { crop = '' }: { crop?: string } = {}): Promise<OfflineResult> {
   const tensor = await prepare(uri);
   const s = await getSession();
   try {
     const out = await s.run({ [s.inputNames[0]]: new Tensor('float32', tensor, [1, 3, SIZE, SIZE]) });
     const logits = out[s.outputNames[0]].data as Float32Array;
-    return interpret(logits);
+    return interpret(logits, i18n.language, crop);
   } finally {
     scheduleRelease();
   }

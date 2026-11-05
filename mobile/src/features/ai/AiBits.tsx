@@ -185,7 +185,7 @@ export function DetectionCard({ detection: d, hasPhoto = true }: { detection?: a
  * the three matches, and general advice for that type of problem. There is no AI report offline.
  * `waiting` is true while the phone is still trying the server, whose full report would replace this.
  */
-export function OfflineResult({ result, waiting = false }: { result: any; waiting?: boolean }) {
+export function OfflineResult({ result, waiting = false, scan = false }: { result: any; waiting?: boolean; scan?: boolean }) {
   const { colors } = useTheme();
   const a = result.advice;
   return (
@@ -193,8 +193,8 @@ export function OfflineResult({ result, waiting = false }: { result: any; waitin
       <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: radius.lg, backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: colors.orange }}>
         <Icon name="cloud-off-outline" size={16} color={colors.orange} />
         <View style={{ flex: 1, gap: 2 }}>
-          <AppText weight="700" style={{ fontSize: 14 }}>{t('Offline result, lower accuracy')}</AppText>
-          <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('This result was worked out on your phone. It is less accurate than the full check and has no AI report.')}</AppText>
+          <AppText weight="700" style={{ fontSize: 14 }}>{scan ? t('Scan on this phone, lower accuracy') : t('Offline result, lower accuracy')}</AppText>
+          <AppText style={{ fontSize: 13, lineHeight: 19 }}>{scan ? t('Worked out on your phone with no internet. It is less accurate than the full check and lists findings only, with no written report.') : t('This result was worked out on your phone. It is less accurate than the full check and has no AI report.')}</AppText>
           {waiting ? <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('Still waiting for the AI assistant. If it answers, its report replaces this result.')}</AppText> : null}
         </View>
       </View>
