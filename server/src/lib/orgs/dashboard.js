@@ -32,27 +32,32 @@ async function lastActivity(ids) {
 /** The organization's active farmers and their crop data, narrowed by district. */
 async function load(org, { district = '' } = {}) {
   const links = await M.FarmerOrganization.find({ organization_id: org._id, status: 'active' }).lean();
-  let ids = links.map((l) => l.farmer_id);
-  const [profiles, farmsAll] = await Promise.all([
-    M.Profile.find({ user_id: { $in: ids } }, 'user_id full_name email location').lean(),
-    M.Farm.find({ user_id: { $in: ids } }, 'user_id name district province total_area area_unit').lean(),
+  const allIds = links.map((l) => l.farmer_id);
+  // everything is read in one parallel step (a district only narrows the result afterwards), so a request costs
+  // two database round trips instead of four
+  const [profiles, farmsAll, fieldsAll, cyclesAll, crops, last] = await Promise.all([
+    M.Profile.find({ user_id: { $in: allIds } }, 'user_id full_name email location').lean(),
+    M.Farm.find({ user_id: { $in: allIds } }, 'user_id name district province total_area area_unit').lean(),
+    M.Field.find({ user_id: { $in: allIds } }, 'user_id farm_id name area area_unit latitude longitude').lean(),
+    M.CropCycle.find({ user_id: { $in: allIds } }, 'user_id farm_id field_id crop_id status area_planted area_unit expected_production expected_production_unit expected_harvest_date').lean(),
+    M.Crop.find({ user_id: { $in: allIds } }, 'name').lean(),
+    lastActivity(allIds),
   ]);
   const farms = district ? farmsAll.filter((f) => (f.district || '').toLowerCase() === district.toLowerCase()) : farmsAll;
+  let ids = allIds;
   if (district) {
     const keep = new Set(farms.map((f) => f.user_id));
-    ids = ids.filter((id) => keep.has(id));
+    ids = allIds.filter((id) => keep.has(id));
   }
   const farmIds = new Set(farms.map((f) => String(f._id)));
-  const [fields, cycles, crops] = await Promise.all([
-    M.Field.find({ user_id: { $in: ids } }, 'user_id farm_id name area area_unit latitude longitude').lean(),
-    M.CropCycle.find({ user_id: { $in: ids } }, 'user_id farm_id field_id crop_id status area_planted area_unit expected_production expected_production_unit expected_harvest_date').lean(),
-    M.Crop.find({ user_id: { $in: ids } }, 'name').lean(),
-  ]);
+  const fields = fieldsAll;
+  const cycles = cyclesAll;
   const cropName = Object.fromEntries(crops.map((c) => [String(c._id), c.name]));
   const profileOf = Object.fromEntries(profiles.map((p) => [p.user_id, p]));
   return {
     links,
     ids,
+    last,
     profileOf,
     farms,
     fields: fields.filter((f) => !district || farmIds.has(String(f.farm_id))),
@@ -80,8 +85,8 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
   const ids = d.ids;
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-  const [last, harvests, acts, scouting, protection] = await Promise.all([
-    lastActivity(ids),
+  const last = d.last;
+  const [harvests, acts, scouting, protection] = await Promise.all([
     M.HarvestRecord.find({ user_id: { $in: ids } }, 'user_id crop_id quantity unit harvest_date').lean(),
     M.FieldActivity.find({ user_id: { $in: ids } }, 'user_id activity_type activity_date description crop_cycle_id').sort({ activity_date: -1 }).limit(4000).lean(),
     M.CropScoutingRecord.find({ user_id: { $in: ids } }, 'user_id crop_id scouting_date pest_observation disease_observation plant_health').sort({ scouting_date: -1 }).limit(1500).lean(),
@@ -199,9 +204,22 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
 }
 
 /* ---------------------------------------------------------------- farmer list */
+const loaded = new Map();
+const LOADED_TTL = 60_000;
+/** What the farmer list needs, kept for a minute per organization and district so paging, searching and filtering reuse it. */
+async function loadCached(org, district) {
+  const key = `${org._id}|${district || ''}|${org.farmer_count}`;
+  const hit = loaded.get(key);
+  if (hit && Date.now() - hit.at < LOADED_TTL) return hit.data;
+  const data = await load(org, { district });
+  if (loaded.size > 200) loaded.delete(loaded.keys().next().value); // never grows without bound
+  loaded.set(key, { at: Date.now(), data });
+  return data;
+}
+
 export async function listFarmers(org, f, settings) {
-  const d = await load(org, f);
-  const last = await lastActivity(d.ids);
+  const d = await loadCached(org, f.district);
+  const last = d.last;
   const activeSince = Date.now() - settings.inactive_days * DAY;
   const farmsBy = {};
   d.farms.forEach((x) => { (farmsBy[x.user_id] = farmsBy[x.user_id] || []).push(x); });
