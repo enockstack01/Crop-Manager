@@ -3,6 +3,7 @@ import { initLlama, LlamaContext } from 'llama.rn';
 import { familyAdviceIn } from './advice';
 import { labelNames } from './crops';
 import { cleanText, parseNote, type Note, type NoteLang } from './note';
+import { Sha256 } from './checksum';
 
 export { parseNote };
 export type { Note, NoteLang };
@@ -26,6 +27,7 @@ export const MODEL = {
 };
 // model files of earlier versions of the app: unusable now, and each one takes room the new download needs
 const OLD_FILES = ['gemma-3-1b-it-Q4_K_M.gguf', 'gemma-3-1b-it-Q4_K_M.gguf.part'];
+const SLICE = 4 * 1024 * 1024; // how much of an existing partial file is read at a time when its checksum has to be rebuilt
 // small pieces and a time limit for each: on a slow or dropping connection a request can hang for ever without failing, which would leave the
 // download stuck. 4 MB in 120 s still works on a connection of about 35 KB/s.
 const CHUNK = 4 * 1024 * 1024;
@@ -40,6 +42,8 @@ export const noteLangFor = (appLang: string): NoteLang => (appLang === 'fr' ? 'f
 const dir = () => new Directory(Paths.document, 'llm');
 const finalFile = () => new File(dir(), MODEL.file);
 const partFile = () => new File(dir(), `${MODEL.file}.part`);
+// the running checksum of the partial file, saved after every piece so a resumed download does not read gigabytes again
+const hashFile = () => new File(dir(), `${MODEL.file}.sha.json`);
 
 export type ModelState = { state: 'ready' | 'partial' | 'none'; have: number; total: number };
 
@@ -65,6 +69,8 @@ export async function downloadModel({ onProgress, signal }: { onProgress?: (have
   if (!part.exists) part.create();
   let have = part.size;
   if (have > MODEL.bytes) { part.delete(); part.create(); have = 0; }
+  let hash = await resumeHash(part, have);
+  if (!hash) { part.delete(); part.create(); have = 0; hash = new Sha256(); } // cannot prove what is there: start again rather than trust it
   onProgress?.(have, MODEL.bytes);
 
   while (have < MODEL.bytes) {
@@ -103,14 +109,62 @@ export async function downloadModel({ onProgress, signal }: { onProgress?: (have
     } finally {
       h.close();
     }
+    hash.update(bytes!);
     have += want;
+    saveHash(hash);
     onProgress?.(have, MODEL.bytes);
   }
 
   if (part.size !== MODEL.bytes) throw new Error('The download is not complete. Try again.');
+  // the published checksum must match, or the file is damaged (a bad connection, a changed file) and is not kept
+  if (hash.digestHex() !== MODEL.sha256) {
+    part.delete();
+    removeHashFile();
+    throw new Error('The downloaded file is damaged. Download it again.');
+  }
+  removeHashFile();
   const f = finalFile();
   if (f.exists) f.delete();
   part.rename(MODEL.file);
+}
+
+/** The checksum of what is already in the partial file: restored from the saved state, or rebuilt by reading the file. Null if neither works. */
+async function resumeHash(part: File, have: number): Promise<Sha256 | null> {
+  if (have === 0) return new Sha256();
+  try {
+    const saved = hashFile();
+    if (saved.exists) {
+      const s = JSON.parse(await saved.text());
+      if (s && s.bytes === have && s.state) return Sha256.fromState(s.state);
+    }
+  } catch { /* fall through to rebuilding it */ }
+  try {
+    const h = new Sha256();
+    const fh = part.open();
+    try {
+      for (let at = 0; at < have; at += SLICE) {
+        fh.offset = at;
+        h.update(fh.readBytes(Math.min(SLICE, have - at)));
+      }
+    } finally {
+      fh.close();
+    }
+    return h.bytes === have ? h : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveHash(h: Sha256) {
+  try {
+    const f = hashFile();
+    if (!f.exists) f.create();
+    f.write(JSON.stringify({ bytes: h.bytes, state: h.toState() }));
+  } catch { /* not saved: the next start rebuilds it from the file */ }
+}
+
+function removeHashFile() {
+  try { const f = hashFile(); if (f.exists) f.delete(); } catch { /* nothing to remove */ }
 }
 
 /** Removes the model files of earlier versions of the app (the previous, smaller model), to free their room. */
@@ -122,7 +176,7 @@ export function removeOldModels() {
 
 export function deleteModel() {
   releaseModel();
-  for (const f of [finalFile(), partFile()]) if (f.exists) f.delete();
+  for (const f of [finalFile(), partFile(), hashFile()]) if (f.exists) f.delete();
 }
 
 /* ------------------------------------------------------------------ running it */
