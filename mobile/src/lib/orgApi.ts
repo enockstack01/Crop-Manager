@@ -53,6 +53,10 @@ export const useOrgFarmers = (orgId: string, params: Record<string, any>) =>
 export const useOrgLinks = (orgId: string) => useQuery({ queryKey: ['org', orgId, 'links'], queryFn: () => get(`/organizations/${orgId}/referral-links`), enabled: !!orgId, refetchInterval: 30_000 });
 export const useOrgMembers = (orgId: string, enabled = true) => useQuery({ queryKey: ['org', orgId, 'members'], queryFn: () => get(`/organizations/${orgId}/members`), enabled: !!orgId && enabled });
 
+export const useOrgInvites = (orgId: string, status?: string) => useQuery({ queryKey: ['org', orgId, 'invites', status || 'all'], queryFn: () => get(`/organizations/${orgId}/farmer-invites`, status ? { status } : undefined), enabled: !!orgId });
+export const useFarmerRecords = (orgId: string, farmerId: string) => useQuery({ queryKey: ['org', orgId, 'farmer', farmerId], queryFn: () => get(`/organizations/${orgId}/farmers/${farmerId}/records`), enabled: !!orgId && !!farmerId, retry: false });
+export const useOrgActivity = (orgId: string, page: number, enabled = true) => useQuery({ queryKey: ['org', orgId, 'activity', page], queryFn: () => get(`/organizations/${orgId}/activity`, { page }), enabled: !!orgId && enabled, placeholderData: (p: any) => p });
+
 export function useOrgMutations(orgId: string) {
   const qc = useQueryClient();
   const onSuccess = () => qc.invalidateQueries({ queryKey: ['org', orgId] });
@@ -61,6 +65,10 @@ export function useOrgMutations(orgId: string) {
     createLink: useMutation({ mutationFn: (body: any) => api.post(`/organizations/${orgId}/referral-links`, body).then((r) => r.data), onSuccess }),
     revokeLink: useMutation({ mutationFn: (id: string) => api.delete(`/organizations/${orgId}/referral-links/${id}`).then((r) => r.data), onSuccess }),
     invite: useMutation({ mutationFn: (body: any) => api.post(`/organizations/${orgId}/members`, body).then((r) => r.data), onSuccess }),
+    inviteFarmers: useMutation({ mutationFn: (body: any) => api.post(`/organizations/${orgId}/farmer-invites`, body).then((r) => r.data), onSuccess }),
+    resendInvite: useMutation({ mutationFn: (id: string) => api.post(`/organizations/${orgId}/farmer-invites/${id}/resend`).then((r) => r.data), onSuccess }),
+    revokeInvite: useMutation({ mutationFn: (id: string) => api.delete(`/organizations/${orgId}/farmer-invites/${id}`).then((r) => r.data), onSuccess }),
+    setMemberRole: useMutation({ mutationFn: ({ id, role }: { id: string; role: string }) => api.patch(`/organizations/${orgId}/members/${id}`, { role }).then((r) => r.data), onSuccess }),
     removeMember: useMutation({ mutationFn: (id: string) => api.delete(`/organizations/${orgId}/members/${id}`).then((r) => r.data), onSuccess }),
     removeFarmer: useMutation({ mutationFn: (farmerId: string) => api.delete(`/organizations/${orgId}/farmers/${farmerId}`).then((r) => r.data), onSuccess }),
   };

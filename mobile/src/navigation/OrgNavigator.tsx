@@ -10,6 +10,7 @@ import { screenHeader } from './headers';
 import { ORG_ADMIN_SECTIONS, ORG_STAFF_SECTIONS } from './navConfig';
 import { OrgDashboardScreen } from '../screens/org/OrgDashboardScreen';
 import { OrgFarmersScreen, OrgLinksScreen, OrgProfileScreen, OrgTeamScreen } from '../screens/org/OrgListScreens';
+import { OrgActivityScreen, OrgFarmerScreen, OrgInvitesScreen } from '../screens/org/OrgWorkspaceScreens';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 
@@ -23,9 +24,12 @@ function screens(Nav: typeof Tabs | typeof Drawer, role: string) {
     <>
       <S name="org-dashboard" component={OrgDashboardScreen} options={{ title: 'Overview' }} />
       <S name="org-farmers" component={OrgFarmersScreen} options={{ title: 'Farmers' }} />
+      <S name="org-invitations" component={OrgInvitesScreen} options={{ title: 'Invitations' }} />
+      <S name="org-farmer" component={OrgFarmerScreen} options={{ title: 'Farmer' }} />
       <S name="org-links" component={OrgLinksScreen} options={{ title: 'Referral links' }} />
       {role === 'org_admin' ? <S name="org-team" component={OrgTeamScreen} options={{ title: 'Team' }} /> : null}
       <S name="org-profile" component={OrgProfileScreen} options={{ title: 'Organization' }} />
+      {role === 'org_admin' ? <S name="org-activity" component={OrgActivityScreen} options={{ title: 'Activity' }} /> : null}
       <S name="settings" component={SettingsScreen} options={{ title: 'Settings' }} />
     </>
   );

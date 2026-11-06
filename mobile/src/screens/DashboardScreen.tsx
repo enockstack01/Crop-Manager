@@ -19,6 +19,7 @@ import { Icon } from '../components/Icon';
 import { Bars, HBars, LineChart } from '../components/charts';
 import { DateField, SelectField } from '../components/fields';
 import { QuickActions } from '../features/dashboard/QuickActions';
+import { RoleSummary } from '../features/dashboard/RoleSummary';
 import { FarmProfileCard } from '../features/dashboard/FarmProfileCard';
 import { InsightTiles } from '../features/dashboard/InsightTiles';
 import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed';
@@ -69,6 +70,7 @@ export function DashboardScreen({ navigation }: any) {
         <AppText variant="subtitle" style={{ fontSize: 15, marginTop: 2 }}>{t("Here's what's happening across your farm today.")}</AppText>
       </View>
       <LocationAskSheet />
+      <RoleSummary navigation={navigation} />
       <View style={{ marginBottom: 16, marginHorizontal: -16 }}>
         <View style={{ paddingLeft: 16 }}>
           <QuickActions onOpen={(r) => navigation.navigate(r)} />

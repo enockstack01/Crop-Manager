@@ -15,7 +15,7 @@ import { OrgGate, UsageMeter } from './OrgGate';
 import { t } from '../../i18n';
 
 /* ----------------------------------------------------------------- farmers */
-function FarmersBody({ org, role, route }: { org: any; role: string; route: any }) {
+function FarmersBody({ org, role, route, navigation }: { org: any; role: string; route: any; navigation?: any }) {
   const { colors } = useTheme();
   const toast = useToast();
   const confirm = useConfirm();
@@ -34,7 +34,7 @@ function FarmersBody({ org, role, route }: { org: any; role: string; route: any 
 
   return (
     <>
-      <PageHeader title="Farmers" subtitle="Farmers linked to your organization." />
+      <PageHeader title="Farmers" subtitle="Farmers linked to your organization." action={<Button title="Invite farmers" icon="paper-plane" size="sm" onPress={() => navigation?.navigate('org-invitations')} />} />
       <TextField label="Search" value={q} onChangeValue={(v) => { setQ(v); setPage(1); }} placeholder={t('Search name, location or crop...')} icon="magnifying-glass" />
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
         <Button title={inactive ? 'Showing: no recent activity' : 'No recent activity'} size="sm" kind={inactive ? 'primary' : 'secondary'} onPress={() => { setInactive(inactive ? '' : '1'); setPage(1); }} />
@@ -57,6 +57,7 @@ function FarmersBody({ org, role, route }: { org: any; role: string; route: any 
               <AppText style={{ fontSize: 12, color: colors.textLight }}>
                 {t('Joined')} {formatDate(f.joined_at)} · {t('Last activity')}: {f.last_activity ? formatDate(f.last_activity) : t('none')}
               </AppText>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}><Button title="Open records" size="sm" kind="secondary" icon="folder-open" onPress={() => navigation?.navigate('org-farmer', { farmerId: f.farmer_id })} /></View>
               {role === 'org_admin' ? <View style={{ alignSelf: 'flex-start', marginTop: 4 }}><Button title="Remove" size="sm" kind="secondary" icon="user-minus" onPress={() => remove(f)} /></View> : null}
             </View>
           ))}
@@ -71,8 +72,8 @@ function FarmersBody({ org, role, route }: { org: any; role: string; route: any 
   );
 }
 
-export function OrgFarmersScreen({ route }: any) {
-  return <Screen><OrgGate>{({ org, role }) => <FarmersBody org={org} role={role} route={route} />}</OrgGate></Screen>;
+export function OrgFarmersScreen({ route, navigation }: any) {
+  return <Screen><OrgGate>{({ org, role }) => <FarmersBody org={org} role={role} route={route} navigation={navigation} />}</OrgGate></Screen>;
 }
 
 /* -------------------------------------------------------------------- links */
@@ -172,12 +173,16 @@ function TeamBody({ org }: { org: any }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { data: members, isLoading } = useOrgMembers(org.id);
-  const { invite, removeMember } = useOrgMutations(org.id);
+  const { invite, removeMember, setMemberRole } = useOrgMutations(org.id);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('org_staff');
 
   const send = async () => {
     try { await invite.mutateAsync({ email, role }); toast(t('Invitation saved. They join when they sign in with {{email}}.', { email })); setEmail(''); } catch (err) { toast(reasonText(err), 'error'); }
+  };
+  const changeRole = async (m: any) => {
+    const next = m.role === 'org_admin' ? 'org_staff' : 'org_admin';
+    try { await setMemberRole.mutateAsync({ id: m.id, role: next }); toast(t('Role updated')); } catch (err) { toast(reasonText(err), 'error'); }
   };
   const remove = async (m: any) => {
     if (!(await confirm(t('Remove {{name}} from the team?', { name: m.name || m.email }), { confirmLabel: 'Remove', danger: true }))) return;
@@ -199,7 +204,10 @@ function TeamBody({ org }: { org: any }) {
             <View key={m.id} style={{ padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.card, gap: 4 }}>
               <AppText weight="700" style={{ fontSize: 14 }}>{m.name || m.email}</AppText>
               <AppText style={{ fontSize: 12, color: colors.textLight }}>{m.name ? `${m.email} · ` : ''}{t(ROLES.find((r) => r.value === m.role)?.label || m.role)} · {t(m.status === 'invited' ? 'Invited' : 'Active')}</AppText>
-              <View style={{ alignSelf: 'flex-start', marginTop: 4 }}><Button title="Remove" size="sm" kind="secondary" icon="user-minus" onPress={() => remove(m)} /></View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                {m.status === 'active' ? <Button title={m.role === 'org_admin' ? 'Make field officer' : 'Make administrator'} size="sm" kind="secondary" icon="user-gear" loading={setMemberRole.isPending} onPress={() => changeRole(m)} /> : null}
+                <Button title="Remove" size="sm" kind="secondary" icon="user-minus" onPress={() => remove(m)} />
+              </View>
             </View>
           ))}
         </View>

@@ -22,7 +22,7 @@ import { ScanScreen } from '../screens/ScanScreen';
 import { OfflineAssistantScreen } from '../screens/OfflineAssistantScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 import { useProfile } from '../lib/useResource';
-import { NAV_SECTIONS, ADMIN_SECTION } from './navConfig';
+import { ADMIN_SECTION, sectionsFor } from './navConfig';
 import { AdminOverviewScreen } from '../screens/admin/AdminOverviewScreen';
 import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminUserDetailScreen } from '../screens/admin/AdminUserDetailScreen';
@@ -112,7 +112,7 @@ export function AppNavigator() {
   const { isTablet } = useLayout();
   const { profile } = useProfile();
   const isAdmin = !!profile?.is_admin;
-  const sections = isAdmin ? [...NAV_SECTIONS, ADMIN_SECTION] : NAV_SECTIONS;
+  const sections = isAdmin ? [...sectionsFor(), ADMIN_SECTION] : sectionsFor(profile?.role);
 
   if (!isTablet) {
     return (

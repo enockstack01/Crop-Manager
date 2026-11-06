@@ -87,16 +87,33 @@ export const ADMIN_SECTION: NavSection = {
   ],
 };
 
+/**
+ * The menu keeps every entry for every farm account; the account type decides which groups come first (an agronomist works with crops and
+ * diagnosis first, a farm manager with the operation). Mirrors sectionsFor in client/src/components/Sidebar.jsx.
+ */
+const FIRST: Record<string, string[]> = {
+  Agronomist: ['Dashboard', 'Tools', 'Production', 'Farm Management', 'Analytics'],
+  'Farm Manager': ['Dashboard', 'Production', 'Resources', 'Finance', 'Analytics'],
+};
+export function sectionsFor(role?: string): NavSection[] {
+  const order = FIRST[role || ''];
+  if (!order) return NAV_SECTIONS;
+  const key = (s: NavSection) => s.label || 'Dashboard';
+  const rank = (s: NavSection) => { const i = order.indexOf(key(s)); return i === -1 ? order.length : i; };
+  return [...NAV_SECTIONS].sort((a, b) => rank(a) - rank(b)); // stable: groups not named keep their order
+}
+
 /** Organization workspace (mirrors the web sidebar for organization users). */
 const ORG_BASE: NavItem[] = [
   { route: 'org-dashboard', label: 'Overview', icon: 'table-cells-large' },
   { route: 'org-farmers', label: 'Farmers', icon: 'users' },
+  { route: 'org-invitations', label: 'Invitations', icon: 'envelope' },
   { route: 'org-links', label: 'Referral links', icon: 'link' },
 ];
 const ORG_SYSTEM: NavSection = { label: 'System', items: [{ route: 'settings', label: 'Settings', icon: 'gear' }] };
 export const ORG_ADMIN_SECTIONS: NavSection[] = [
   { items: ORG_BASE },
-  { label: 'Organization', items: [{ route: 'org-team', label: 'Team', icon: 'user-group' }, { route: 'org-profile', label: 'Organization', icon: 'building' }] },
+  { label: 'Organization', items: [{ route: 'org-team', label: 'Team', icon: 'user-group' }, { route: 'org-profile', label: 'Organization', icon: 'building' }, { route: 'org-activity', label: 'Activity', icon: 'clock-rotate-left' }] },
   ORG_SYSTEM,
 ];
 export const ORG_STAFF_SECTIONS: NavSection[] = [
