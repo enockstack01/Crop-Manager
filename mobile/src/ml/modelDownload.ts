@@ -2,9 +2,10 @@ import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { Paths } from 'expo-file-system';
+import * as Device from 'expo-device';
 import { autoDownloadVerdict, isOnline } from '../lib/modePolicy';
 import { toNet } from '../lib/connectivity';
-import { MODEL, downloadModel, modelStatus, deleteModel } from './assistant';
+import { MODEL, downloadModel, modelStatus, deleteModel, removeOldModels } from './assistant';
 
 /*
  * One shared place that downloads the offline assistant, so the first-launch download, the "Offline assistant" screen and the offline
@@ -37,6 +38,7 @@ export const subscribeDownload = (f: () => void) => { subs.add(f); return () => 
 
 /** Reads what is on the phone and the saved choice for the automatic download. */
 export async function initDownloadState() {
+  removeOldModels(); // the previous, smaller model can no longer be used and its room is needed
   let auto = true;
   try { auto = (await AsyncStorage.getItem(AUTO_KEY)) !== 'off'; } catch { /* default on */ }
   set({ ...fromDisk(), auto, reason: '' });
@@ -87,6 +89,7 @@ async function check(allowMetered: boolean) {
   return autoDownloadVerdict({
     ready: s.state === 'ready', enabled: state.auto, net, allowMetered,
     freeBytes: Number.isFinite(ds) ? ds : null, remainingBytes: MODEL.bytes - s.have,
+    memoryBytes: Device.totalMemory ?? null,
   });
 }
 

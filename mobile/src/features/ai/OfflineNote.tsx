@@ -71,7 +71,7 @@ export function OfflineNote({ result, notes = '', auto = false }: { result: any;
     return (
       <View style={box}>
         <AppText weight="700" style={{ fontSize: 14 }}>{t('Get a written note without internet')}</AppText>
-        <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('Download the offline assistant once (about 770 MB, Wi-Fi recommended) and this phone can write a short treatment note by itself.')}</AppText>
+        <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('Download the offline assistant once (about 2.8 GB, Wi-Fi recommended) and this phone can write a short treatment note by itself.')}</AppText>
         {nav ? (
           <Button title="Set up the offline assistant" icon="download" kind="secondary" onPress={() => nav.navigate('offline-assistant')} />
         ) : (

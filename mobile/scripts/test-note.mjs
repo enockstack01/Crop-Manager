@@ -75,5 +75,12 @@ ok(clean('Votre question porte sur le stockage. Séchez bien le maïs.') === 'S�
 ok(clean('Okra grows well in warm soil. High rows help drainage.') === 'Okra grows well in warm soil. High rows help drainage.', 'words that only start like okay or hi are kept');
 ok(clean('Rotate crops. Beans are okay after maize.').includes('Beans are okay'), 'the word okay inside a real sentence is kept');
 
+console.log('8. model control tokens');
+const think = '<|channel>thought\nthinking out loud<channel|>Dry the maize well before storing it.<turn|>';
+ok(clean(think) === 'Dry the maize well before storing it.', 'a thinking section and turn markers are removed', clean(think));
+ok(clean('Keep the store clean.<end_of_turn>') === 'Keep the store clean.', 'the older end-of-turn marker is removed');
+const tn = parseNote('<|turn>model\nOVERVIEW: Leaf rust on coffee.\nSTEPS:\n- Remove sick leaves.<turn|>', 'en');
+ok(tn.overview === 'Leaf rust on coffee.' && tn.steps[0] === 'Remove sick leaves.', 'a note keeps its parts when markers surround it', JSON.stringify(tn));
+
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

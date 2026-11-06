@@ -16,13 +16,14 @@ const mb = (b: number) => `${Math.round(b / 1048576)} MB`;
 const WAITING: Record<string, string> = {
   offline: 'Waiting for the internet. It continues by itself when you are online.',
   mobile_data: 'Waiting for Wi-Fi, so your mobile data is not used. You can also download now on mobile data.',
-  storage: 'There is not enough free storage on this phone. Free about 1.2 GB and it starts by itself.',
+  storage: 'There is not enough free storage on this phone. Free about 3.5 GB and it starts by itself.',
+  memory: 'This phone does not have enough memory (about 6 GB) to run the offline assistant, so it is not downloaded.',
   off: 'The automatic download is switched off.',
   network: 'The download stopped because the connection dropped. It continues by itself.',
 };
 
 /**
- * Get, check and remove the offline assistant. The model (769 MB) is not part of the app: it downloads by itself when the app is first
+ * Get, check and remove the offline assistant. The model (2.8 GB) is not part of the app: it downloads by itself when the app is first
  * opened on Wi-Fi, and this screen shows the progress and lets you stop it, switch the automatic download off, or download on mobile data.
  */
 export function OfflineAssistantScreen() {
@@ -94,10 +95,10 @@ export function OfflineAssistantScreen() {
       ) : null}
 
       <View style={{ gap: 8, marginTop: 16 }}>
-        <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('Download size: about 770 MB. You need about 1.2 GB of free storage and a phone with 3 GB of memory or more.')}</AppText>
+        <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('Download size: about 2.8 GB. You need about 3.5 GB of free storage and a phone with 6 GB of memory or more.')}</AppText>
         <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('It writes in English or French. In other languages the note is written in English, next to the translated general advice.')}</AppText>
         <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('It is a small model and can make mistakes, so use its notes as a guide and ask an extension officer about anything serious.')}</AppText>
-        <AppText variant="caption">Gemma is provided under and subject to the Gemma Terms of Use: ai.google.dev/gemma/terms</AppText>
+        <AppText variant="caption">Offline model: Gemma 4, licensed under the Apache License 2.0 (apache.org/licenses/LICENSE-2.0)</AppText>
       </View>
     </Screen>
   );

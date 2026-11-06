@@ -8,23 +8,27 @@ export { parseNote };
 export type { Note, NoteLang };
 
 /*
- * The offline assistant: a small language model (Gemma 3 1B, 4-bit, 769 MB) that runs on the phone through llama.cpp and writes
+ * The offline assistant: a small language model (Gemma 4 E2B, 4-bit, 2.84 GB) that runs on the phone through llama.cpp and writes
  * a short treatment note from what the photo model found. It plays the role online assistant plays when there is signal, much more
  * modestly: it is small, so the note is short, always English or French, grounded in the stored advice, and can still be wrong.
  *
- * The model is too big to ship inside the app, so the farmer downloads it once (resumable, in 8 MB pieces) and it lives in the
- * app's own storage. Gemma is provided under the Gemma Terms of Use (https://ai.google.dev/gemma/terms).
+ * The model is too big to ship inside the app, so the farmer downloads it once (resumable, in 4 MB pieces) and it lives in the
+ * app's own storage. It needs a phone with about 6 GB of memory (see MIN_MEMORY in lib/modePolicy.ts). Licence: Apache 2.0 (see the
+ * licence line on the Offline assistant screen).
  */
 
 export const MODEL = {
-  file: 'gemma-3-1b-it-Q4_K_M.gguf',
-  url: 'https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it-Q4_K_M.gguf',
-  bytes: 806_058_240,
-  sha256: '8ccc5cd1f1b3602548715ae25a66ed73fd5dc68a210412eea643eb20eb75a135', // published checksum, for reference
+  file: 'gemma-4-E2B-it-Q4_0.gguf',
+  // pinned to one published revision of the repository, so the file (and its exact size) can never change under the app
+  url: 'https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/6938c58e698502037401a5f19f6905f2fb2f7dee/gemma-4-E2B-it-Q4_0.gguf',
+  bytes: 2_841_481_184,
+  sha256: '8e30dff3ac4c8434c49a7036fa15564bdbb6044e42bf04550bf1a096ad7e6a52', // published checksum, for reference
 };
+// model files of earlier versions of the app: unusable now, and each one takes room the new download needs
+const OLD_FILES = ['gemma-3-1b-it-Q4_K_M.gguf', 'gemma-3-1b-it-Q4_K_M.gguf.part'];
 // small pieces and a time limit for each: on a slow or dropping connection a request can hang for ever without failing, which would leave the
-// download stuck. 2 MB in 120 s still works on a connection of about 17 KB/s.
-const CHUNK = 2 * 1024 * 1024;
+// download stuck. 4 MB in 120 s still works on a connection of about 35 KB/s.
+const CHUNK = 4 * 1024 * 1024;
 const CHUNK_TIMEOUT_MS = 120_000;
 
 /** Languages the small model writes well in (checked by hand). Every other language gets the note in English. */
@@ -109,6 +113,13 @@ export async function downloadModel({ onProgress, signal }: { onProgress?: (have
   part.rename(MODEL.file);
 }
 
+/** Removes the model files of earlier versions of the app (the previous, smaller model), to free their room. */
+export function removeOldModels() {
+  for (const name of OLD_FILES) {
+    try { const f = new File(dir(), name); if (f.exists) f.delete(); } catch { /* not removable now: tried again next launch */ }
+  }
+}
+
 export function deleteModel() {
   releaseModel();
   for (const f of [finalFile(), partFile()]) if (f.exists) f.delete();
@@ -135,7 +146,7 @@ async function context(): Promise<LlamaContext> {
   return loading;
 }
 
-/** Frees the model's memory (about 1 GB) a couple of minutes after the last note. */
+/** Frees the model's memory (about 3 GB) a couple of minutes after the last note. */
 function scheduleRelease() {
   if (idle) clearTimeout(idle);
   idle = setTimeout(releaseModel, KEEP_MS);
@@ -225,7 +236,7 @@ export async function writeNote(input: NoteInput, onProgress?: (chars: number) =
         top_k: 30,
         top_p: 0.9,
         penalty_repeat: 1.1,
-        stop: ['<end_of_turn>'],
+        stop: ['<turn|>', '<end_of_turn>'],
       },
       (d) => { chars += (d.token || '').length; onProgress?.(chars); },
     );
@@ -266,7 +277,7 @@ export async function askOffline(history: Turn[], question: string, lang: NoteLa
         top_k: 30,
         top_p: 0.9,
         penalty_repeat: 1.1,
-        stop: ['<end_of_turn>'],
+        stop: ['<turn|>', '<end_of_turn>'],
       },
       (d) => { chars += (d.token || '').length; onProgress?.(chars); },
     );

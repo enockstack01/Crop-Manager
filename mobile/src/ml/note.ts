@@ -17,8 +17,12 @@ const CHATTER = /(let me know|n'hésitez pas|i hope this|j'espère que|---|here 
 const CHEMICAL = /(spray|pulv[ée]ris|bouillie|bordelaise|apply|applying|application|appliqu|treat with|traite[zr]? avec|fungicid|pesticid|insecticid|herbicid|chemical|chimique)/i;
 const SEND_TO_EXPERT = /(extension officer|agent de vulgarisation|label|[ée]tiquette)/i;
 
+// Gemma 4 marks turns and (when thinking is on) a thinking section with special tokens; none of it belongs in an answer
+export const stripSpecial = (s: string) =>
+  s.replace(/<\|channel>[\s\S]*?<channel\|>/g, ' ').replace(/<\|[^>\n]{1,30}>|<[^>\s|]{1,30}\|>|<(?:start|end)_of_turn>|<\/?(?:bos|eos)>/g, ' ');
+
 export const cleanText = (s: string, max: number) => {
-  const first = s.replace(/\*\*|\*|_{2,}|`/g, '').replace(/\s+/g, ' ').trim();
+  const first = stripSpecial(s).replace(/\*\*|\*|_{2,}|`/g, '').replace(/\s+/g, ' ').trim();
   // keep whole sentences that pass the filters, up to the length limit
   const kept: string[] = [];
   for (const raw of first.match(/[^.!?]+[.!?]*\s*/g) || [first]) {
@@ -35,7 +39,7 @@ export const cleanText = (s: string, max: number) => {
 export function parseNote(text: string, lang: NoteLang): Note {
   const out = { overview: '', cause: '', steps: [] as string[], prevent: [] as string[], help: '' };
   let cur: string | null = null;
-  for (const raw of text.split(/\r?\n/)) {
+  for (const raw of stripSpecial(text).split(/\r?\n/)) {
     const line = raw.replace(/\*\*/g, '').trim();
     if (!line) continue;
     const m = line.match(new RegExp(`^(${LABELS.join('|')})\\s*:?\\s*(.*)$`, 'i'));

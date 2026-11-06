@@ -24,18 +24,25 @@ export function offlineModeNow(offlineSince: number | null, now: number, grace =
   return offlineSince !== null && now - offlineSince >= grace;
 }
 
-export type DownloadVerdict = { ok: boolean; reason: 'ok' | 'ready' | 'off' | 'offline' | 'mobile_data' | 'storage' };
+export type DownloadVerdict = { ok: boolean; reason: 'ok' | 'ready' | 'off' | 'offline' | 'mobile_data' | 'storage' | 'memory' };
 
 /** Extra room kept free on top of the model itself, so the phone does not run out of storage. */
 export const STORAGE_MARGIN = 400 * 1024 * 1024;
 
 /**
+ * The least memory a phone needs to run the offline assistant (a "6 GB" phone reports about 5.5 GB, a "4 GB" one about 3.7 GB).
+ * Below this the 2.8 GB download would only waste the person's data and storage, because the model could not be loaded.
+ */
+export const MIN_MEMORY = 4.5 * 1024 * 1024 * 1024;
+
+/**
  * Whether the offline assistant may start downloading by itself: only when it is not already there, the person has not turned the
- * automatic download off, the phone is online on an unmetered network (the file is about 770 MB) and there is room for it.
+ * automatic download off, the phone is online on an unmetered network (the file is about 2.8 GB), there is room for it and the phone has the memory to run it.
  * `allowMetered` is set when the person chose to download on mobile data.
  */
-export function autoDownloadVerdict(i: { ready: boolean; enabled: boolean; net: Net; freeBytes: number | null; remainingBytes: number; allowMetered?: boolean }): DownloadVerdict {
+export function autoDownloadVerdict(i: { ready: boolean; enabled: boolean; net: Net; freeBytes: number | null; remainingBytes: number; allowMetered?: boolean; memoryBytes?: number | null }): DownloadVerdict {
   if (i.ready) return { ok: false, reason: 'ready' };
+  if (i.memoryBytes != null && i.memoryBytes < MIN_MEMORY) return { ok: false, reason: 'memory' }; // known and too small: never worth downloading
   if (!i.enabled && !i.allowMetered) return { ok: false, reason: 'off' };
   if (!isOnline(i.net)) return { ok: false, reason: 'offline' };
   const metered = i.net.expensive === true || i.net.type === 'cellular' || (i.net.type !== 'wifi' && i.net.type !== 'ethernet' && i.net.expensive !== false);
