@@ -14,6 +14,7 @@ import { env } from './config/env.js';
 import api from './routes/index.js';
 import { notFound, errorHandler } from './middleware/error.js';
 import { UPLOAD_DIR } from './routes/uploads.routes.js';
+import { SAFE_NAME, storage } from './lib/storage.js';
 import { cspDirectives } from './lib/csp.js';
 
 // built web client (npm run build → client/dist); served by this same server in
@@ -52,11 +53,25 @@ export function createApp() {
 
   // uploaded scouting photos
   // every file has its own random name and is never changed, so browsers may keep it; nothing in this folder may run as a page
-  app.use('/uploads', express.static(UPLOAD_DIR, {
-    maxAge: '30d',
-    immutable: true,
-    setHeaders: (res) => res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox"),
-  }));
+  const sandbox = (res) => res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  if (storage.name === 'local') {
+    app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true, setHeaders: sandbox }));
+  } else {
+    // pictures kept in a private bucket are read by the server and sent with the same headers as local files
+    app.get('/uploads/:name', async (req, res, next) => {
+      try {
+        if (!SAFE_NAME.test(req.params.name)) return res.status(404).end();
+        const bytes = await storage.get(req.params.name);
+        if (!bytes) return res.status(404).end();
+        sandbox(res);
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+        return res.end(bytes);
+      } catch (err) {
+        return next(err);
+      }
+    });
+  }
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
   // ready = able to serve real requests (database connected). A load balancer or uptime monitor should use this one.

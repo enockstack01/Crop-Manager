@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
-import { UPLOAD_DIR } from '../routes/uploads.routes.js';
+import { storage } from '../lib/storage.js';
 import { Crop, CropScoutingRecord } from '../models/index.js';
 import { classify, visionEnabled } from '../lib/vision/hfClient.js';
 import { labelCropFor } from '../lib/vision/cropMap.js';
@@ -61,15 +61,15 @@ export const status = asyncHandler(async (req, res) => {
 const MEDIA = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
 
 /** Reads one of the caller's own uploaded photos; anything else is refused. */
-function readPhoto(userId, url) {
+async function readPhoto(userId, url) {
   if (!url) return null;
   const file = path.basename(String(url));
   if (!file.startsWith(`${userId}-`)) throw createHttpError(400, 'That photo does not belong to your account.');
   const media = MEDIA[path.extname(file).toLowerCase()];
   if (!media) throw createHttpError(400, 'Use a JPG, PNG, WebP or GIF photo.');
-  const full = path.join(UPLOAD_DIR, file);
-  if (!fs.existsSync(full)) throw createHttpError(404, 'The photo could not be found. Upload it again.');
-  return { media, bytes: fs.readFileSync(full) };
+  const bytes = await storage.get(file);
+  if (!bytes) throw createHttpError(404, 'The photo could not be found. Upload it again.');
+  return { media, bytes };
 }
 
 const imageBlock = ({ media, bytes }) => ({ type: 'image', source: { type: 'base64', media_type: media, data: bytes.toString('base64') } });
@@ -102,7 +102,7 @@ export const diagnose = asyncHandler(async (req, res) => {
     ['Notes', clip(b.notes || rec.notes)],
     ['Affected area or share of plants', clip(b.affected, 120)],
   ].filter(([, v]) => v);
-  const photos = urls.map((u) => readPhoto(req.userId, u)).filter(Boolean);
+  const photos = (await Promise.all(urls.map((u) => readPhoto(req.userId, u)))).filter(Boolean);
   const images = photos.map(imageBlock);
   if (!images.length && !lines.length) throw createHttpError(400, 'Add a photo or describe what you see.');
   try {
