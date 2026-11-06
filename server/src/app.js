@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -58,6 +59,11 @@ export function createApp() {
   }));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+  // ready = able to serve real requests (database connected). A load balancer or uptime monitor should use this one.
+  app.get('/api/ready', (_req, res) => {
+    const db = mongoose.connection.readyState === 1;
+    res.status(db ? 200 : 503).json({ ready: db, database: db ? 'connected' : 'not connected', ts: Date.now() });
+  });
 
   app.use(
     '/api',

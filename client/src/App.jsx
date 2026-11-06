@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut } from '@clerk/clerk-react';
 
 import { AppLayout } from './components/AppLayout.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { AuthScreen } from './components/AuthScreen.jsx';
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const Farms = lazy(() => import('./pages/Farms.jsx'));
@@ -58,6 +59,7 @@ function Home() {
 
 export function App() {
   return (
+    <ErrorBoundary>
     <Suspense fallback={<Loading label="Loading..." />}>
     <Routes>
       <Route path="/sign-in/*" element={<AuthScreen mode="sign-in" />} />
@@ -129,5 +131,6 @@ export function App() {
       </Route>
     </Routes>
     </Suspense>
+    </ErrorBoundary>
   );
 }

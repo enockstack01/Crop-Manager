@@ -23,6 +23,16 @@ async function main() {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
+// One request that fails in the background must not take every farmer's session down: log it and keep serving.
+// A truly unexpected exception leaves the process in an unknown state, so it is logged and the process manager restarts it.
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] unhandled promise rejection:', reason instanceof Error ? reason.stack || reason.message : String(reason));
+});
+process.on('uncaughtException', (err) => {
+  console.error('[server] uncaught exception, exiting so it restarts clean:', err?.stack || err);
+  process.exit(1);
+});
+
 main().catch((err) => {
   console.error('[server] fatal startup error:', err);
   process.exit(1);
