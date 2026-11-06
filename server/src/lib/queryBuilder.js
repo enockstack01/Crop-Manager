@@ -3,6 +3,9 @@
  * (?page, ?perPage, ?sort, ?order, ?q, plus per-resource equality filters)
  * into a Mongo filter / sort / pagination triple.
  */
+// the apps' pickers ask for 1000 rows at once; this is the most one request may return
+export const MAX_PER_PAGE = 1000;
+
 export function buildQuery(reqQuery, resource, userId) {
   const filter = { user_id: userId };
 
@@ -27,7 +30,7 @@ export function buildQuery(reqQuery, resource, userId) {
 
   // pagination
   const page = Math.max(1, parseInt(reqQuery.page, 10) || 1);
-  const perPage = Math.min(100, Math.max(1, parseInt(reqQuery.perPage, 10) || 10));
+  const perPage = Math.min(MAX_PER_PAGE, Math.max(1, parseInt(reqQuery.perPage, 10) || 10));
 
   return { filter, sort, page, perPage, skip: (page - 1) * perPage, limit: perPage };
 }
