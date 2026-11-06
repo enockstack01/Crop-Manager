@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { limiter as rateLimit } from '../lib/rateLimit.js';
 import * as ai from '../controllers/ai.controller.js';
 
 const router = Router();
 
 // a burst guard on top of the per-user daily allowance (the model calls cost money)
 router.use(rateLimit({
-  windowMs: 60_000, max: 12, standardHeaders: true, legacyHeaders: false,
+  name: 'ai-burst', windowMs: 60_000, max: 12, standardHeaders: true, legacyHeaders: false,
   keyGenerator: (req) => req.userId || req.ip,
   message: { message: 'Too many AI requests. Wait a minute and try again.' },
 }));

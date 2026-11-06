@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
+import { limiter as rateLimit } from './lib/rateLimit.js';
 import compression from 'compression';
 import { clerkMiddleware } from '@clerk/express';
 
@@ -67,7 +67,7 @@ export function createApp() {
 
   app.use(
     '/api',
-    rateLimit({ windowMs: 60_000, max: 300, standardHeaders: true, legacyHeaders: false }),
+    rateLimit({ name: 'api', windowMs: 60_000, max: 300 }),
     oneValuePerQueryKey,
     api
   );

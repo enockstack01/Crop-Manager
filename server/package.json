@@ -17,6 +17,7 @@
     "test:vision": "node src/scripts/test-vision.mjs",
     "test:hardening": "node src/scripts/test-hardening.mjs",
     "test:workspace": "node src/scripts/test-workspace.mjs",
+    "test:ratelimit": "node src/scripts/test-ratelimit.mjs",
     "test:tenancy": "node src/scripts/test-tenancy.mjs",
     "test:invites": "node src/scripts/test-invites.mjs",
     "test:diagnose": "node src/scripts/test-diagnose-vision.mjs"

@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { limiter as rateLimit } from '../lib/rateLimit.js';
 import { orgAccess } from '../lib/orgs/access.js';
 import * as org from '../controllers/org.controller.js';
 import * as ws from '../controllers/orgWorkspace.controller.js';
 
+let limiterCount = 0;
 const limiter = (max, keyGenerator, message) =>
-  rateLimit({ windowMs: 60_000, max, standardHeaders: true, legacyHeaders: false, keyGenerator, message: { message } });
+  rateLimit({ name: `org-${(limiterCount += 1)}`, windowMs: 60_000, max, standardHeaders: true, legacyHeaders: false, keyGenerator, message: { message } });
 
 // Public link check: limited per IP address and, separately, per device (the apps send x-device-id),
 // so a token cannot be guessed by hammering one address or one phone.
