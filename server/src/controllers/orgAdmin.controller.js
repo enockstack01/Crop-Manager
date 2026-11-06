@@ -7,7 +7,7 @@ import {
   attachFarmer, audit, getOrgSettings, notifyUsers, orgAdminIds, orgView, queueReferredFarmer, setOrgSettings, joinError,
 } from '../lib/orgs/core.js';
 
-import { sendInvitationEmail } from '../lib/orgs/invite.js';
+import { inviteFarmerEmails } from '../lib/orgs/farmerInvites.js';
 
 const INVITE_DAYS = 30;
 const str = (v, max = 200) => (v === undefined || v === null ? '' : String(v).trim().slice(0, max));
@@ -161,42 +161,7 @@ export const importFarmers = asyncHandler(async (req, res) => {
   if (!emails.length) throw createHttpError(400, 'No email addresses found');
   if (emails.length > 2000) throw createHttpError(400, 'Import at most 2000 farmers at a time');
 
-  const result = { joined: 0, invited: 0, rows: [] };
-  let stop = false;
-  for (const email of emails) {
-    if (stop) { result.rows.push({ email, result: 'limit_reached' }); continue; }
-    if (!isEmail(email)) { result.rows.push({ email, result: 'invalid_email' }); continue; }
-    const profile = await Profile.findOne({ email: new RegExp(`^${esc(email)}$`, 'i') }).lean();
-    if (!profile) {
-      // no account yet: keep the invitation and email it, so the farmer can sign up and is linked at the first sign-in
-      if (stop) { result.rows.push({ email, result: 'limit_reached' }); continue; }
-      const expires = new Date(Date.now() + INVITE_DAYS * 86_400_000);
-      const invite = await FarmerInvite.findOneAndUpdate(
-        { organization_id: org._id, email },
-        { $set: { status: 'invited', expires_at: expires, invited_by: req.userId }, $setOnInsert: { organization_id: org._id, email } },
-        { upsert: true, new: true }
-      );
-      const mail = await sendInvitationEmail(email, { publicMetadata: { organization: org.name } });
-      invite.email_sent = mail.sent;
-      invite.email_error = mail.error;
-      if (mail.sent) { invite.sent_count += 1; invite.last_sent_at = new Date(); }
-      await invite.save();
-      result.invited = (result.invited || 0) + 1;
-      result.rows.push({ email, result: mail.sent ? 'invited' : mail.dry ? 'invited_test' : 'invite_not_sent', detail: mail.error || undefined });
-      continue;
-    }
-    if (profile.is_admin || profile.user_type === 'org') { result.rows.push({ email, result: 'not_a_farmer' }); continue; }
-    try {
-      await attachFarmer({ farmerId: profile.user_id, org, consentSource: 'bulk_import' });
-      await queueReferredFarmer(profile, org); // linked to the organization, still waits for the administrator's approval
-      result.joined += 1;
-      result.rows.push({ email, result: 'joined' });
-    } catch (err) {
-      const code = err?.details?.code || 'error';
-      if (code === 'org_limit') stop = true;
-      result.rows.push({ email, result: code });
-    }
-  }
+  const result = await inviteFarmerEmails({ org, emails, actorId: req.userId });
   await audit(req, 'farmers.imported', { target_type: 'organization', target_id: org._id, organization_id: org._id, details: { requested: emails.length, joined: result.joined, invited: result.invited, consent: 'confirmed by administrator' } });
   res.json(result);
 });

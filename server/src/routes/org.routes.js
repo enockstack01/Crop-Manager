@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { orgAccess } from '../lib/orgs/access.js';
 import * as org from '../controllers/org.controller.js';
+import * as ws from '../controllers/orgWorkspace.controller.js';
 
 const limiter = (max, keyGenerator, message) =>
   rateLimit({ windowMs: 60_000, max, standardHeaders: true, legacyHeaders: false, keyGenerator, message: { message } });
@@ -40,3 +41,11 @@ orgRouter.delete('/:orgId/referral-links/:linkId', adminOnly, org.revokeLink);
 orgRouter.get('/:orgId/farmers', any, org.getFarmers);
 orgRouter.delete('/:orgId/farmers/:farmerId', adminOnly, org.removeFarmer);
 orgRouter.get('/:orgId/dashboard', any, org.getDashboard);
+// workspace: invitations, one farmer's records, team roles, activity log
+orgRouter.post('/:orgId/farmer-invites', any, limiter(20, (r) => r.userId, 'Too many invitations. Please wait a minute.'), ws.inviteFarmers);
+orgRouter.get('/:orgId/farmer-invites', any, ws.listFarmerInvites);
+orgRouter.post('/:orgId/farmer-invites/:inviteId/resend', any, limiter(20, (r) => r.userId, 'Too many attempts. Please wait a minute.'), ws.resendFarmerInvite);
+orgRouter.delete('/:orgId/farmer-invites/:inviteId', any, ws.revokeFarmerInvite);
+orgRouter.get('/:orgId/farmers/:farmerId/records', any, ws.getFarmerRecords);
+orgRouter.patch('/:orgId/members/:memberId', adminOnly, ws.updateMemberRole);
+orgRouter.get('/:orgId/activity', adminOnly, ws.listOrgActivity);

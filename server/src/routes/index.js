@@ -4,6 +4,7 @@ import { farmerOnly, loadProfile, requireActiveAccount } from '../middleware/pro
 import { resources } from '../resources.js';
 import { genericRouter } from './generic.routes.js';
 import { getDashboard } from '../controllers/dashboard.controller.js';
+import { getRoleDashboard } from '../controllers/roleDashboard.controller.js';
 import { search } from '../controllers/search.controller.js';
 import { calculatorContext } from '../controllers/calculators.controller.js';
 import { exportAll, exportResource, exportTables } from '../controllers/export.controller.js';
@@ -48,6 +49,7 @@ api.use('/organizations', orgRouter);
 api.use(['/dashboard', '/export', '/calendar', '/weather', '/calculators', '/search', '/uploads', '/ai', '/inventory-items'], farmerOnly);
 
 api.get('/dashboard', getDashboard);
+api.get('/dashboard/role', getRoleDashboard);
 api.get('/export', exportAll);
 api.post('/export/tables', exportTables);
 api.get('/export/:path', exportResource);
