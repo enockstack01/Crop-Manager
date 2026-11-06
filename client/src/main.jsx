@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './styles/index.css';
 import { useTranslation } from 'react-i18next';
 import { frFR, deDE, esES, ptBR, zhCN, arSA, hiIN } from '@clerk/localizations';
-import './i18n/index.js';
+import { i18nReady } from './i18n/index.js';
 import { App } from './App.jsx';
 import { setTokenGetter } from './lib/api.js';
 import { ToastProvider } from './components/Toast.jsx';
@@ -38,7 +38,8 @@ function ApiTokenBridge() {
   return null;
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+// the first screen waits (a few milliseconds) for the chosen language's texts, then appears in that language
+i18nReady.finally(() => ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <LanguageRoot>
       {(lang) => (
@@ -65,4 +66,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       )}
     </LanguageRoot>
   </React.StrictMode>
-);
+));

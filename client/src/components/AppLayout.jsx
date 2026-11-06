@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
@@ -97,7 +97,9 @@ function Shell() {
               onAction={() => refetch()}
             />
           ) : (
-            <Outlet />
+            <Suspense fallback={<Loading label="Loading..." />}>
+              <Outlet />
+            </Suspense>
           )}
         </div>
       </main>

@@ -9,18 +9,19 @@ export function buildQuery(reqQuery, resource, userId) {
   // equality filters declared by the resource
   for (const key of resource.filters || []) {
     const raw = reqQuery[key];
-    if (raw !== undefined && raw !== '' && raw !== 'all') filter[key] = raw;
+    if (typeof raw === 'string' && raw !== '' && raw !== 'all') filter[key] = raw; // text only: never an operator object
   }
 
   // free-text search across the resource's searchable fields
-  const q = (reqQuery.q || '').trim();
+  const q = String(reqQuery.q ?? '').trim().slice(0, 100);
   if (q && (resource.search || []).length) {
     const rx = new RegExp(escapeRegex(q), 'i');
     filter.$or = resource.search.map((f) => ({ [f]: rx }));
   }
 
   // sorting
-  const sortField = reqQuery.sort || resource.defaultSort || 'created_at';
+  const asked = typeof reqQuery.sort === 'string' && /^[a-z][a-z0-9_]{0,40}$/i.test(reqQuery.sort) ? reqQuery.sort : '';
+  const sortField = asked || resource.defaultSort || 'created_at';
   const sortDir = reqQuery.order === 'asc' ? 1 : reqQuery.order === 'desc' ? -1 : (resource.defaultOrder === 'asc' ? 1 : -1);
   const sort = { [sortField]: sortDir };
 

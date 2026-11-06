@@ -6,30 +6,43 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import { clerkMiddleware } from '@clerk/express';
 
 import { env } from './config/env.js';
 import api from './routes/index.js';
 import { notFound, errorHandler } from './middleware/error.js';
 import { UPLOAD_DIR } from './routes/uploads.routes.js';
+import { cspDirectives } from './lib/csp.js';
 
 // built web client (npm run build → client/dist); served by this same server in
 // production so the website, its API and the mobile app share one deployment
 const WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
 
+/** A repeated query key (?q=a&q=b) arrives as a list; the code expects one text value, so the last one wins. */
+function oneValuePerQueryKey(req, _res, next) {
+  for (const key of Object.keys(req.query)) {
+    const v = req.query[key];
+    if (Array.isArray(v)) req.query[key] = String(v[v.length - 1] ?? '');
+  }
+  next();
+}
+
 export function createApp() {
   const app = express();
 
   app.set('trust proxy', 1);
+  // flat query strings only (?a=1&b=2): the default parser turns ?farm_id[$ne]=x into an object that reaches the database as an
+  // operator, and it is the parser behind the qs denial-of-service advisories
+  app.set('query parser', 'simple');
+  app.use(compression());
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-      // the web client loads Clerk, Google Fonts and Font Awesome from their CDNs;
-      // helmet's default CSP would block them
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: { useDefaults: false, directives: cspDirectives(env.clerkPublishableKey, { isProd: env.isProd }) },
     })
   );
-  app.use(cors({ origin: env.clientOrigin, credentials: true }));
+  app.use(cors({ origin: env.clientOrigin, credentials: true, maxAge: 600 }));
   app.use(express.json({ limit: '2mb' }));
   if (!env.isProd) app.use(morgan('dev'));
 
@@ -37,20 +50,36 @@ export function createApp() {
   app.use(clerkMiddleware());
 
   // uploaded scouting photos
-  app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
+  // every file has its own random name and is never changed, so browsers may keep it; nothing in this folder may run as a page
+  app.use('/uploads', express.static(UPLOAD_DIR, {
+    maxAge: '30d',
+    immutable: true,
+    setHeaders: (res) => res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox"),
+  }));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
   app.use(
     '/api',
     rateLimit({ windowMs: 60_000, max: 300, standardHeaders: true, legacyHeaders: false }),
+    oneValuePerQueryKey,
     api
   );
 
   if (env.isProd && fs.existsSync(WEB_DIST)) {
-    app.use(express.static(WEB_DIST, { index: false, maxAge: '1h' }));
+    // the build gives its files names that change with their content, so those can be kept for a year; the page itself must be re-checked
+    app.use(express.static(WEB_DIST, {
+      index: false,
+      maxAge: '1h',
+      setHeaders: (res, file) => {
+        if (/[\\/]assets[\\/]/.test(file)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      },
+    }));
     // client-side routes (/farms, /reports, …) all load the SPA shell
-    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => res.sendFile(path.join(WEB_DIST, 'index.html')));
+    app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(path.join(WEB_DIST, 'index.html'));
+    });
   }
 
   app.use(notFound);

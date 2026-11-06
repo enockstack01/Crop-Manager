@@ -1,51 +1,54 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut } from '@clerk/clerk-react';
 
 import { AppLayout } from './components/AppLayout.jsx';
 import { AuthScreen } from './components/AuthScreen.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import Farms from './pages/Farms.jsx';
-import Fields from './pages/Fields.jsx';
-import Crops from './pages/Crops.jsx';
-import Varieties from './pages/Varieties.jsx';
-import Seasons from './pages/Seasons.jsx';
-import CropCycles from './pages/CropCycles.jsx';
-import Planting from './pages/Planting.jsx';
-import Activities from './pages/Activities.jsx';
-import Irrigation from './pages/Irrigation.jsx';
-import Fertilizers from './pages/Fertilizers.jsx';
-import CropProtection from './pages/CropProtection.jsx';
-import Scouting from './pages/Scouting.jsx';
-import Harvest from './pages/Harvest.jsx';
-import Inventory from './pages/Inventory.jsx';
-import Equipment from './pages/Equipment.jsx';
-import Maintenance from './pages/Maintenance.jsx';
-import Expenses from './pages/Expenses.jsx';
-import Sales from './pages/Sales.jsx';
-import Calculators from './pages/Calculators.jsx';
-import CalculatorDetail from './pages/CalculatorDetail.jsx';
-import Reports from './pages/Reports.jsx';
-import Calendar from './pages/Calendar.jsx';
-import Weather from './pages/Weather.jsx';
-import Assistant from './pages/Assistant.jsx';
-import Join from './pages/Join.jsx';
-import OrgRegister from './pages/OrgRegister.jsx';
-import OrgDashboard from './pages/org/OrgDashboard.jsx';
-import OrgFarmers from './pages/org/OrgFarmers.jsx';
-import OrgLinks from './pages/org/OrgLinks.jsx';
-import { OrgTeam, OrgProfile } from './pages/org/OrgTeamProfile.jsx';
-import AdminOrganizations from './pages/admin/AdminOrganizations.jsx';
-import AdminOrganizationDetail from './pages/admin/AdminOrganizationDetail.jsx';
-import AdminAudit from './pages/admin/AdminAudit.jsx';
-import AdminAI from './pages/admin/AdminAI.jsx';
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const Farms = lazy(() => import('./pages/Farms.jsx'));
+const Fields = lazy(() => import('./pages/Fields.jsx'));
+const Crops = lazy(() => import('./pages/Crops.jsx'));
+const Varieties = lazy(() => import('./pages/Varieties.jsx'));
+const Seasons = lazy(() => import('./pages/Seasons.jsx'));
+const CropCycles = lazy(() => import('./pages/CropCycles.jsx'));
+const Planting = lazy(() => import('./pages/Planting.jsx'));
+const Activities = lazy(() => import('./pages/Activities.jsx'));
+const Irrigation = lazy(() => import('./pages/Irrigation.jsx'));
+const Fertilizers = lazy(() => import('./pages/Fertilizers.jsx'));
+const CropProtection = lazy(() => import('./pages/CropProtection.jsx'));
+const Scouting = lazy(() => import('./pages/Scouting.jsx'));
+const Harvest = lazy(() => import('./pages/Harvest.jsx'));
+const Inventory = lazy(() => import('./pages/Inventory.jsx'));
+const Equipment = lazy(() => import('./pages/Equipment.jsx'));
+const Maintenance = lazy(() => import('./pages/Maintenance.jsx'));
+const Expenses = lazy(() => import('./pages/Expenses.jsx'));
+const Sales = lazy(() => import('./pages/Sales.jsx'));
+const Calculators = lazy(() => import('./pages/Calculators.jsx'));
+const CalculatorDetail = lazy(() => import('./pages/CalculatorDetail.jsx'));
+const Reports = lazy(() => import('./pages/Reports.jsx'));
+const Calendar = lazy(() => import('./pages/Calendar.jsx'));
+const Weather = lazy(() => import('./pages/Weather.jsx'));
+const Assistant = lazy(() => import('./pages/Assistant.jsx'));
+const Join = lazy(() => import('./pages/Join.jsx'));
+const OrgRegister = lazy(() => import('./pages/OrgRegister.jsx'));
+const OrgDashboard = lazy(() => import('./pages/org/OrgDashboard.jsx'));
+const OrgFarmers = lazy(() => import('./pages/org/OrgFarmers.jsx'));
+const OrgLinks = lazy(() => import('./pages/org/OrgLinks.jsx'));
+const OrgTeam = lazy(() => import('./pages/org/OrgTeamProfile.jsx').then((m) => ({ default: m.OrgTeam })));
+const OrgProfile = lazy(() => import('./pages/org/OrgTeamProfile.jsx').then((m) => ({ default: m.OrgProfile })));
+const AdminOrganizations = lazy(() => import('./pages/admin/AdminOrganizations.jsx'));
+const AdminOrganizationDetail = lazy(() => import('./pages/admin/AdminOrganizationDetail.jsx'));
+const AdminAudit = lazy(() => import('./pages/admin/AdminAudit.jsx'));
+const AdminAI = lazy(() => import('./pages/admin/AdminAI.jsx'));
 import { useMyOrg } from './lib/orgApi.js';
-import Settings from './pages/Settings.jsx';
+const Settings = lazy(() => import('./pages/Settings.jsx'));
 import { AdminGuard } from './components/AdminGuard.jsx';
-import AdminOverview from './pages/admin/AdminOverview.jsx';
-import AdminUsers from './pages/admin/AdminUsers.jsx';
-import AdminUserDetail from './pages/admin/AdminUserDetail.jsx';
-import AdminData from './pages/admin/AdminData.jsx';
-import AdminSettings from './pages/admin/AdminSettings.jsx';
+import { Loading } from './components/ui.jsx';
+const AdminOverview = lazy(() => import('./pages/admin/AdminOverview.jsx'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers.jsx'));
+const AdminUserDetail = lazy(() => import('./pages/admin/AdminUserDetail.jsx'));
+const AdminData = lazy(() => import('./pages/admin/AdminData.jsx'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings.jsx'));
 
 /** Organization staff open their workspace instead of the farm dashboard. */
 function Home() {
@@ -55,6 +58,7 @@ function Home() {
 
 export function App() {
   return (
+    <Suspense fallback={<Loading label="Loading..." />}>
     <Routes>
       <Route path="/sign-in/*" element={<AuthScreen mode="sign-in" />} />
       <Route path="/sign-up/*" element={<AuthScreen mode="sign-up" />} />
@@ -124,5 +128,6 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }

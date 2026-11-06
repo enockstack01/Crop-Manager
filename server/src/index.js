@@ -11,6 +11,10 @@ async function main() {
     console.log(`[server] API listening on http://localhost:${env.port}  (env: ${env.nodeEnv})`);
   });
 
+  // the proxy in front (Render, nginx) keeps idle connections for up to 60 s; closing ours sooner causes random 502 errors
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
+
   const shutdown = (signal) => {
     console.log(`\n[server] ${signal} received, shutting down`);
     server.close(() => process.exit(0));
