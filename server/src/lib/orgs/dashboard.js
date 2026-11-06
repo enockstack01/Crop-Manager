@@ -30,18 +30,52 @@ async function lastActivity(ids) {
 }
 
 /** The organization's active farmers and their crop data, narrowed by district. */
-async function load(org, { district = '' } = {}) {
+const escapeRx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The record figures only the dashboard needs, worked out by the database so thousands of records are never sent over the wire:
+ * harvest totals per farmer, crop and unit; activity counts per day and per type with the ten latest; and the pest, disease and
+ * serious-case reports of the last 14 days.
+ */
+function recordStats(ids, { from, to, weekStart, since14 }) {
+  const range = (field) => (from || to ? { [field]: { ...(from ? { $gte: from } : {}), ...(to ? { $lte: to } : {}) } } : {});
+  const mine = { user_id: { $in: ids } };
+  return Promise.all([
+    M.HarvestRecord.aggregate([{ $match: { ...mine, ...range('harvest_date') } }, { $group: { _id: { u: '$user_id', c: '$crop_id', unit: '$unit' }, qty: { $sum: '$quantity' } } }]),
+    M.FieldActivity.aggregate([
+      { $match: { ...mine, ...range('activity_date') } },
+      {
+        $facet: {
+          perDay: [{ $match: { activity_date: { $gte: weekStart } } }, { $group: { _id: '$activity_date', n: { $sum: 1 } } }],
+          byType: [{ $group: { _id: '$activity_type', n: { $sum: 1 } } }],
+          recent: [{ $sort: { activity_date: -1 } }, { $limit: 10 }, { $project: { user_id: 1, activity_type: 1, activity_date: 1, description: 1 } }],
+        },
+      },
+    ]),
+    M.CropScoutingRecord.find({ ...mine, scouting_date: { $gte: since14 }, $or: [{ pest_observation: { $nin: ['', null] } }, { disease_observation: { $nin: ['', null] } }] }, 'user_id crop_id scouting_date pest_observation disease_observation').sort({ scouting_date: -1 }).limit(1500).lean(),
+    M.CropProtectionRecord.find({ ...mine, protection_date: { $gte: since14 }, severity: { $in: ['High', 'Critical'] } }, 'user_id problem_name problem_type severity protection_date').sort({ protection_date: -1 }).limit(1500).lean(),
+  ]);
+}
+
+async function load(org, { district = '', heavy = null } = {}) {
   const links = await M.FarmerOrganization.find({ organization_id: org._id, status: 'active' }).lean();
   const allIds = links.map((l) => l.farmer_id);
-  // everything is read in one parallel step (a district only narrows the result afterwards), so a request costs
-  // two database round trips instead of four
-  const [profiles, farmsAll, fieldsAll, cyclesAll, crops, last] = await Promise.all([
+  // A district narrows the farmers first (one cheap query), so the database only works on those farmers' records.
+  let heavyIds = allIds;
+  if (heavy && district) {
+    const rows = await M.Farm.find({ user_id: { $in: allIds }, district: new RegExp(`^${escapeRx(district)}$`, 'i') }, 'user_id').lean();
+    heavyIds = [...new Set(rows.map((r) => r.user_id))];
+  }
+  // Everything else is read in ONE parallel step (a district only narrows the result afterwards, in memory), so a request costs
+  // two database round trips however many things it shows.
+  const [profiles, farmsAll, fieldsAll, cyclesAll, crops, last, stats] = await Promise.all([
     M.Profile.find({ user_id: { $in: allIds } }, 'user_id full_name email location').lean(),
     M.Farm.find({ user_id: { $in: allIds } }, 'user_id name district province total_area area_unit').lean(),
     M.Field.find({ user_id: { $in: allIds } }, 'user_id farm_id name area area_unit latitude longitude').lean(),
     M.CropCycle.find({ user_id: { $in: allIds } }, 'user_id farm_id field_id crop_id status area_planted area_unit expected_production expected_production_unit expected_harvest_date').lean(),
     M.Crop.find({ user_id: { $in: allIds } }, 'name').lean(),
     lastActivity(allIds),
+    heavy ? recordStats(heavyIds, heavy) : null,
   ]);
   const farms = district ? farmsAll.filter((f) => (f.district || '').toLowerCase() === district.toLowerCase()) : farmsAll;
   let ids = allIds;
@@ -62,6 +96,8 @@ async function load(org, { district = '' } = {}) {
     farms,
     fields: fields.filter((f) => !district || farmIds.has(String(f.farm_id))),
     cycles: cycles.filter((c) => !district || farmIds.has(String(c.farm_id))).map((c) => ({ ...c, crop: (cropName[String(c.crop_id)] || '').trim() || '—' })),
+    cropName,
+    records: stats ? { harvests: stats[0], acts: stats[1][0], scouting: stats[2], protection: stats[3] } : null,
   };
 }
 
@@ -81,20 +117,17 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
   const from = filters.from || '';
   const to = filters.to || '';
   const inRange = (d) => (!from || d >= from) && (!to || d <= to);
-  const d = await load(org, filters);
+  const weekStart = new Date(now);
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7) - 11 * 7); // Monday, 11 weeks back
+  const since14 = iso(now - 14 * DAY);
+  const d = await load(org, { district: filters.district, heavy: { from, to, weekStart: iso(weekStart.getTime()), since14 } });
   const ids = d.ids;
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const last = d.last;
-  const [harvests, acts, scouting, protection] = await Promise.all([
-    M.HarvestRecord.find({ user_id: { $in: ids } }, 'user_id crop_id quantity unit harvest_date').lean(),
-    M.FieldActivity.find({ user_id: { $in: ids } }, 'user_id activity_type activity_date description crop_cycle_id').sort({ activity_date: -1 }).limit(4000).lean(),
-    M.CropScoutingRecord.find({ user_id: { $in: ids } }, 'user_id crop_id scouting_date pest_observation disease_observation plant_health').sort({ scouting_date: -1 }).limit(1500).lean(),
-    M.CropProtectionRecord.find({ user_id: { $in: ids } }, 'user_id problem_name problem_type severity protection_date').sort({ protection_date: -1 }).limit(1500).lean(),
-  ]);
-  const cropIds = [...new Set([...harvests.map((h) => String(h.crop_id)), ...scouting.map((s) => String(s.crop_id))])].filter((x) => x && x !== 'null');
-  const cropDocs = cropIds.length ? await M.Crop.find({ _id: { $in: cropIds } }, 'name').lean() : [];
-  const cropName = Object.fromEntries(cropDocs.map((c) => [String(c._id), c.name]));
+  const { harvests, acts, scouting, protection } = d.records;
+  const cropName = d.cropName; // every crop of the organization's farmers was read with the rest, so no extra round trip
 
   // overview
   const activeSince = now - settings.inactive_days * DAY;
@@ -142,13 +175,13 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
     row.stages[c.status] += 1;
   }
   const idSet = new Set(ids);
-  for (const h of harvests) {
-    if (!idSet.has(h.user_id) || !inRange(h.harvest_date || '')) continue;
-    const name = (cropName[String(h.crop_id)] || '—').trim();
+  for (const h of harvests) { // already totalled per farmer, crop and unit by the database, inside the date range
+    if (!idSet.has(h._id.u)) continue;
+    const name = (cropName[String(h._id.c)] || '—').trim();
     const row = (crops[name.toLowerCase()] = crops[name.toLowerCase()] || {
       name, farmers: new Set(), area_ha: 0, expected_kg: 0, harvested_kg: 0, stages: { Planned: 0, Planted: 0, Growing: 0, 'Ready for Harvest': 0 },
     });
-    row.harvested_kg += toKg(h.quantity, h.unit);
+    row.harvested_kg += toKg(h.qty, h._id.unit);
   }
   const cropRows = Object.values(crops)
     .map((c) => ({ name: c.name, farmers: c.farmers.size, area_ha: c.area_ha, expected_kg: c.expected_kg, harvested_kg: c.harvested_kg, stages: c.stages }))
@@ -158,22 +191,19 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
 
   // activity: weekly trend for 12 weeks and the latest records
   const weeks = [];
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - 11 * 7); // Monday, 11 weeks back
+  const start = weekStart;
   for (let i = 0; i < 12; i += 1) weeks.push({ week: iso(start.getTime() + i * 7 * DAY), count: 0 });
-  const actMine = acts.filter((a) => idSet.has(a.user_id) && inRange(a.activity_date || ''));
-  for (const a of actMine) {
-    const t = new Date(a.activity_date).getTime();
-    const idx = Math.floor((t - start.getTime()) / (7 * DAY));
-    if (idx >= 0 && idx < 12) weeks[idx].count += 1;
+  const a = acts || { perDay: [], byType: [], recent: [] }; // counted by the database, for this district and date range
+  for (const day of a.perDay) {
+    const idx = Math.floor((new Date(day._id).getTime() - start.getTime()) / (7 * DAY));
+    if (idx >= 0 && idx < 12) weeks[idx].count += day.n;
   }
   const byType = {};
-  actMine.forEach((a) => { byType[a.activity_type || 'Other'] = (byType[a.activity_type || 'Other'] || 0) + 1; });
+  a.byType.forEach((x) => { byType[x._id || 'Other'] = (byType[x._id || 'Other'] || 0) + x.n; });
   const activity = {
     weekly: weeks,
-    by_type: Object.entries(byType).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count),
-    recent: actMine.slice(0, 10).map((a) => ({ farmer: nameOf(d.profileOf[a.user_id]), type: a.activity_type, date: a.activity_date, description: a.description || '' })),
+    by_type: Object.entries(byType).map(([type, count]) => ({ type, count })).sort((a2, b2) => b2.count - a2.count),
+    recent: a.recent.map((r) => ({ farmer: nameOf(d.profileOf[r.user_id]), type: r.activity_type, date: r.activity_date, description: r.description || "" })),
   };
 
   // alerts
@@ -181,11 +211,10 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
     .filter((id) => !last[id] || new Date(last[id]).getTime() < activeSince)
     .map((id) => ({ farmer_id: id, farmer: nameOf(d.profileOf[id]), last_activity: last[id] || null }))
     .sort((a, b) => (a.last_activity ? new Date(a.last_activity).getTime() : 0) - (b.last_activity ? new Date(b.last_activity).getTime() : 0));
-  const since14 = iso(now - 14 * DAY);
   const reports = [
-    ...scouting.filter((s) => idSet.has(s.user_id) && (s.pest_observation || s.disease_observation) && (s.scouting_date || '') >= since14)
+    ...scouting.filter((s) => idSet.has(s.user_id))
       .map((s) => ({ farmer: nameOf(d.profileOf[s.user_id]), crop: cropName[String(s.crop_id)] || '', kind: s.disease_observation ? 'Disease' : 'Pest', note: s.disease_observation || s.pest_observation, date: s.scouting_date })),
-    ...protection.filter((p) => idSet.has(p.user_id) && (p.protection_date || '') >= since14 && ['High', 'Critical'].includes(p.severity))
+    ...protection.filter((p) => idSet.has(p.user_id))
       .map((p) => ({ farmer: nameOf(d.profileOf[p.user_id]), crop: '', kind: p.problem_type || 'Pest', note: p.problem_name, date: p.protection_date })),
   ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const overdue = open

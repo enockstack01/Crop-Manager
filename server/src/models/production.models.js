@@ -157,6 +157,12 @@ const HarvestRecordSchema = ownedSchema({
   notes: { type: String, trim: true },
 });
 
+// "latest records of my farmers" (organization dashboard, role home pages) sort by the record's own date
+FieldActivitySchema.index({ user_id: 1, activity_date: -1 });
+CropScoutingRecordSchema.index({ user_id: 1, scouting_date: -1 });
+CropProtectionRecordSchema.index({ user_id: 1, protection_date: -1 });
+HarvestRecordSchema.index({ user_id: 1, harvest_date: -1 });
+
 export const CropCycle = mongoose.model('CropCycle', CropCycleSchema);
 export const PlantingRecord = mongoose.model('PlantingRecord', PlantingRecordSchema);
 export const FieldActivity = mongoose.model('FieldActivity', FieldActivitySchema);
