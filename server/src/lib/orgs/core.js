@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import createHttpError from '../httpError.js';
-import { AuditLog, FarmerOrganization, Notification, Organization, OrganizationMember, Profile, ReferralLink, SystemSetting } from '../../models/index.js';
+import { AuditLog, FarmerInvite, FarmerOrganization, Notification, Organization, OrganizationMember, Profile, ReferralLink, SystemSetting } from '../../models/index.js';
 import { notifyAdmins, statusPatch } from '../accountStatus.js';
 
 /* ------------------------------------------------------------------ settings */
@@ -216,6 +216,30 @@ export async function queueReferredFarmer(profile, org) {
   }
 }
 
+/**
+ * Links a farmer to the organization that invited their email address, if one did and the invitation is still open.
+ * The administrator confirmed the farmers' consent when sending the invitation, the same rule as the bulk import. Never throws:
+ * if the organization is suspended or full, the invitation simply stays open.
+ */
+export async function joinInvitedFarmer(profile) {
+  try {
+    const invite = await FarmerInvite.findOne({ email: profile.email.toLowerCase(), status: 'invited', expires_at: { $gt: new Date() } }).sort({ created_at: 1 });
+    if (!invite) return;
+    if (await FarmerOrganization.exists({ farmer_id: profile.user_id, status: 'active' })) { invite.status = 'joined'; invite.joined_at = new Date(); await invite.save(); return; }
+    const org = await Organization.findById(invite.organization_id);
+    if (!org || org.status !== 'active') return;
+    await attachFarmer({ farmerId: profile.user_id, org, consentSource: 'bulk_import' });
+    await queueReferredFarmer(profile, org);
+    invite.status = 'joined';
+    invite.joined_at = new Date();
+    await invite.save();
+    await AuditLog.create({ actor_id: profile.user_id, actor_name: profile.full_name || profile.email || '', action: 'farmer.joined', target_type: 'farmer', target_id: profile.user_id, organization_id: org._id, details: { via: 'email_invitation' } });
+    await notifyUsers([profile.user_id], { type: 'success', title: 'You joined an organization', message: `You are now linked to ${org.name}. They can see a summary of your crop activity.` });
+  } catch (err) {
+    console.warn('[invite] could not link the invited farmer:', String(err?.message || err).slice(0, 120));
+  }
+}
+
 /* ------------------------------------------------------------ user context */
 /** What the apps need to choose the right workspace: role, organization and (for farmers) their link. */
 export async function orgContextFor(profile) {
@@ -240,6 +264,8 @@ export async function orgContextFor(profile) {
         }
       }
     }
+    // farmers invited by email (no account at the time) are linked to the organization at the first sign-in with that verified address
+    if (profile.email && profile.email_verified && !profile.is_admin && profile.user_type !== 'org') await joinInvitedFarmer(profile);
     const m = await OrganizationMember.findOne({ user_id: profile.user_id, status: 'active' }).lean();
     if (m) {
       const org = await Organization.findById(m.organization_id).lean();

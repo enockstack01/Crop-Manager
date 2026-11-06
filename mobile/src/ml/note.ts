@@ -15,7 +15,7 @@ const CHATTER = /(let me know|n'hésitez pas|i hope this|j'espère que|---|here 
 const CHEMICAL = /(spray|pulv[ée]ris|bouillie|bordelaise|apply|applying|application|appliqu|treat with|traite[zr]? avec|fungicid|pesticid|insecticid|herbicid|chemical|chimique)/i;
 const SEND_TO_EXPERT = /(extension officer|agent de vulgarisation|label|[ée]tiquette)/i;
 
-const clean = (s: string, max: number) => {
+export const cleanText = (s: string, max: number) => {
   const first = s.replace(/\*\*|\*|_{2,}|`/g, '').replace(/\s+/g, ' ').trim();
   // keep whole sentences that pass the filters, up to the length limit
   const kept: string[] = [];
@@ -53,14 +53,14 @@ export function parseNote(text: string, lang: NoteLang): Note {
     else if (cur === 'CAUSE') out.cause += ` ${line}`;
     else if (cur === 'HELP') out.help += ` ${line}`;
   }
-  const uniq = (a: string[], n: number, max: number) => [...new Set(a.map((x) => clean(x, max)).filter(Boolean))].slice(0, n);
+  const uniq = (a: string[], n: number, max: number) => [...new Set(a.map((x) => cleanText(x, max)).filter(Boolean))].slice(0, n);
   return {
     lang,
-    overview: clean(out.overview, 320),
-    cause: clean(out.cause, 260),
+    overview: cleanText(out.overview, 320),
+    cause: cleanText(out.cause, 260),
     steps: uniq(out.steps, 4, 220),
     prevent: uniq(out.prevent, 3, 200),
-    help: clean(out.help, 240),
+    help: cleanText(out.help, 240),
   };
 }
 

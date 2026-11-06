@@ -14,7 +14,7 @@ import { buildDashboard, listFarmers } from '../lib/orgs/dashboard.js';
 const str = (v, max = 200) => (v === undefined || v === null ? '' : String(v).trim().slice(0, max));
 const ORG_FIELDS = ['type', 'country', 'district', 'sector', 'contact_email', 'contact_phone'];
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-const publicUrl = () => process.env.PUBLIC_APP_URL || (env.isProd ? 'https://crop.agricoders.com' : env.clientOrigin);
+import { publicUrl, sendInvitationEmail } from '../lib/orgs/invite.js';
 
 /* ------------------------------------------------------- organization sign-up */
 // POST /api/organizations/register: the person signs up (Clerk) first, then registers their organization
@@ -107,7 +107,9 @@ export const inviteMember = asyncHandler(async (req, res) => {
   if (dup) throw createHttpError(409, 'This person is already on the team.');
   const m = await OrganizationMember.create({ organization_id: req.org._id, invited_email: email, role, status: 'invited', user_id: null });
   await audit(req, 'member.invited', { target_type: 'member', target_id: m._id, organization_id: req.org._id, details: { email, role } });
-  res.status(201).json({ id: String(m._id), email, role, status: 'invited' });
+  // a person with no account yet gets an email with a sign-up link; one who already has an account is matched at the next sign-in
+  const mail = existingProfile ? { sent: false, error: '' } : await sendInvitationEmail(email, { publicMetadata: { organization: req.org.name } });
+  res.status(201).json({ id: String(m._id), email, role, status: 'invited', email_sent: mail.sent, email_error: mail.error || undefined });
 });
 
 export const removeMember = asyncHandler(async (req, res) => {

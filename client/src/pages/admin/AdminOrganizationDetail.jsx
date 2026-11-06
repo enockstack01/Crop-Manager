@@ -11,7 +11,7 @@ import { t } from '../../i18n/index.js';
 const BADGE = { pending: 'badge-warning', active: 'badge-success', suspended: 'badge-danger' };
 const LINK_BADGE = { active: 'badge-success', expired: 'badge-neutral', revoked: 'badge-danger', full: 'badge-warning' };
 const RESULT = {
-  joined: 'Joined', not_registered: 'No account with this email', already_member: 'Already a member', other_org: 'In another organization',
+  joined: 'Joined', invited: 'Invitation emailed', invited_test: 'Invitation saved (test mode sends no email)', invite_not_sent: 'Invitation saved, but the email could not be sent', not_registered: 'No account with this email', already_member: 'Already a member', other_org: 'In another organization',
   org_limit: 'Limit reached', limit_reached: 'Not tried, limit reached', invalid_email: 'Not an email address', not_a_farmer: 'Not a farmer account', error: 'Error',
 };
 
@@ -121,8 +121,8 @@ export default function AdminOrganizationDetail() {
           <button className="btn btn-primary" disabled={!csv.trim() || !consent || importFarmers.isPending || o.status !== 'active'} onClick={runImport}>{importFarmers.isPending ? t('Importing…') : t('Import farmers')}</button>
           {report && (
             <div style={{ marginTop: 12 }}>
-              <p><b>{t('{{count}} farmers joined.', { count: report.joined })}</b></p>
-              <ul className="org-list">{report.rows.filter((r) => r.result !== 'joined').slice(0, 50).map((r, i) => <li key={i}>{r.email}: <span className="org-muted">{t(RESULT[r.result] || r.result)}</span></li>)}</ul>
+              <p><b>{t('{{count}} farmers joined.', { count: report.joined })}</b>{report.invited ? <> {t('{{count}} invitations sent. They join when they sign up.', { count: report.invited })}</> : null}</p>
+              <ul className="org-list">{report.rows.filter((r) => r.result !== 'joined' && r.result !== 'invited').slice(0, 50).map((r, i) => <li key={i}>{r.email}: <span className="org-muted">{t(RESULT[r.result] || r.result)}</span></li>)}</ul>
             </div>
           )}
         </div>

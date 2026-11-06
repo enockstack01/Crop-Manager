@@ -16,6 +16,7 @@
     "test:images": "node src/scripts/test-images.mjs",
     "test:vision": "node src/scripts/test-vision.mjs",
     "test:hardening": "node src/scripts/test-hardening.mjs",
+    "test:invites": "node src/scripts/test-invites.mjs",
     "test:diagnose": "node src/scripts/test-diagnose-vision.mjs"
   },
   "dependencies": {

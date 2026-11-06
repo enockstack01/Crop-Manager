@@ -17,7 +17,7 @@ import { t } from '../../i18n';
 
 const LINK_TONE: Record<string, 'success' | 'neutral' | 'danger' | 'warning'> = { active: 'success', expired: 'neutral', revoked: 'danger', full: 'warning' };
 const RESULT: Record<string, string> = {
-  joined: 'Joined', not_registered: 'No account with this email', already_member: 'Already a member', other_org: 'In another organization',
+  joined: 'Joined', invited: 'Invitation emailed', invited_test: 'Invitation saved (test mode sends no email)', invite_not_sent: 'Invitation saved, but the email could not be sent', not_registered: 'No account with this email', already_member: 'Already a member', other_org: 'In another organization',
   org_limit: 'Limit reached', limit_reached: 'Not tried, limit reached', invalid_email: 'Not an email address', not_a_farmer: 'Not a farmer account', error: 'Error',
 };
 
@@ -130,8 +130,8 @@ export function AdminOrganizationDetailScreen({ route, navigation }: any) {
           </View>
           {report ? (
             <View style={{ marginTop: 12, gap: 4 }}>
-              <AppText weight="700" style={{ fontSize: 13 }}>{t('{{count}} farmers joined.', { count: report.joined })}</AppText>
-              {report.rows.filter((r: any) => r.result !== 'joined').slice(0, 50).map((r: any, i: number) => (
+              <AppText weight="700" style={{ fontSize: 13 }}>{t('{{count}} farmers joined.', { count: report.joined })}{report.invited ? ` ${t('{{count}} invitations sent. They join when they sign up.', { count: report.invited })}` : ''}</AppText>
+              {report.rows.filter((r: any) => r.result !== 'joined' && r.result !== 'invited').slice(0, 50).map((r: any, i: number) => (
                 <AppText key={i} style={{ fontSize: 12 }}>{r.email}: <AppText style={{ fontSize: 12, color: colors.textLight }}>{t(RESULT[r.result] || r.result)}</AppText></AppText>
               ))}
             </View>

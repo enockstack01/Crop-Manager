@@ -2,7 +2,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { initLlama, LlamaContext } from 'llama.rn';
 import { familyAdviceIn } from './advice';
 import { labelNames } from './crops';
-import { parseNote, type Note, type NoteLang } from './note';
+import { cleanText, parseNote, type Note, type NoteLang } from './note';
 
 export { parseNote };
 export type { Note, NoteLang };
@@ -218,6 +218,46 @@ export async function writeNote(input: NoteInput, onProgress?: (chars: number) =
     const note = parseNote(res.text || '', input.lang);
     if (!note.overview || !note.steps.length) throw new Error('The note could not be written. Try again.');
     return note;
+  } finally {
+    scheduleRelease();
+  }
+}
+
+/* ------------------------------------------------------------------ questions */
+
+export type Turn = { role: 'user' | 'assistant'; content: string };
+
+const ASK = {
+  en: {
+    system: `You are the offline farm helper of CropManager, for smallholder farmers in Africa. Answer in English, in at most five short sentences, in simple words. Give only basic, well-known farm practice (crop care, planting, spacing, soil, water, storage, hygiene). Never give doses, mixing amounts, spray dates, or product or brand names. For pests, diseases or chemicals, say what to look for and that the local extension officer knows which registered product suits the crop and the label must be followed. If you are not sure, say so and send the farmer to an extension officer. Do not invent facts about the farmer's farm.`,
+    unsafe: 'I cannot answer that safely without internet. Please ask a local extension officer, or try again when you are online.',
+  },
+  fr: {
+    system: `Tu es l'assistant agricole hors ligne de CropManager, pour les petits agriculteurs en Afrique. Réponds en français, en cinq phrases courtes au plus, avec des mots simples. Donne seulement des pratiques agricoles de base bien connues (soins des cultures, semis, espacement, sol, eau, stockage, hygiène). Ne donne jamais de doses, de quantités de mélange, de dates de traitement ni de noms de produits. Pour les ravageurs, les maladies ou les produits chimiques, dis quoi observer et que l'agent de vulgarisation sait quel produit homologué convient à la culture et qu'il faut suivre l'étiquette. Si tu n'es pas sûr, dis-le et envoie l'agriculteur voir un agent de vulgarisation. N'invente rien sur l'exploitation de l'agriculteur.`,
+    unsafe: "Je ne peux pas répondre à cela en toute sécurité sans internet. Demandez à un agent de vulgarisation, ou réessayez quand vous êtes en ligne.",
+  },
+};
+
+/** Answers a farming question on the phone. The answer is filtered the same way as the notes (no doses, no products, no chatter). */
+export async function askOffline(history: Turn[], question: string, lang: NoteLang, onProgress?: (chars: number) => void): Promise<string> {
+  const c = await context();
+  const T = ASK[lang] || ASK.en;
+  try {
+    let chars = 0;
+    const res = await c.completion(
+      {
+        messages: [{ role: 'system', content: T.system }, ...history.slice(-6).map((h) => ({ role: h.role, content: h.content.slice(0, 600) })), { role: 'user', content: question.slice(0, 500) }],
+        n_predict: 300,
+        temperature: 0.3,
+        top_k: 30,
+        top_p: 0.9,
+        penalty_repeat: 1.1,
+        stop: ['<end_of_turn>'],
+      },
+      (d) => { chars += (d.token || '').length; onProgress?.(chars); },
+    );
+    const text = cleanText(res.text || '', 700);
+    return text.length >= 12 ? text : T.unsafe;
   } finally {
     scheduleRelease();
   }

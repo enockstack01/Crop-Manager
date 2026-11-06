@@ -56,6 +56,21 @@ const ReferralLinkSchema = base({
   revoked_at: { type: Date, default: null },
 });
 
+/** A farmer invited by email who has no account yet. At the farmer's first sign-in with that verified address the link to the organization is made. */
+const FarmerInviteSchema = base({
+  organization_id: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
+  email: { type: String, required: true, trim: true, lowercase: true, index: true },
+  invited_by: { type: String, default: '' },
+  status: { type: String, enum: ['invited', 'joined', 'revoked'], default: 'invited' },
+  expires_at: { type: Date, required: true },
+  email_sent: { type: Boolean, default: false }, // false when the email service refused (the invitation still waits for the farmer to sign up)
+  email_error: { type: String, default: '' },
+  sent_count: { type: Number, default: 0 },
+  last_sent_at: { type: Date, default: null },
+  joined_at: { type: Date, default: null },
+});
+FarmerInviteSchema.index({ organization_id: 1, email: 1 }, { unique: true });
+
 const FarmerOrganizationSchema = base({
   farmer_id: { type: String, required: true }, // Clerk user id of the farmer
   organization_id: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
@@ -91,5 +106,6 @@ const AuditLogSchema = new Schema(
 export const Organization = mongoose.model('Organization', OrganizationSchema);
 export const OrganizationMember = mongoose.model('OrganizationMember', OrganizationMemberSchema);
 export const ReferralLink = mongoose.model('ReferralLink', ReferralLinkSchema);
+export const FarmerInvite = mongoose.model('FarmerInvite', FarmerInviteSchema);
 export const FarmerOrganization = mongoose.model('FarmerOrganization', FarmerOrganizationSchema);
 export const AuditLog = mongoose.model('AuditLog', AuditLogSchema);

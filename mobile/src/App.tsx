@@ -26,6 +26,7 @@ import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
 import { Loading } from './components/ui';
 import { SplashHost, SplashReadyOnMount, useSplashReady } from './components/AppSplash';
+import { OfflineGate } from './components/OfflineGate';
 import { AppNavigator } from './navigation/AppNavigator';
 import { OrgNavigator } from './navigation/OrgNavigator';
 import { JoinScreen } from './screens/JoinScreen';
@@ -171,6 +172,8 @@ export default function App() {
           <SplashHost>
             {/* rethrow: clerk-js otherwise treats every failed request on native as "offline" and
                 returns null, hiding the real error (e.g. the Google sign-in start) */}
+            {/* offline mode and the first-launch download of the offline assistant live above sign-in, so they need no account and no server */}
+            <OfflineGate>
             {ready ? (
               <ClerkProvider
                 publishableKey={CLERK_PUBLISHABLE_KEY}
@@ -182,6 +185,7 @@ export default function App() {
                 <AppShell />
               </ClerkProvider>
             ) : null}
+            </OfflineGate>
           </SplashHost>
         </ThemeProvider>
       </SafeAreaProvider>
