@@ -28,6 +28,9 @@ export const REASONS = {
   reason_required: 'Enter the reason for changing the farmer limit',
   email_is_farmer: 'This email belongs to a farmer account. Invite a different email address.',
   in_other_org: 'This person already works for another organization.',
+  too_soon: 'This invitation was sent a moment ago. Try again in a few minutes.',
+  org_not_active: 'The organization must be approved before it can invite farmers.',
+  already_joined: 'This farmer has already joined.',
 };
 
 /** The message for an API error: translated from its reason code when it has one. */
@@ -57,6 +60,10 @@ export const useOrgFarmers = (orgId, params) =>
 export const useOrgLinks = (orgId) => useQuery({ queryKey: ['org', orgId, 'links'], queryFn: () => get(`/organizations/${orgId}/referral-links`), enabled: !!orgId, refetchInterval: 30_000 });
 export const useOrgMembers = (orgId, enabled = true) => useQuery({ queryKey: ['org', orgId, 'members'], queryFn: () => get(`/organizations/${orgId}/members`), enabled: !!orgId && enabled });
 
+export const useOrgInvites = (orgId, status) => useQuery({ queryKey: ['org', orgId, 'invites', status || 'all'], queryFn: () => get(`/organizations/${orgId}/farmer-invites`, status ? { status } : undefined), enabled: !!orgId });
+export const useFarmerRecords = (orgId, farmerId) => useQuery({ queryKey: ['org', orgId, 'farmer', farmerId], queryFn: () => get(`/organizations/${orgId}/farmers/${farmerId}/records`), enabled: !!orgId && !!farmerId, retry: false });
+export const useOrgActivity = (orgId, page, enabled = true) => useQuery({ queryKey: ['org', orgId, 'activity', page], queryFn: () => get(`/organizations/${orgId}/activity`, { page }), enabled: !!orgId && enabled, placeholderData: (p) => p });
+
 export function useOrgMutations(orgId) {
   const qc = useQueryClient();
   const inv = () => qc.invalidateQueries({ queryKey: ['org', orgId] });
@@ -66,6 +73,10 @@ export function useOrgMutations(orgId) {
     createLink: mut((body) => api.post(`/organizations/${orgId}/referral-links`, body).then((r) => r.data)),
     revokeLink: mut((id) => api.delete(`/organizations/${orgId}/referral-links/${id}`).then((r) => r.data)),
     invite: mut((body) => api.post(`/organizations/${orgId}/members`, body).then((r) => r.data)),
+    inviteFarmers: mut((body) => api.post(`/organizations/${orgId}/farmer-invites`, body).then((r) => r.data)),
+    resendInvite: mut((id) => api.post(`/organizations/${orgId}/farmer-invites/${id}/resend`).then((r) => r.data)),
+    revokeInvite: mut((id) => api.delete(`/organizations/${orgId}/farmer-invites/${id}`).then((r) => r.data)),
+    setMemberRole: mut(({ id, role }) => api.patch(`/organizations/${orgId}/members/${id}`, { role }).then((r) => r.data)),
     removeMember: mut((id) => api.delete(`/organizations/${orgId}/members/${id}`).then((r) => r.data)),
     removeFarmer: mut(({ farmerId, reason }) => api.delete(`/organizations/${orgId}/farmers/${farmerId}`, { data: { reason } }).then((r) => r.data)),
   };

@@ -35,6 +35,9 @@ const OrgRegister = lazy(() => import('./pages/OrgRegister.jsx'));
 const OrgDashboard = lazy(() => import('./pages/org/OrgDashboard.jsx'));
 const OrgFarmers = lazy(() => import('./pages/org/OrgFarmers.jsx'));
 const OrgLinks = lazy(() => import('./pages/org/OrgLinks.jsx'));
+const OrgInvites = lazy(() => import('./pages/org/OrgWorkspace.jsx').then((m) => ({ default: m.OrgInvites })));
+const OrgFarmerDetail = lazy(() => import('./pages/org/OrgWorkspace.jsx').then((m) => ({ default: m.OrgFarmerDetail })));
+const OrgActivity = lazy(() => import('./pages/org/OrgWorkspace.jsx').then((m) => ({ default: m.OrgActivity })));
 const OrgTeam = lazy(() => import('./pages/org/OrgTeamProfile.jsx').then((m) => ({ default: m.OrgTeam })));
 const OrgProfile = lazy(() => import('./pages/org/OrgTeamProfile.jsx').then((m) => ({ default: m.OrgProfile })));
 const AdminOrganizations = lazy(() => import('./pages/admin/AdminOrganizations.jsx'));
@@ -110,6 +113,9 @@ export function App() {
         <Route path="org">
           <Route index element={<OrgDashboard />} />
           <Route path="farmers" element={<OrgFarmers />} />
+          <Route path="farmers/:farmerId" element={<OrgFarmerDetail />} />
+          <Route path="invitations" element={<OrgInvites />} />
+          <Route path="activity" element={<OrgActivity />} />
           <Route path="links" element={<OrgLinks />} />
           <Route path="team" element={<OrgTeam />} />
           <Route path="profile" element={<OrgProfile />} />

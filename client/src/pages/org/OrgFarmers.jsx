@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState, IconButton, Loading, PageHeader, Pagination } from '../../components/ui.jsx';
 import { useConfirm } from '../../components/Confirm.jsx';
 import { useToast } from '../../components/Toast.jsx';
@@ -50,7 +50,7 @@ function Body({ org, role }) {
       <PageHeader
         title="Farmers"
         subtitle="Farmers linked to your organization."
-        action={<button className="btn btn-secondary" onClick={exportCsv}><i className="fas fa-file-csv" /> {t('Export CSV')}</button>}
+        action={<span className="org-actions"><Link className="btn btn-primary" to="/org/invitations"><i className="fas fa-paper-plane" /> {t('Invite farmers')}</Link><button className="btn btn-secondary" onClick={exportCsv}><i className="fas fa-file-csv" /> {t('Export CSV')}</button></span>}
       />
       <div className="table-toolbar">
         <div className="table-toolbar-left">
@@ -87,7 +87,7 @@ function Body({ org, role }) {
               <tbody>
                 {data.data.map((f) => (
                   <tr key={f.farmer_id}>
-                    <td><b>{f.name}</b></td>
+                    <td><Link to={`/org/farmers/${f.farmer_id}`}><b>{f.name}</b></Link></td>
                     <td>{f.location || '—'}</td>
                     <td>{f.farms ? `${Math.round(f.farm_ha * 10) / 10} ha · ${t(f.farms === 1 ? '{{count}} farm' : '{{count}} farms', { count: f.farms })}` : '—'}</td>
                     <td>{f.crops.length ? f.crops.join(', ') : '—'}</td>

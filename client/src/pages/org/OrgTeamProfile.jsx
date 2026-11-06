@@ -18,7 +18,7 @@ function TeamBody({ org }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { data: members, isLoading } = useOrgMembers(org.id);
-  const { invite, removeMember } = useOrgMutations(org.id);
+  const { invite, removeMember, setMemberRole } = useOrgMutations(org.id);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('org_staff');
 
@@ -31,6 +31,9 @@ function TeamBody({ org }) {
     } catch (err) {
       toast(reasonText(err), 'error');
     }
+  };
+  const changeRole = async (m, next) => {
+    try { await setMemberRole.mutateAsync({ id: m.id, role: next }); toast(t('Role updated')); } catch (err) { toast(reasonText(err), 'error'); }
   };
   const remove = async (m) => {
     if (!(await confirm(t('Remove <strong>{{name}}</strong> from the team?', { name: m.name || m.email }), { confirmLabel: t('Remove') }))) return;
@@ -65,7 +68,11 @@ function TeamBody({ org }) {
                 <tr key={m.id}>
                   <td><b>{m.name || '—'}</b></td>
                   <td>{m.email}</td>
-                  <td>{t(ROLES.find((r) => r.value === m.role)?.label || m.role)}</td>
+                  <td>
+                    <select className="form-control" style={{ minWidth: 150 }} value={m.role} aria-label={t('Role')} disabled={setMemberRole.isPending} onChange={(e) => changeRole(m, e.target.value)}>
+                      {ROLES.map((r) => <option key={r.value} value={r.value}>{t(r.label)}</option>)}
+                    </select>
+                  </td>
                   <td><span className={`badge ${m.status === 'active' ? 'badge-success' : 'badge-warning'}`}>{t(m.status === 'invited' ? 'Invited' : 'Active')}</span></td>
                   <td><IconButton icon="fa-user-minus" title="Remove" danger onClick={() => remove(m)} /></td>
                 </tr>

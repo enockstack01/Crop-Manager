@@ -7,6 +7,7 @@ import { useProfile } from '../components/profile.jsx';
 import { Loading, EmptyState, StatTile } from '../components/ui.jsx';
 import { formatCurrency, formatNumber, getGreeting, displayName, formatTotals, sumByCurrency, currenciesUsed, getCurrency } from '../lib/format.js';
 import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
+import { RoleSummary } from '../features/dashboard/RoleSummary.jsx';
 import { t } from '../i18n/index.js';
 import { InsightTiles } from '../features/dashboard/InsightTiles.jsx';
 import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed.jsx';
@@ -82,6 +83,8 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      <RoleSummary />
 
       {/* Farm profile: land utilization + farm at a glance (same design and order as the mobile app) */}
       <FarmProfile

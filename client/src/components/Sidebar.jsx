@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
+import { useProfile } from './profile.jsx';
+import { useMyOrg } from '../lib/orgApi.js';
 import { t } from '../i18n/index.js';
 
 const SECTIONS = [
@@ -60,15 +62,39 @@ const SECTIONS = [
   { label: 'System', items: [{ to: '/settings', icon: 'fa-cog', label: 'Settings' }] },
 ];
 
+/*
+ * The menu keeps every entry for every farm account; the account type decides which groups come first and, for a cooperative manager,
+ * adds the way to the organization tools. An agronomist works with crops and diagnosis first; a farm manager with the operation.
+ */
+const FIRST = {
+  Agronomist: ['Dashboard', 'Tools', 'Production', 'Farm Management', 'Analytics'],
+  'Farm Manager': ['Dashboard', 'Production', 'Resources', 'Finance', 'Analytics'],
+};
+const coopSection = (hasOrg) => ({ label: 'Cooperative', items: [hasOrg ? { to: '/org', icon: 'fa-people-group', label: 'My organization' } : { to: '/organization/register', icon: 'fa-people-group', label: 'Register an organization' }] });
+
+export function sectionsFor(role, hasOrg = false) {
+  const order = FIRST[role];
+  let list = SECTIONS;
+  if (order) {
+    const key = (s) => s.label || 'Dashboard';
+    const rank = (s) => { const i = order.indexOf(key(s)); return i === -1 ? order.length : i; };
+    list = [...SECTIONS].sort((a, b) => rank(a) - rank(b)); // stable: groups not named keep their order
+  }
+  if (role === 'Cooperative Manager') list = [SECTIONS[0], coopSection(hasOrg), ...SECTIONS.slice(1)];
+  return list;
+}
+
 const ORG_SECTIONS = [
   { items: [{ to: '/org', icon: 'fa-th-large', label: 'Overview', end: true }] },
   {
     label: 'Organization',
     items: [
       { to: '/org/farmers', icon: 'fa-users', label: 'Farmers' },
+      { to: '/org/invitations', icon: 'fa-envelope', label: 'Invitations' },
       { to: '/org/links', icon: 'fa-link', label: 'Referral links' },
       { to: '/org/team', icon: 'fa-user-group', label: 'Team', admin: true },
       { to: '/org/profile', icon: 'fa-building', label: 'Organization' },
+      { to: '/org/activity', icon: 'fa-clock-rotate-left', label: 'Activity', admin: true },
     ],
   },
   { label: 'System', items: [{ to: '/settings', icon: 'fa-cog', label: 'Settings' }] },
@@ -93,6 +119,8 @@ export const NAV_PAGES = (orgUser = false) =>
 
 export function Sidebar({ collapsed, mobileOpen, isAdmin, orgRole = '', onToggle, onNavigate }) {
   const { signOut } = useClerk();
+  const { profile } = useProfile();
+  const { orgId } = useMyOrg();
 
   return (
     <aside
@@ -108,7 +136,7 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, orgRole = '', onToggle
       </div>
 
       <nav className="sidebar-nav">
-        {(orgRole ? ORG_SECTIONS : isAdmin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS).map((section, i) => (
+        {(orgRole ? ORG_SECTIONS : isAdmin ? [...SECTIONS, ADMIN_SECTION] : sectionsFor(profile?.role, !!orgId)).map((section, i) => (
           <div key={section.label || i}>
             {section.label && <div className="sidebar-label">{t(section.label)}</div>}
             {section.items.filter((item) => !item.admin || orgRole === 'org_admin').map((item) => (
