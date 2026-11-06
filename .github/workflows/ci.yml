@@ -1,0 +1,113 @@
+name: CI
+
+# Runs on every pull request and on every push to main. Make the jobs "server", "web-and-audit" and "mobile" required checks
+# (branch protection: see docs/RELEASE.md) so nothing reaches main, and therefore production, without them passing.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: server
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      # test values only: the suites use the dev-auth header and mock AI, so they never call Clerk, Hugging Face or the AI provider
+      MONGODB_URI: mongodb://localhost:27017/cropmanager_ci
+      CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5hY2NvdW50cy5kZXYk
+      CLERK_SECRET_KEY: sk_test_ci_not_a_real_key
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the web app (the production-mode checks serve it)
+        run: npm run build
+      - name: Every server test suite
+        run: npm run test:all --workspace server
+
+  web-and-audit:
+    name: web-and-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Web app builds
+        run: npm run build
+      - name: No high or critical advisories in what runs in production (web and server)
+        run: npm audit --omit=dev --audit-level=high
+
+  mobile:
+    name: mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # runs the TypeScript test files directly
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Rules that decide offline mode and the download (no phone needed)
+        run: |
+          node scripts/test-policy.mjs
+          node scripts/test-note.mjs
+          node scripts/test-checksum.mjs
+      - name: No high or critical advisories
+        run: npm audit --omit=dev --audit-level=high
+
+  # Builds an Android debug app so a change to the build tools or a native library fails here, not on release day.
+  android-debug-build:
+    name: android-debug-build
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'build-android')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Build (arm64 only)
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a --no-daemon
