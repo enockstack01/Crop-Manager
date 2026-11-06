@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { Paths } from 'expo-file-system';
-import { autoDownloadVerdict } from '../lib/modePolicy';
+import { autoDownloadVerdict, isOnline } from '../lib/modePolicy';
 import { toNet } from '../lib/connectivity';
 import { MODEL, downloadModel, modelStatus, deleteModel } from './assistant';
 
@@ -20,6 +20,8 @@ export type DownloadState = { phase: Phase; have: number; total: number; reason:
 let state: DownloadState = { phase: 'idle', have: 0, total: MODEL.bytes, reason: '', auto: true };
 const subs = new Set<() => void>();
 let ctl: AbortController | null = null;
+// taken synchronously before anything is awaited: two starts at the same moment (launch and the connection listener) must never both run
+let running = false;
 
 const set = (patch: Partial<DownloadState>) => {
   state = { ...state, ...patch };
@@ -48,9 +50,10 @@ export async function setAutoDownload(on: boolean) {
 
 /** Downloads now (also on mobile data when `allowMetered`, because the person chose to). */
 export async function startDownload({ allowMetered = false }: { allowMetered?: boolean } = {}) {
-  if (state.phase === 'downloading') return;
-  const v = await check(allowMetered);
-  if (!v.ok) { set({ phase: v.reason === 'ready' ? 'ready' : 'waiting', reason: v.reason }); return; }
+  if (running) return;
+  running = true;
+  const v = await check(allowMetered).catch(() => null);
+  if (!v || !v.ok) { running = false; if (v) set({ phase: v.reason === 'ready' ? 'ready' : 'waiting', reason: v.reason }); return; }
   ctl = new AbortController();
   set({ phase: 'downloading', reason: '', ...{ have: modelStatus().have } });
   try {
@@ -60,6 +63,7 @@ export async function startDownload({ allowMetered = false }: { allowMetered?: b
     set({ ...fromDisk(), phase: e?.message === 'cancelled' ? 'paused' : 'error', reason: e?.message === 'cancelled' ? 'cancelled' : 'network' });
   } finally {
     ctl = null;
+    running = false;
   }
 }
 
@@ -88,7 +92,7 @@ async function check(allowMetered: boolean) {
 
 /** Starts the download by itself when the policy allows it; otherwise records why it is waiting. */
 export async function autoStart() {
-  if (state.phase === 'downloading') return;
+  if (running) return;
   const v = await check(false);
   if (v.ok) startDownload();
   else set({ ...(v.reason === 'ready' ? fromDisk() : {}), reason: v.reason });
@@ -99,7 +103,12 @@ export function useAutoDownload() {
   useEffect(() => {
     let live = true;
     initDownloadState().then(() => { if (live) autoStart(); });
-    const unsub = NetInfo.addEventListener(() => { if (live) autoStart(); });
+    const unsub = NetInfo.addEventListener((n) => {
+      if (!live) return;
+      // connection lost: end the attempt now (a request on a dead connection can hang for ever), it restarts when the connection is back
+      if (!isOnline(toNet(n))) { ctl?.abort(); return; }
+      autoStart();
+    });
     return () => { live = false; unsub(); };
   }, []);
 }

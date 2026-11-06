@@ -22,7 +22,10 @@ export const MODEL = {
   bytes: 806_058_240,
   sha256: '8ccc5cd1f1b3602548715ae25a66ed73fd5dc68a210412eea643eb20eb75a135', // published checksum, for reference
 };
-const CHUNK = 8 * 1024 * 1024;
+// small pieces and a time limit for each: on a slow or dropping connection a request can hang for ever without failing, which would leave the
+// download stuck. 2 MB in 120 s still works on a connection of about 17 KB/s.
+const CHUNK = 2 * 1024 * 1024;
+const CHUNK_TIMEOUT_MS = 120_000;
 
 /** Languages the small model writes well in (checked by hand). Every other language gets the note in English. */
 export const NOTE_LANGS = ['en', 'fr'] as const;
@@ -67,9 +70,20 @@ export async function downloadModel({ onProgress, signal }: { onProgress?: (have
     let bytes: Uint8Array | null = null;
     for (let attempt = 0; attempt < 5 && !bytes; attempt += 1) {
       try {
-        const res = await fetch(MODEL.url, { headers: { Range: `bytes=${have}-${end}` }, signal });
-        if (res.status !== 206) throw new Error(`the server answered ${res.status}`); // a 200 would be the whole file: not what we asked for
-        const buf = new Uint8Array(await res.arrayBuffer());
+        // this piece gets its own timer; the person's Stop (signal) also ends it
+        const piece = new AbortController();
+        const onStop = () => piece.abort();
+        signal?.addEventListener('abort', onStop);
+        const timer = setTimeout(() => piece.abort(), CHUNK_TIMEOUT_MS);
+        let buf: Uint8Array;
+        try {
+          const res = await fetch(MODEL.url, { headers: { Range: `bytes=${have}-${end}` }, signal: piece.signal });
+          if (res.status !== 206) throw new Error(`the server answered ${res.status}`); // a 200 would be the whole file: not what we asked for
+          buf = new Uint8Array(await res.arrayBuffer());
+        } finally {
+          clearTimeout(timer);
+          signal?.removeEventListener('abort', onStop);
+        }
         if (buf.length !== want) throw new Error('a piece arrived incomplete');
         bytes = buf;
       } catch (e: any) {

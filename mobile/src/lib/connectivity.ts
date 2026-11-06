@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import { API_ORIGIN } from '../env';
 import { GRACE_MS, Net, isOnline, offlineModeNow } from './modePolicy';
 
 /*
- * Is the phone really online? "Connected to Wi-Fi" is not enough (a router with no internet, a captive portal), so the check asks the
- * CropManager server itself. That also works in places where the usual public check address is blocked.
+ * Is the phone really online? "Connected to Wi-Fi" is not enough (a router with no internet, a captive portal), so the phone asks a
+ * neutral public address that answers with an empty 204. It deliberately does NOT ask the CropManager server: a server that is asleep
+ * or restarting must show the normal "cannot reach CropManager" screen, not throw every farmer into offline mode.
+ * (Cloudflare's check address is used because it is reachable in more countries than Google's.)
  */
 NetInfo.configure({
-  reachabilityUrl: `${API_ORIGIN}/api/health`,
-  reachabilityTest: async (response) => response.status === 200,
-  reachabilityLongTimeout: 20 * 1000, // while we believe we are offline
+  reachabilityUrl: 'https://cp.cloudflare.com/generate_204',
+  reachabilityTest: async (response) => response.status === 204,
+  reachabilityLongTimeout: 15 * 1000, // while we believe we are offline
   reachabilityShortTimeout: 10 * 1000, // while we believe we are online
-  reachabilityRequestTimeout: 12 * 1000,
+  reachabilityRequestTimeout: 10 * 1000,
   useNativeReachability: false,
 });
 
