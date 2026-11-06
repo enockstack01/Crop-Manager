@@ -246,7 +246,7 @@ export async function runChat(req, turns, { extraSystem = '', extra } = {}) {
   try {
     const out = await askAgent({
       task: 'chat',
-      system: systemBlocks(langOf(req), contextText(ctx), `Task: answer the farmer's question as a practical agronomist. Use the farm snapshot first; when you need details (dates, amounts, history) call the record tools instead of guessing. Keep answers short (under 200 words) unless the farmer asks for detail, and say clearly what data you used and what is missing. ${extraSystem}`),
+      system: systemBlocks(langOf(req), contextText(ctx), `Task: answer the farmer's question as a practical agronomist. Use the farm snapshot first; when you need details (dates, amounts, history) call the record tools instead of guessing. Keep answers short (under 200 words) unless the farmer asks for detail. Reply with the answer only: do not list the data you used or describe your steps, and mention missing records only when the answer depends on them. ${extraSystem}`),
       messages: turns,
       tools,
       handlers,

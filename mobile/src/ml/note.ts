@@ -9,6 +9,8 @@ const LABELS = ['OVERVIEW', 'CAUSE', 'STEPS', 'PREVENT', 'HELP'];
 // anything that looks like a dose or a product is dropped, however the small model got there
 const DOSE = /\b\d+([.,]\d+)?\s?(g|kg|mg|ml|l|litres?|liters?|cc|%|ppm|tbsp|tsp|tablespoons?|teaspoons?|grammes?|grams?)\b/i;
 const PRODUCT = /(mancozeb|dithane|ridomil|copper|cuivre|cypermethrin|cyperm[ée]thrine|lambda|chlorpyrifos|glyphosate|neem|metalaxyl|carbendazim|imidacloprid|emamectin|karate|roundup|bordeaux|sulph?ur|soufre)/i;
+// sentences that talk about the request instead of answering it
+const NARRATION = /^(okay|ok|sure|certainly|of course|hello|hi|bonjour|d'accord|bien s[ûu]r)\b|^(you (asked|want|are asking)|your question|the (user|question|farmer) (asked|is asking|wants)|as an ai|based on (the|your) (information|question|details|photo)|vous (avez demand|voulez savoir)|votre question|d'apr[èe]s (les|vos) (informations|d[ée]tails))/i;
 const CHATTER = /(let me know|n'hésitez pas|i hope this|j'espère que|---|here is|voici|i have focused|je me suis concentr)/i;
 // a list of product names is never complete, so any sentence about spraying or applying chemicals is dropped too,
 // unless it sends the farmer to the extension officer or the product label (the only chemical advice the note may give)
@@ -21,7 +23,7 @@ export const cleanText = (s: string, max: number) => {
   const kept: string[] = [];
   for (const raw of first.match(/[^.!?]+[.!?]*\s*/g) || [first]) {
     const sentence = raw.trim();
-    if (!sentence || CHATTER.test(sentence) || DOSE.test(sentence) || PRODUCT.test(sentence)) continue;
+    if (!sentence || NARRATION.test(sentence) || CHATTER.test(sentence) || DOSE.test(sentence) || PRODUCT.test(sentence)) continue;
     if (CHEMICAL.test(sentence) && !SEND_TO_EXPERT.test(sentence)) continue;
     if (sentence.split(' ').some((w) => w.length > 28)) continue; // a runaway string, not a word
     kept.push(sentence);

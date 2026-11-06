@@ -3,7 +3,7 @@
  *
  *   node mobile/scripts/test-note.mjs
  */
-import { parseNote } from '../src/ml/note.ts';
+import { parseNote, cleanText } from '../src/ml/note.ts';
 
 let passed = 0;
 let failures = 0;
@@ -65,6 +65,15 @@ ok(n.help === "Demandez à l'agent de vulgarisation.", 'French chatter is remove
 console.log('6. length limits');
 n = parseNote(`OVERVIEW: ${'Sentence about the crop. '.repeat(40)}\nSTEPS:\n- ${'step '.repeat(100)}.\nCAUSE: x.`, 'en');
 ok(n.overview.length <= 320, 'the overview is capped', String(n.overview.length));
+
+console.log('7. answers contain the answer only');
+const clean = (t) => cleanText(t, 700);
+ok(clean('Okay, here you go. Plant maize 75 cm between rows. Keep the field weeded.') === 'Plant maize 75 cm between rows. Keep the field weeded.', 'a greeting is dropped', clean('Okay, here you go. Plant maize 75 cm between rows. Keep the field weeded.'));
+ok(clean('You asked how to store maize. Dry it well and keep it off the floor.') === 'Dry it well and keep it off the floor.', 'a sentence that restates the question is dropped');
+ok(clean('Based on the information provided, rotate crops each season.') === '', 'a sentence that describes the information given is dropped');
+ok(clean('Votre question porte sur le stockage. Séchez bien le maïs.') === 'Séchez bien le maïs.', 'the same in French');
+ok(clean('Okra grows well in warm soil. High rows help drainage.') === 'Okra grows well in warm soil. High rows help drainage.', 'words that only start like okay or hi are kept');
+ok(clean('Rotate crops. Beans are okay after maize.').includes('Beans are okay'), 'the word okay inside a real sentence is kept');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);
