@@ -7,6 +7,7 @@ import { AppText, PageHeader, Screen } from '../components/ui';
 import { Button } from '../components/Button';
 import { SelectField } from '../components/fields';
 import { ErrorNote, OfflineResult } from '../features/ai/AiBits';
+import { OfflineNote } from '../features/ai/OfflineNote';
 import { offlineCrops } from '../ml/crops';
 import { t } from '../i18n';
 
@@ -87,6 +88,7 @@ export function ScanScreen() {
       ) : null}
       <ErrorNote message={error} />
       {result && !busy ? <OfflineResult result={result} scan /> : null}
+      {result && !busy ? <OfflineNote result={result} /> : null}
       <AppText variant="caption" style={{ marginTop: 16 }}>
         {t('A screening aid, not a diagnosis. For a full written report, add a scouting record and use the AI diagnosis button.')}
       </AppText>

@@ -10,6 +10,7 @@ import { aiDiagnose, reportToText } from '../../lib/ai';
 import { shareDiagnosisPdf } from '../../lib/pdfReport';
 import { useProfile } from '../../lib/useResource';
 import { AiDisclaimer, AiStatusBar, DetectionCard, DiagnosisReport, ErrorNote, OfflineResult, Thinking } from './AiBits';
+import { OfflineNote } from './OfflineNote';
 import { isLocalPhoto, localPhotoFor } from '../../components/PhotoSetField';
 import { t } from '../../i18n';
 
@@ -125,6 +126,7 @@ export function DiagnoseSheet({ visible, onClose, input, onUse, autoCamera = fal
       />
       {busy ? <Thinking label={offline ? 'Waiting for the AI assistant…' : 'Looking at the photo…'} /> : null}
       {offline && !report ? <OfflineResult result={offline} waiting={busy} /> : null}
+      {offline && !report ? <OfflineNote result={offline} notes={symptoms} auto /> : null}
       <ErrorNote message={error} />
       {report && !busy ? <DetectionCard detection={detection} hasPhoto={photos.length > 0} /> : null}
       {report && !busy ? <DiagnosisReport report={report} photos={photos} /> : null}

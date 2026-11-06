@@ -14,3 +14,10 @@ export function offlineCrops(lang = i18n.language): { value: string; label: stri
   }
   return [...seen.entries()].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
 }
+
+/** Crop, disease and plant part of a class (by its label key) in a chosen language, English when that language has no entry. */
+export function labelNames(key: string, lang: string): { crop: string; disease: string; part: string } {
+  const l: any = (LABELS as any[]).find((x) => x.key === key);
+  const n = l?.names?.[lang] || l?.names?.en || {};
+  return { crop: n.crop || l?.crop || '', disease: n.disease || l?.disease || '', part: n.part || l?.part || '' };
+}

@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import i18n, { t as tApp } from '../i18n';
 
 /*
  * General advice per type of problem, shown with an offline (on-phone) result, where there is no AI report.
@@ -7,9 +7,10 @@ import { t } from '../i18n';
  */
 export type Family = 'healthy' | 'fungal' | 'bacterial' | 'viral' | 'pest' | 'general';
 export type FamilyAdvice = { about: string; act: string[]; prevent: string[] };
+type Tr = (s: string) => string;
 
-const ADVICE: Record<Family, () => FamilyAdvice> = {
-  healthy: () => ({
+const ADVICE: Record<Family, (t: Tr) => FamilyAdvice> = {
+  healthy: (t) => ({
     about: t('No disease signs detected.'),
     act: [
       t('Keep scouting the field every week.'),
@@ -20,7 +21,7 @@ const ADVICE: Record<Family, () => FamilyAdvice> = {
       t('Rotate crops and avoid water-logging.'),
     ],
   }),
-  fungal: () => ({
+  fungal: (t) => ({
     about: t('Fungal diseases spread in humid, wet conditions.'),
     act: [
       t('Remove and destroy badly affected leaves or plants; do not compost them.'),
@@ -33,7 +34,7 @@ const ADVICE: Record<Family, () => FamilyAdvice> = {
       t('Plant resistant varieties where available.'),
     ],
   }),
-  bacterial: () => ({
+  bacterial: (t) => ({
     about: t('Bacterial diseases spread by rain splash, tools and infected seed.'),
     act: [
       t('Remove infected plants and keep them away from healthy ones.'),
@@ -46,7 +47,7 @@ const ADVICE: Record<Family, () => FamilyAdvice> = {
       t('Control weeds and insects that carry bacteria.'),
     ],
   }),
-  viral: () => ({
+  viral: (t) => ({
     about: t('Viral diseases cannot be cured and are carried by insects, tools and cuttings.'),
     act: [
       t('Uproot and destroy infected plants early.'),
@@ -58,7 +59,7 @@ const ADVICE: Record<Family, () => FamilyAdvice> = {
       t('Remove weeds that host the virus.'),
     ],
   }),
-  pest: () => ({
+  pest: (t) => ({
     about: t('Insects, mites or nematodes are damaging the crop.'),
     act: [
       t('Check leaf undersides and stems for the pest.'),
@@ -71,7 +72,7 @@ const ADVICE: Record<Family, () => FamilyAdvice> = {
       t('Keep field edges and weeds under control.'),
     ],
   }),
-  general: () => ({
+  general: (t) => ({
     about: t('The cause is uncertain.'),
     act: [
       t('Take a clear close-up photo of the affected leaf in daylight and try again.'),
@@ -84,7 +85,11 @@ const ADVICE: Record<Family, () => FamilyAdvice> = {
   }),
 };
 
-export const familyAdvice = (family: string): FamilyAdvice => (ADVICE[family as Family] || ADVICE.general)();
+export const familyAdvice = (family: string): FamilyAdvice => (ADVICE[family as Family] || ADVICE.general)((s) => tApp(s));
+
+/** The same advice in a chosen language (not the app's), for the prompt of the offline assistant. */
+export const familyAdviceIn = (family: string, lng: string): FamilyAdvice =>
+  (ADVICE[family as Family] || ADVICE.general)((s) => i18n.t(s, { lng }) as string);
 
 export const extensionOfficerNote = (): string =>
-  t('If the problem is spreading quickly, affects more than a small part of the field, or you are not sure what it is, show the plant to a local extension officer before spraying anything.');
+  tApp('If the problem is spreading quickly, affects more than a small part of the field, or you are not sure what it is, show the plant to a local extension officer before spraying anything.');
