@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
-import { initLlama, LlamaContext } from 'llama.rn';
+import type { LlamaContext } from 'llama.rn';
+import { offlineLlmSupported } from './capability';
 import { familyAdviceIn } from './advice';
 import { labelNames } from './crops';
 import { cleanText, parseNote, type Note, type NoteLang } from './note';
@@ -188,7 +189,10 @@ const KEEP_MS = 120_000;
 
 async function context(): Promise<LlamaContext> {
   if (ctx) return ctx;
+  if (!offlineLlmSupported()) throw new Error('unsupported'); // a 32-bit phone: the library has no build for it and is never loaded
   if (!modelReady()) throw new Error('The offline assistant is not downloaded yet.');
+  // the language-model library is loaded here, the first time it is needed, and never on a phone that cannot run it
+  const { initLlama } = await import('llama.rn');
   loading ||= initLlama({
     model: finalFile().uri.replace(/^file:\/\//, ''),
     n_ctx: 2048,

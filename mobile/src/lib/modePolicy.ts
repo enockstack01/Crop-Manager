@@ -24,7 +24,7 @@ export function offlineModeNow(offlineSince: number | null, now: number, grace =
   return offlineSince !== null && now - offlineSince >= grace;
 }
 
-export type DownloadVerdict = { ok: boolean; reason: 'ok' | 'ready' | 'off' | 'offline' | 'mobile_data' | 'storage' | 'memory' };
+export type DownloadVerdict = { ok: boolean; reason: 'ok' | 'ready' | 'off' | 'offline' | 'mobile_data' | 'storage' | 'memory' | 'unsupported' };
 
 /** Extra room kept free on top of the model itself, so the phone does not run out of storage. */
 export const STORAGE_MARGIN = 400 * 1024 * 1024;
@@ -36,12 +36,24 @@ export const STORAGE_MARGIN = 400 * 1024 * 1024;
 export const MIN_MEMORY = 2.4 * 1024 * 1024 * 1024;
 
 /**
+ * The on-phone language model is built for 64-bit processors only (arm64-v8a on phones, x86_64 on emulators); its library has no 32-bit
+ * version. `abis` is the list the phone reports (expo-device supportedCpuArchitectures): a phone that lists only 32-bit ones (armeabi-v7a,
+ * armeabi, x86) cannot run it, even if its processor could, because its system is 32-bit. Unknown (null or empty) counts as supported, so
+ * a phone is never refused on a guess. The leaf scan is a different, smaller library and works on 32-bit too.
+ */
+export function llmSupported(abis: readonly string[] | null | undefined): boolean {
+  if (!abis || abis.length === 0) return true;
+  return abis.some((a) => a === 'arm64-v8a' || a === 'x86_64' || a === 'arm64');
+}
+
+/**
  * Whether the offline assistant may start downloading by itself: only when it is not already there, the person has not turned the
  * automatic download off, the phone is online on an unmetered network (the file is about 770 MB), there is room for it and the phone has the memory to run it.
  * `allowMetered` is set when the person chose to download on mobile data.
  */
-export function autoDownloadVerdict(i: { ready: boolean; enabled: boolean; net: Net; freeBytes: number | null; remainingBytes: number; allowMetered?: boolean; memoryBytes?: number | null }): DownloadVerdict {
+export function autoDownloadVerdict(i: { ready: boolean; enabled: boolean; net: Net; freeBytes: number | null; remainingBytes: number; allowMetered?: boolean; memoryBytes?: number | null; cpuAbis?: readonly string[] | null }): DownloadVerdict {
   if (i.ready) return { ok: false, reason: 'ready' };
+  if (!llmSupported(i.cpuAbis)) return { ok: false, reason: 'unsupported' }; // no point downloading a model this phone cannot load
   if (i.memoryBytes != null && i.memoryBytes < MIN_MEMORY) return { ok: false, reason: 'memory' }; // known and too small: never worth downloading
   if (!i.enabled && !i.allowMetered) return { ok: false, reason: 'off' };
   if (!isOnline(i.net)) return { ok: false, reason: 'offline' };

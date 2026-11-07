@@ -3,7 +3,7 @@
  *
  *   node mobile/scripts/test-policy.mjs
  */
-import { autoDownloadVerdict, GRACE_MS, isOnline, offlineModeNow, STORAGE_MARGIN } from '../src/lib/modePolicy.ts';
+import { autoDownloadVerdict, GRACE_MS, isOnline, offlineModeNow, STORAGE_MARGIN, llmSupported } from '../src/lib/modePolicy.ts';
 
 let passed = 0;
 let failures = 0;
@@ -47,6 +47,16 @@ ok(autoDownloadVerdict({ ...base, memoryBytes: 1.8e9 }).reason === 'memory', 'a 
 ok(autoDownloadVerdict({ ...base, memoryBytes: 2.9e9 }).ok, 'a phone with about 3 GB of memory does');
 ok(autoDownloadVerdict({ ...base, memoryBytes: null }).ok, 'an unknown amount of memory does not block the download');
 ok(autoDownloadVerdict({ ...base, memoryBytes: 1.8e9, allowMetered: true }).reason === 'memory', 'choosing mobile data does not override the memory rule');
+
+console.log('32-bit and 64-bit phones');
+ok(llmSupported(['arm64-v8a', 'armeabi-v7a', 'armeabi']), 'a 64-bit phone (which also lists the 32-bit ones) can run the model');
+ok(llmSupported(['x86_64', 'x86']), 'a 64-bit emulator can');
+ok(!llmSupported(['armeabi-v7a', 'armeabi']), 'a phone with a 32-bit system cannot, whatever its processor');
+ok(!llmSupported(['x86']), 'neither can a 32-bit emulator');
+ok(llmSupported(null) && llmSupported([]) && llmSupported(undefined), 'an unknown list never blocks a phone');
+ok(autoDownloadVerdict({ ...base, cpuAbis: ['armeabi-v7a'] }).reason === 'unsupported', 'a 32-bit phone does not download a model it cannot load');
+ok(autoDownloadVerdict({ ...base, cpuAbis: ['armeabi-v7a'], allowMetered: true }).reason === 'unsupported', 'choosing mobile data does not override that');
+ok(autoDownloadVerdict({ ...base, cpuAbis: ['arm64-v8a', 'armeabi-v7a'] }).ok, 'a 64-bit phone downloads as usual');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

@@ -7,6 +7,7 @@ import { AppText } from '../../components/ui';
 import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
 import i18n, { t } from '../../i18n';
+import { offlineLlmSupported } from '../../ml/capability';
 
 /**
  * The offline assistant's written note under an on-phone result: what is happening, the cause, what to do, how to prevent it and
@@ -63,7 +64,7 @@ export function OfflineNote({ result, notes = '', auto = false }: { result: any;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 
-  if (!usable || ready === null) return null;
+  if (!usable || ready === null || !offlineLlmSupported()) return null; // the written note needs the language model: not on a 32-bit phone
 
   const box = { marginTop: 12, gap: 10, padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg } as const;
 

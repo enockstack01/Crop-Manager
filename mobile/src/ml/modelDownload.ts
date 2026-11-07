@@ -90,6 +90,7 @@ async function check(allowMetered: boolean) {
     ready: s.state === 'ready', enabled: state.auto, net, allowMetered,
     freeBytes: Number.isFinite(ds) ? ds : null, remainingBytes: MODEL.bytes - s.have,
     memoryBytes: Device.totalMemory ?? null,
+    cpuAbis: Device.supportedCpuArchitectures ?? null,
   });
 }
 
