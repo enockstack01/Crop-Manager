@@ -9,24 +9,24 @@ export { parseNote };
 export type { Note, NoteLang };
 
 /*
- * The offline assistant: a small language model (Gemma 4 E2B, 4-bit, 2.84 GB) that runs on the phone through llama.cpp and writes
+ * The offline assistant: a small language model (Gemma 3 1B, 4-bit, 769 MB) that runs on the phone through llama.cpp and writes
  * a short treatment note from what the photo model found. It plays the role online assistant plays when there is signal, much more
  * modestly: it is small, so the note is short, always English or French, grounded in the stored advice, and can still be wrong.
  *
  * The model is too big to ship inside the app, so the farmer downloads it once (resumable, in 4 MB pieces) and it lives in the
- * app's own storage. It needs a phone with about 6 GB of memory (see MIN_MEMORY in lib/modePolicy.ts). Licence: Apache 2.0 (see the
- * licence line on the Offline assistant screen).
+ * app's own storage. It needs a phone with about 3 GB of memory (see MIN_MEMORY in lib/modePolicy.ts). Gemma is provided under the
+ * Gemma Terms of Use (https://ai.google.dev/gemma/terms).
  */
 
 export const MODEL = {
-  file: 'gemma-4-E2B-it-Q4_0.gguf',
+  file: 'gemma-3-1b-it-Q4_K_M.gguf',
   // pinned to one published revision of the repository, so the file (and its exact size) can never change under the app
-  url: 'https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/6938c58e698502037401a5f19f6905f2fb2f7dee/gemma-4-E2B-it-Q4_0.gguf',
-  bytes: 2_841_481_184,
-  sha256: '8e30dff3ac4c8434c49a7036fa15564bdbb6044e42bf04550bf1a096ad7e6a52', // published checksum, for reference
+  url: 'https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/resolve/f9c28bcd85737ffc5aef028638d3341d49869c27/gemma-3-1b-it-Q4_K_M.gguf',
+  bytes: 806_058_240,
+  sha256: '8ccc5cd1f1b3602548715ae25a66ed73fd5dc68a210412eea643eb20eb75a135', // published checksum, for reference
 };
-// model files of earlier versions of the app: unusable now, and each one takes room the new download needs
-const OLD_FILES = ['gemma-3-1b-it-Q4_K_M.gguf', 'gemma-3-1b-it-Q4_K_M.gguf.part'];
+// model files of earlier test builds (the 2.8 GB Gemma 4 model): unusable now, and each one takes room the download needs
+const OLD_FILES = ['gemma-4-E2B-it-Q4_0.gguf', 'gemma-4-E2B-it-Q4_0.gguf.part', 'gemma-4-E2B-it-Q4_0.gguf.sha.json'];
 const SLICE = 4 * 1024 * 1024; // how much of an existing partial file is read at a time when its checksum has to be rebuilt
 // small pieces and a time limit for each: on a slow or dropping connection a request can hang for ever without failing, which would leave the
 // download stuck. 4 MB in 120 s still works on a connection of about 35 KB/s.

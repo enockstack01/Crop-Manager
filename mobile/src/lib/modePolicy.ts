@@ -30,14 +30,14 @@ export type DownloadVerdict = { ok: boolean; reason: 'ok' | 'ready' | 'off' | 'o
 export const STORAGE_MARGIN = 400 * 1024 * 1024;
 
 /**
- * The least memory a phone needs to run the offline assistant (a "6 GB" phone reports about 5.5 GB, a "4 GB" one about 3.7 GB).
- * Below this the 2.8 GB download would only waste the person's data and storage, because the model could not be loaded.
+ * The least memory a phone needs to run the offline assistant (a "3 GB" phone reports about 2.8 GB, a "2 GB" one about 1.8 GB).
+ * Below this the 769 MB download would only waste the person's data and storage, because the model could not be loaded.
  */
-export const MIN_MEMORY = 4.5 * 1024 * 1024 * 1024;
+export const MIN_MEMORY = 2.4 * 1024 * 1024 * 1024;
 
 /**
  * Whether the offline assistant may start downloading by itself: only when it is not already there, the person has not turned the
- * automatic download off, the phone is online on an unmetered network (the file is about 2.8 GB), there is room for it and the phone has the memory to run it.
+ * automatic download off, the phone is online on an unmetered network (the file is about 770 MB), there is room for it and the phone has the memory to run it.
  * `allowMetered` is set when the person chose to download on mobile data.
  */
 export function autoDownloadVerdict(i: { ready: boolean; enabled: boolean; net: Net; freeBytes: number | null; remainingBytes: number; allowMetered?: boolean; memoryBytes?: number | null }): DownloadVerdict {

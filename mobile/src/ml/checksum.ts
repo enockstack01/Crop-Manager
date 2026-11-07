@@ -1,5 +1,5 @@
 /*
- * SHA-256 that can be fed a file piece by piece and can be saved and restored. The offline assistant is a 2.8 GB download that may take
+ * SHA-256 that can be fed a file piece by piece and can be saved and restored. The offline assistant is a 769 MB download that may take
  * several sittings: each 4 MB piece is added to the running checksum as it arrives, the running state is saved next to the partial file, and
  * a resumed download carries on from it instead of reading gigabytes again. At the end the result is compared with the published checksum.
  * Plain arithmetic with no phone code, so it is tested on a computer against Node's own SHA-256 (mobile/scripts/test-checksum.mjs).

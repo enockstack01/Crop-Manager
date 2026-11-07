@@ -9,14 +9,14 @@ Nothing in this list has been run on a real phone yet. The automated tests (`npm
 ## 1. Automatic download
 | # | Step | Expected |
 |---|------|----------|
-| 1 | Install, open on **Wi-Fi** with ≥ 3.3 GB free | Download of the offline assistant starts by itself and shows progress |
+| 1 | Install, open on **Wi-Fi** with ≥ 1.2 GB free | Download of the offline assistant starts by itself and shows progress |
 | 2 | Same on **mobile data only** | It does **not** start; the screen says it waits for Wi-Fi |
 | 3 | Press "Download now on mobile data" | It starts |
 | 4 | Turn Wi-Fi off mid-download, wait 1 minute, back on | It stops, then continues from the same place without starting over |
 | 5 | Close the app mid-download, reopen | Continues from where it stopped; no restart from zero |
-| 6 | Fill storage so < 3.3 GB is free | It does not start and says how much to free |
-| 7 | **3–4 GB phone** | It does not download and says the phone has too little memory |
-| 8 | Finish the download | "Ready"; the 769 MB model of the older app version is gone |
+| 6 | Fill storage so < 1.2 GB is free | It does not start and says how much to free |
+| 7 | **2 GB phone** | It does not download and says the phone has too little memory |
+| 8 | Finish the download | "Ready"; the 2.8 GB test model of the earlier build, if present, is gone |
 | 9 | Tamper: replace the finished file with a same-size different file (developer build) | Next download attempt refuses it as damaged |
 
 ## 2. Offline mode

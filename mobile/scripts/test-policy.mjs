@@ -26,7 +26,7 @@ ok(!offlineModeNow(null, t + 99999), 'as soon as the phone is online again it sw
 console.log('3. automatic download');
 const MB = 1024 * 1024;
 const wifi = { connected: true, reachable: true, type: 'wifi', expensive: false };
-const base = { ready: false, enabled: true, net: wifi, freeBytes: 5000 * MB, remainingBytes: 2710 * MB };
+const base = { ready: false, enabled: true, net: wifi, freeBytes: 5000 * MB, remainingBytes: 769 * MB };
 ok(autoDownloadVerdict(base).ok, 'on Wi-Fi with room it starts by itself');
 ok(autoDownloadVerdict({ ...base, ready: true }).reason === 'ready', 'nothing to do when the assistant is already there');
 ok(autoDownloadVerdict({ ...base, enabled: false }).reason === 'off', 'the person can turn it off');
@@ -37,16 +37,16 @@ ok(autoDownloadVerdict({ ...base, net: { connected: true, reachable: true, type:
 ok(autoDownloadVerdict({ ...base, net: { connected: true, reachable: true, type: 'ethernet', expensive: false } }).ok, 'ethernet is fine');
 ok(autoDownloadVerdict({ ...base, net: { connected: true, reachable: true, type: 'cellular', expensive: true }, allowMetered: true }).ok, 'the person can choose to download on mobile data');
 ok(autoDownloadVerdict({ ...base, enabled: false, allowMetered: true, net: { connected: true, reachable: true, type: 'cellular', expensive: true } }).ok, 'choosing "download now" works even when the automatic download is off');
-ok(autoDownloadVerdict({ ...base, freeBytes: 2710 * MB + STORAGE_MARGIN - 1 }).reason === 'storage', 'it does not start without room for the file and a margin');
-ok(autoDownloadVerdict({ ...base, freeBytes: 2710 * MB + STORAGE_MARGIN }).ok, 'exactly enough room is enough');
+ok(autoDownloadVerdict({ ...base, freeBytes: 769 * MB + STORAGE_MARGIN - 1 }).reason === 'storage', 'it does not start without room for the file and a margin');
+ok(autoDownloadVerdict({ ...base, freeBytes: 769 * MB + STORAGE_MARGIN }).ok, 'exactly enough room is enough');
 ok(autoDownloadVerdict({ ...base, freeBytes: null }).ok, 'when the free space cannot be read it still tries');
 ok(autoDownloadVerdict({ ...base, remainingBytes: 100 * MB, freeBytes: 600 * MB }).ok, 'a download that is partly done needs room only for the rest');
 
 console.log('memory');
-ok(autoDownloadVerdict({ ...base, memoryBytes: 3.7e9 }).reason === 'memory', 'a phone with about 4 GB of memory does not download the model');
-ok(autoDownloadVerdict({ ...base, memoryBytes: 5.6e9 }).ok, 'a phone with about 6 GB of memory does');
+ok(autoDownloadVerdict({ ...base, memoryBytes: 1.8e9 }).reason === 'memory', 'a phone with about 2 GB of memory does not download the model');
+ok(autoDownloadVerdict({ ...base, memoryBytes: 2.9e9 }).ok, 'a phone with about 3 GB of memory does');
 ok(autoDownloadVerdict({ ...base, memoryBytes: null }).ok, 'an unknown amount of memory does not block the download');
-ok(autoDownloadVerdict({ ...base, memoryBytes: 3.7e9, allowMetered: true }).reason === 'memory', 'choosing mobile data does not override the memory rule');
+ok(autoDownloadVerdict({ ...base, memoryBytes: 1.8e9, allowMetered: true }).reason === 'memory', 'choosing mobile data does not override the memory rule');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

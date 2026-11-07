@@ -17,7 +17,7 @@ const CHATTER = /(let me know|n'hésitez pas|i hope this|j'espère que|---|here 
 const CHEMICAL = /(spray|pulv[ée]ris|bouillie|bordelaise|apply|applying|application|appliqu|treat with|traite[zr]? avec|fungicid|pesticid|insecticid|herbicid|chemical|chimique)/i;
 const SEND_TO_EXPERT = /(extension officer|agent de vulgarisation|label|[ée]tiquette)/i;
 
-// Gemma 4 marks turns and (when thinking is on) a thinking section with special tokens; none of it belongs in an answer
+// control tokens (end of turn, and the thinking sections of newer models) never belong in an answer
 export const stripSpecial = (s: string) =>
   s.replace(/<\|channel>[\s\S]*?<channel\|>/g, ' ').replace(/<\|[^>\n]{1,30}>|<[^>\s|]{1,30}\|>|<(?:start|end)_of_turn>|<\/?(?:bos|eos)>/g, ' ');
 
