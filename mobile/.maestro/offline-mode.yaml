@@ -1,0 +1,19 @@
+# Offline mode on a real phone or emulator. Needs Maestro (https://maestro.mobile.dev) and the app installed and signed in once.
+#   maestro test mobile/.maestro/offline-mode.yaml
+# Turns the connection off, expects the offline screen with only the assistant, turns it on, expects the normal app back.
+appId: com.cropmanager.app
+---
+- launchApp
+- assertVisible: "Dashboard"
+- toggleAirplaneMode
+- extendedWaitUntil:
+    visible: "Offline mode"
+    timeout: 30000
+- assertVisible: "Scan a leaf"
+- assertVisible: "Ask a question"
+- assertNotVisible: "Dashboard"
+- toggleAirplaneMode
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 60000
+- assertNotVisible: "Offline mode"

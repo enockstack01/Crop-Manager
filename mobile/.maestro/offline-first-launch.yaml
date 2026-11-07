@@ -1,0 +1,12 @@
+# First launch with no signal: the app must open straight into offline mode, with no sign-in. Run after clearing the app's data.
+#   adb shell pm clear com.cropmanager.app ; then switch the phone to airplane mode ; then
+#   maestro test mobile/.maestro/offline-first-launch.yaml
+appId: com.cropmanager.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Offline mode"
+    timeout: 45000
+- assertNotVisible: "Sign in"
+- assertVisible: "Ask a question"
