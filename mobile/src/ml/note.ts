@@ -10,7 +10,7 @@ const LABELS = ['OVERVIEW', 'CAUSE', 'STEPS', 'PREVENT', 'HELP'];
 const DOSE = /\b\d+([.,]\d+)?\s?(g|kg|mg|ml|l|litres?|liters?|cc|%|ppm|tbsp|tsp|tablespoons?|teaspoons?|grammes?|grams?)\b/i;
 const PRODUCT = /(mancozeb|dithane|ridomil|copper|cuivre|cypermethrin|cyperm[ée]thrine|lambda|chlorpyrifos|glyphosate|neem|metalaxyl|carbendazim|imidacloprid|emamectin|karate|roundup|bordeaux|sulph?ur|soufre)/i;
 // sentences that talk about the request instead of answering it
-const NARRATION = /^(okay|ok|sure|certainly|of course|hello|hi|bonjour|d'accord|bien s[ûu]r)\b|^(you (asked|want|are asking)|your question|the (user|question|farmer) (asked|is asking|wants)|as an ai|based on (the|your) (information|question|details|photo)|vous (avez demand|voulez savoir)|votre question|d'apr[èe]s (les|vos) (informations|d[ée]tails))/i;
+const NARRATION = /^(okay|ok|sure|certainly|of course|hello|hi|bonjour|d'accord|bien s[ûu]r)\b|^(no (greeting|preamble|intro|introduction)|pas de (salutation|pr[ée]ambule)|answer only|reply with|start directly)|^(you (asked|want|are asking)|your question|the (user|question|farmer) (asked|is asking|wants)|as an ai|based on (the|your) (information|question|details|photo)|vous (avez demand|voulez savoir)|votre question|d'apr[èe]s (les|vos) (informations|d[ée]tails))/i;
 const CHATTER = /(let me know|n'hésitez pas|i hope this|j'espère que|---|here is|voici|i have focused|je me suis concentr)/i;
 // a list of product names is never complete, so any sentence about spraying or applying chemicals is dropped too,
 // unless it sends the farmer to the extension officer or the product label (the only chemical advice the note may give)

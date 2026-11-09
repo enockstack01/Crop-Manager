@@ -82,5 +82,11 @@ ok(clean('Keep the store clean.<end_of_turn>') === 'Keep the store clean.', 'the
 const tn = parseNote('<|turn>model\nOVERVIEW: Leaf rust on coffee.\nSTEPS:\n- Remove sick leaves.<turn|>', 'en');
 ok(tn.overview === 'Leaf rust on coffee.' && tn.steps[0] === 'Remove sick leaves.', 'a note keeps its parts when markers surround it', JSON.stringify(tn));
 
+console.log('9. an instruction the small model repeated');
+ok(clean('No greeting. Plant maize 75 cm apart. Keep the field weeded.') === 'Plant maize 75 cm apart. Keep the field weeded.', 'a repeated "no greeting" is dropped, the answer stays', clean('No greeting. Plant maize 75 cm apart. Keep the field weeded.'));
+ok(clean('Pas de salutation. Séchez bien le maïs.') === 'Séchez bien le maïs.', 'the same in French');
+ok(clean('Start directly with the answer. Dry the maize well.') === 'Dry the maize well.', 'a repeated "start directly" is dropped');
+ok(clean('Weeding early helps. There is no greeting in farming.').includes('Weeding early helps.'), 'ordinary sentences are kept');
+
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);
