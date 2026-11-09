@@ -8,7 +8,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { limiter as rateLimit } from './lib/rateLimit.js';
 import compression from 'compression';
-import { clerkMiddleware } from '@clerk/express';
+import { clerkSession } from './middleware/clerkSession.js';
 
 import { env } from './config/env.js';
 import api from './routes/index.js';
@@ -49,7 +49,7 @@ export function createApp() {
   if (!env.isProd) app.use(morgan('dev'));
 
   // Clerk request context (reads CLERK_* from env)
-  app.use(clerkMiddleware());
+  app.use(clerkSession);
 
   // uploaded scouting photos
   // every file has its own random name and is never changed, so browsers may keep it; nothing in this folder may run as a page

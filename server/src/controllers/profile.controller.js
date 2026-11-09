@@ -21,13 +21,22 @@ function checkCurrency(code) {
   if (code !== undefined && !CURRENCY_CODES.includes(code)) throw createHttpError(400, `Unsupported currency: ${code}`);
 }
 
+let lastClerkWarning = 0;
+function warnClerkLookup(err) {
+  if (Date.now() - lastClerkWarning < 60_000) return; // once a minute is enough
+  lastClerkWarning = Date.now();
+  console.error('[clerk] could not read the signed-in user from Clerk:', err?.errors?.[0]?.message || err?.message || err, '(check CLERK_SECRET_KEY: it must belong to the same Clerk instance as the apps)');
+}
+
 /** Upsert the local Profile from the Clerk user record, then return it. */
 export const getMe = asyncHandler(async (req, res) => {
   let clerkUser = null;
   try {
     clerkUser = await clerkClient.users.getUser(req.userId);
-  } catch {
-    /* Clerk unreachable — fall back to whatever we already stored */
+  } catch (err) {
+    // Clerk unreachable or CLERK_SECRET_KEY wrong: fall back to what is stored, but say so. Without the email from Clerk nobody can be
+    // recognised as an administrator and no invitation can be matched, and that used to fail silently.
+    warnClerkLookup(err);
   }
 
   const set = {};

@@ -25,10 +25,31 @@ const queryClient = new QueryClient({
 // Clerk's own sign-in / sign-up screens are translated where Clerk offers the language
 const CLERK_LOCALES = { fr: frFR, de: deDE, es: esES, pt: ptBR, zh: zhCN, ar: arSA, hi: hiIN };
 
-/** Remounts the app when the interface language changes, so every screen re-renders in it. */
+/**
+ * Remounts the screens when the interface language changes, so every screen re-renders in it. Clerk itself stays mounted (it is outside
+ * this wrapper): restarting it on a language change reloaded the session and threw away a half-finished sign-in.
+ */
 function LanguageRoot({ children }) {
   const { i18n } = useTranslation();
-  return <div key={i18n.language} style={{ display: 'contents' }}>{children(i18n.language)}</div>;
+  return <div key={i18n.language} style={{ display: 'contents' }}>{children}</div>;
+}
+
+/** Clerk's own sign-in texts follow the interface language without being restarted. */
+function ClerkWithLanguage({ children }) {
+  const { i18n } = useTranslation();
+  return (
+    <ClerkProvider
+      localization={CLERK_LOCALES[i18n.language]}
+      publishableKey={PUBLISHABLE_KEY}
+      afterSignOutUrl="/"
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+    >
+      {children}
+    </ClerkProvider>
+  );
 }
 
 /** Wires Clerk's session token into the axios instance. */
@@ -41,29 +62,19 @@ function ApiTokenBridge() {
 // the first screen waits (a few milliseconds) for the chosen language's texts, then appears in that language
 i18nReady.finally(() => ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <LanguageRoot>
-      {(lang) => (
-        <ClerkProvider
-          localization={CLERK_LOCALES[lang]}
-          publishableKey={PUBLISHABLE_KEY}
-          afterSignOutUrl="/"
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
-          signInFallbackRedirectUrl="/"
-          signUpFallbackRedirectUrl="/"
-        >
-          <ApiTokenBridge />
-          <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-              <ToastProvider>
-                <ConfirmProvider>
-                  <App />
-                </ConfirmProvider>
-              </ToastProvider>
-            </BrowserRouter>
-          </QueryClientProvider>
-        </ClerkProvider>
-      )}
-    </LanguageRoot>
+    <ClerkWithLanguage>
+      <ApiTokenBridge />
+      <QueryClientProvider client={queryClient}>
+        <LanguageRoot>
+          <BrowserRouter>
+            <ToastProvider>
+              <ConfirmProvider>
+                <App />
+              </ConfirmProvider>
+            </ToastProvider>
+          </BrowserRouter>
+        </LanguageRoot>
+      </QueryClientProvider>
+    </ClerkWithLanguage>
   </React.StrictMode>
 ));

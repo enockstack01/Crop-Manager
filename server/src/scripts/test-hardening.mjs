@@ -51,6 +51,11 @@ await withServer(5082, { ALLOW_DEV_AUTH: '1' }, async (base) => {
   ok(/default-src 'self'/.test(csp) && /object-src 'none'/.test(csp) && /frame-ancestors 'none'/.test(csp) && /base-uri 'self'/.test(csp), 'a Content Security Policy is sent');
   ok(!/script-src[^;]*'unsafe-inline'/.test(csp) && !/script-src[^;]*'unsafe-eval'/.test(csp), 'scripts may not run inline or through eval');
   ok(/script-src-attr 'none'/.test(csp), 'inline event handlers are refused');
+  // a login token that looks right but is damaged must be a plain "sign in again" (401), never a server error
+  for (const bad of ['not.a.token', 'a.b.c', 'eyJhbGciOiJSUzI1NiJ9.e30.sig', 'x']) {
+    const r = await fetch(`${base}/api/profile`, { headers: { Authorization: `Bearer ${bad}` } });
+    ok(r.status === 401, `a damaged login token (${bad}) gets 401, not an error page`, String(r.status));
+  }
   ok(h.headers.get('x-powered-by') === null, 'the server does not announce what it runs on');
   ok(h.headers.get('x-content-type-options') === 'nosniff', 'browsers may not guess file types');
   ok(!!h.headers.get('strict-transport-security'), 'browsers are told to keep using https');
