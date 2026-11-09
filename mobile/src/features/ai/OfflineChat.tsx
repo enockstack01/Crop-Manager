@@ -7,7 +7,6 @@ import { Icon } from '../../components/Icon';
 import i18n, { t } from '../../i18n';
 import { useModelDownload } from '../../ml/modelDownload';
 import type { Turn } from '../../ml/assistant';
-import { offlineLlmSupported } from '../../ml/capability';
 
 const SUGGESTIONS = ['How far apart should I plant maize?', 'How do I store beans so they do not spoil?', 'What can I do to keep my soil healthy?'];
 
@@ -24,16 +23,6 @@ export function OfflineChat() {
   const [error, setError] = useState('');
   const scroll = useRef<ScrollView>(null);
   const run = useRef(0);
-
-  if (!offlineLlmSupported()) {
-    return (
-      <View style={{ padding: 20, gap: 8 }}>
-        <AppText weight="700" style={{ fontSize: 15 }}>{t('Questions are not available on this phone')}</AppText>
-        <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('This phone has a 32-bit system, which the offline assistant does not support.')}</AppText>
-        <AppText variant="caption">{t('You can still scan a leaf: that works without internet.')}</AppText>
-      </View>
-    );
-  }
 
   if (dl.phase !== 'ready') {
     return (

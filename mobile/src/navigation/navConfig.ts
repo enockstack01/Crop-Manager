@@ -1,4 +1,5 @@
 import { MODULES } from './modules';
+import { offlineLlmSupported } from '../ml/capability';
 
 export type NavItem = { route: string; label: string; icon: string };
 export type NavSection = { label?: string; items: NavItem[] };
@@ -96,11 +97,12 @@ const FIRST: Record<string, string[]> = {
   'Farm Manager': ['Dashboard', 'Production', 'Resources', 'Finance', 'Analytics'],
 };
 export function sectionsFor(role?: string): NavSection[] {
+  const all = offlineLlmSupported() ? NAV_SECTIONS : NAV_SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => i.route !== 'offline-assistant') })); // a 32-bit phone is not offered the offline assistant
   const order = FIRST[role || ''];
-  if (!order) return NAV_SECTIONS;
+  if (!order) return all;
   const key = (s: NavSection) => s.label || 'Dashboard';
   const rank = (s: NavSection) => { const i = order.indexOf(key(s)); return i === -1 ? order.length : i; };
-  return [...NAV_SECTIONS].sort((a, b) => rank(a) - rank(b)); // stable: groups not named keep their order
+  return [...all].sort((a, b) => rank(a) - rank(b)); // stable: groups not named keep their order
 }
 
 /** Organization workspace (mirrors the web sidebar for organization users). */

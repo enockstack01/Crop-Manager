@@ -7,8 +7,9 @@ const { withGradleProperties } = require('@expo/config-plugins');
  *   arm64-v8a     64-bit ARM phones (almost every phone sold in recent years)
  *   x86_64        64-bit emulators on a PC
  *
- * The on-phone language model (llama.rn) has no 32-bit build: on a 32-bit phone the app still installs and scans leaves, and says that
- * written notes and questions are not available (see ml/capability.ts). 32-bit x86 is left out: no phones and only old emulators use it.
+ * The on-phone language model (llama.rn) has no 32-bit build, so a 32-bit phone is never offered the offline assistant or its download:
+ * the app installs and runs normally there (records, the leaf scan, the online AI), and never switches to the offline-assistant screen
+ * (see ml/capability.ts and offlineModeApplies in lib/modePolicy.ts). 32-bit x86 is left out: no phones and only old emulators use it.
  */
 const ABIS = 'armeabi-v7a,arm64-v8a,x86_64';
 

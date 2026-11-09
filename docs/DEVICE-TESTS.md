@@ -28,6 +28,16 @@ Nothing in this list has been run on a real phone yet. The automated tests (`npm
 | 4 | Sleep/cut the **server** but keep the internet | App stays in normal mode (internet is judged by a neutral address, not our server) |
 | 5 | Weak signal flicker (toggle quickly 3×) | No flashing between screens |
 
+## 2b. 32-bit phone (a phone or tablet with a 32-bit system, for example an older Android Go device)
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Install the APK | Installs (it contains 32-bit libraries) and opens |
+| 2 | Open More | There is **no** "Offline assistant" entry |
+| 3 | Airplane mode on for a minute | The app is **not** replaced by the offline-assistant screen; the normal app stays, records can be viewed |
+| 4 | Open Scan a leaf, scan a photo in airplane mode | The result appears (the leaf scan model runs on 32-bit); no "Write a note" or "Set up the offline assistant" box |
+| 5 | Leave Wi-Fi on for 10 minutes on a full charge | Nothing is downloaded (storage does not grow) |
+| 6 | Back online, open the AI Assistant | The online assistant answers |
+
 ## 3. Offline AI quality and cost (record numbers)
 | # | Step | Record |
 |---|------|--------|

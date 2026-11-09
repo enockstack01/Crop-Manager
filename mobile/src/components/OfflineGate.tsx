@@ -5,6 +5,8 @@ import { ConfirmProvider } from './Confirm';
 import { useSplashReady } from './AppSplash';
 import { OfflineModeScreen } from '../screens/OfflineModeScreen';
 import { useOfflineMode } from '../lib/connectivity';
+import { offlineModeApplies } from '../lib/modePolicy';
+import { offlineLlmSupported } from '../ml/capability';
 import { useAutoDownload } from '../ml/modelDownload';
 
 /**
@@ -14,12 +16,14 @@ import { useAutoDownload } from '../ml/modelDownload';
  *  - the offline assistant downloads itself on the first launch (Wi-Fi, enough room) and continues whenever the connection returns
  */
 export function OfflineGate({ children }: { children: React.ReactNode }) {
-  const offline = useOfflineMode();
+  const noInternet = useOfflineMode();
+  // a 32-bit phone is never switched to the offline-assistant screen: it has no offline assistant, so it keeps the normal app
+  const offline = offlineModeApplies(noInternet, offlineLlmSupported());
   const splashReady = useSplashReady();
   useAutoDownload();
 
   // with no signal the sign-in service never answers, so the splash must not wait for it
-  useEffect(() => { if (offline) splashReady(); }, [offline, splashReady]);
+  useEffect(() => { if (noInternet) splashReady(); }, [noInternet, splashReady]);
 
   return (
     <View style={{ flex: 1 }}>

@@ -3,7 +3,7 @@
  *
  *   node mobile/scripts/test-policy.mjs
  */
-import { autoDownloadVerdict, GRACE_MS, isOnline, offlineModeNow, STORAGE_MARGIN, llmSupported } from '../src/lib/modePolicy.ts';
+import { autoDownloadVerdict, GRACE_MS, isOnline, offlineModeNow, STORAGE_MARGIN, llmSupported, offlineModeApplies } from '../src/lib/modePolicy.ts';
 
 let passed = 0;
 let failures = 0;
@@ -57,6 +57,11 @@ ok(llmSupported(null) && llmSupported([]) && llmSupported(undefined), 'an unknow
 ok(autoDownloadVerdict({ ...base, cpuAbis: ['armeabi-v7a'] }).reason === 'unsupported', 'a 32-bit phone does not download a model it cannot load');
 ok(autoDownloadVerdict({ ...base, cpuAbis: ['armeabi-v7a'], allowMetered: true }).reason === 'unsupported', 'choosing mobile data does not override that');
 ok(autoDownloadVerdict({ ...base, cpuAbis: ['arm64-v8a', 'armeabi-v7a'] }).ok, 'a 64-bit phone downloads as usual');
+
+console.log('offline mode by phone type');
+ok(offlineModeApplies(true, true), 'a 64-bit phone with no internet switches to the offline assistant');
+ok(!offlineModeApplies(true, false), 'a 32-bit phone with no internet keeps the normal app (no offline assistant screen)');
+ok(!offlineModeApplies(false, true) && !offlineModeApplies(false, false), 'with internet nobody is switched');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

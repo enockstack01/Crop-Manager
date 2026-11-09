@@ -47,6 +47,13 @@ export function llmSupported(abis: readonly string[] | null | undefined): boolea
 }
 
 /**
+ * Offline mode (the screen with only the offline assistant) takes over the app only on a phone that can run the assistant. A 32-bit phone
+ * is never offered the assistant or its download: with no internet it keeps the normal app (its records, the leaf scan) and the online AI
+ * works again when the connection returns.
+ */
+export const offlineModeApplies = (noInternet: boolean, canRunAssistant: boolean) => noInternet && canRunAssistant;
+
+/**
  * Whether the offline assistant may start downloading by itself: only when it is not already there, the person has not turned the
  * automatic download off, the phone is online on an unmetered network (the file is about 770 MB), there is room for it and the phone has the memory to run it.
  * `allowMetered` is set when the person chose to download on mobile data.

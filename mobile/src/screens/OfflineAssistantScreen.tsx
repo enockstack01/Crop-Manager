@@ -19,7 +19,7 @@ const WAITING: Record<string, string> = {
   storage: 'There is not enough free storage on this phone. Free about 1.2 GB and it starts by itself.',
   memory: 'This phone does not have enough memory (about 3 GB) to run the offline assistant, so it is not downloaded.',
   off: 'The automatic download is switched off.',
-  unsupported: 'This phone has a 32-bit system, which the offline assistant does not support. Scanning a leaf still works without internet.',
+  unsupported: 'This phone has a 32-bit system, which the offline assistant does not support.',
   network: 'The download stopped because the connection dropped. It continues by itself.',
 };
 

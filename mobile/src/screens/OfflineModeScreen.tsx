@@ -8,7 +8,6 @@ import { Icon } from '../components/Icon';
 import { OfflineChat } from '../features/ai/OfflineChat';
 import { ScanScreen } from './ScanScreen';
 import { useModelDownload } from '../ml/modelDownload';
-import { offlineLlmSupported } from '../ml/capability';
 import { t } from '../i18n';
 
 /**
@@ -53,10 +52,6 @@ export function OfflineModeScreen() {
       {dl.phase === 'downloading' ? (
         <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primaryLight }}>
           <AppText style={{ fontSize: 12.5 }}>{t('Downloading the offline assistant: {{pct}}%', { pct })}</AppText>
-        </View>
-      ) : !offlineLlmSupported() ? (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primaryLight }}>
-          <AppText style={{ fontSize: 12.5 }}>{t('This phone has a 32-bit system: you can scan leaves, but written notes and questions are not available.')}</AppText>
         </View>
       ) : dl.phase !== 'ready' ? (
         <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primaryLight }}>
