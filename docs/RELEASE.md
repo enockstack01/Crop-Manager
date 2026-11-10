@@ -17,6 +17,7 @@
 Or in the GitHub web page: Settings → Branches → Add rule for `main` → require a pull request, require the status checks `server`, `web-and-audit`, `mobile`, block force pushes. Setting `enforce_admins` to true also stops the owner pushing straight to main. Not applied yet: it changes the repository's rules, so it needs the owner to run it.
 
 ## Before every release
+0. A release app must talk to the real server. `mobile/.env.local` and `.env` hold developer addresses (the emulator's 10.0.2.2 or a home-network IP); the app now ignores such an address in a release build and uses https://crop.agricoders.com/api (`mobile/src/lib/apiUrl.ts`). After building, check the APK: it must contain `crop.agricoders.com/api` and not `10.0.2.2`.
 1. CI is green on the pull request (server suites, web build, advisories, mobile checks).
 2. Render settings: `AI_API_KEY`, `MONGODB_URI`, Clerk keys, `HF_TOKEN`, `OPENWEATHER_API_KEY` set; `ALLOW_DEV_AUTH` and `AI_MOCK` **absent**; `PUBLIC_APP_URL` set; with more than one instance leave `RATE_LIMIT_STORE` unset (shared store is the default in production).
 3. Uploads: set `STORAGE_DRIVER=s3` and the `S3_*` settings, then copy old pictures once with `node server/src/scripts/migrate-uploads.mjs`. Until then pictures live on the server disk and are lost on redeploy.

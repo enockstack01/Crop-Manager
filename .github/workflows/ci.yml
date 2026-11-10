@@ -82,6 +82,7 @@ jobs:
           node scripts/test-policy.mjs
           node scripts/test-note.mjs
           node scripts/test-checksum.mjs
+          node scripts/test-apiurl.mjs
       - name: No high or critical advisories
         run: npm audit --omit=dev --audit-level=high
 

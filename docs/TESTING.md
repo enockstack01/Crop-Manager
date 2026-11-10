@@ -19,7 +19,7 @@ One command runs every server suite (it starts its own test server; nothing call
 | diagnose-vision | 15 | photo diagnosis end to end with the mock AI |
 | hardening | 35 | headers, Content Security Policy, caching, production behaviour |
 
-Mobile rules (no phone needed): `cd mobile && npx tsc --noEmit && node scripts/test-policy.mjs && node scripts/test-note.mjs && node scripts/test-checksum.mjs`.
+Mobile rules (no phone needed): `cd mobile && npx tsc --noEmit && node scripts/test-policy.mjs && node scripts/test-note.mjs && node scripts/test-checksum.mjs && node scripts/test-apiurl.mjs`.
 
 Other tools: `server/src/scripts/bench-org.mjs` (organization dashboard speed with N farmers), `eval-classifier.mjs` (classifier accuracy from a review CSV), `score-offline-answers.mjs` (offline assistant replies), `check-ai-features.mjs` (every AI feature against the real service, costs money). Phones: `docs/DEVICE-TESTS.md`.
 
