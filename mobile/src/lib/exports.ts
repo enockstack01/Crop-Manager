@@ -1,5 +1,5 @@
 import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import { deliverFile } from './saveFile';
 import { api } from './api';
 import { t } from '../i18n';
 
@@ -25,9 +25,7 @@ async function saveAndShare(data: ArrayBuffer, name: string, format: ExportForma
   if (file.exists) file.delete();
   file.create();
   file.write(new Uint8Array(data));
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType: MIME[format], dialogTitle: t('Export'), UTI: UTI[format] });
-  }
+  await deliverFile(file.uri, name, MIME[format], UTI[format]);
   return file.uri;
 }
 

@@ -202,16 +202,41 @@ export function interpret(logits: ArrayLike<number>, lang = i18n.language, crop 
   };
 }
 
-/** Runs the on-phone model on a local photo. Throws if the phone cannot load the model (for example, too little memory). */
+/** Why a scan failed: the photo could not be read, or the model could not run on this phone. The screens say which. */
+export class ScanError extends Error {
+  kind: 'photo' | 'model';
+  constructor(kind: 'photo' | 'model', message: string) {
+    super(message);
+    this.name = 'ScanError';
+    this.kind = kind;
+  }
+}
+
+/**
+ * Runs the on-phone model on a local photo. If the model cannot load or run (often too little memory on a busy phone) it is freed and tried once more
+ * before giving up, and the error says whether the photo or the model was the problem.
+ */
 export async function diagnoseOffline(uri: string, { crop = '' }: { crop?: string } = {}): Promise<OfflineResult> {
-  const tensor = await prepare(uri);
-  const s = await getSession();
+  let tensor: Float32Array;
   try {
-    const out = await s.run({ [s.inputNames[0]]: new Tensor('float32', tensor, [1, 3, SIZE, SIZE]) });
-    const logits = out[s.outputNames[0]].data as Float32Array;
-    return interpret(logits, i18n.language, crop);
-  } finally {
-    scheduleRelease();
+    tensor = await prepare(uri);
+  } catch (e: any) {
+    throw new ScanError('photo', e?.message || 'The photo could not be read.');
+  }
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const s = await getSession();
+      const out = await s.run({ [s.inputNames[0]]: new Tensor('float32', tensor, [1, 3, SIZE, SIZE]) });
+      const logits = out[s.outputNames[0]].data as Float32Array;
+      return interpret(logits, i18n.language, crop);
+    } catch (e: any) {
+      const broken = session;
+      session = null;
+      broken?.release().catch(() => {}); // start from a clean model on the second try
+      if (attempt >= 1) throw new ScanError('model', e?.message || 'The model could not run.');
+    } finally {
+      scheduleRelease();
+    }
   }
 }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../lib/api';
+import { shrinkPhoto } from '../lib/photo';
 import { mediaUrl } from '../env';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius, spacing } from '../theme/theme';
@@ -33,6 +34,7 @@ export function PhotoField({
       form.append('file', { uri, type: mime, name } as any);
       const { data } = await api.post('/uploads', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 180000,
       });
       onChange(data.url);
       toast('Photo uploaded');
@@ -52,12 +54,13 @@ export function PhotoField({
       return;
     }
     const res = fromCamera
-      ? await ImagePicker.launchCameraAsync({ quality: 0.6, mediaTypes: ['images'] })
-      : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, mediaTypes: ['images'] });
+      ? await ImagePicker.launchCameraAsync({ quality: 1, mediaTypes: ['images'] })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 1, mediaTypes: ['images'] });
     if (res.canceled || !res.assets?.[0]) return;
     const a = res.assets[0];
-    const name = a.fileName || `photo-${Date.now()}.jpg`;
-    await upload(a.uri, a.mimeType || 'image/jpeg', name);
+    // made small on the phone first: a camera photo is 5 to 15 MB and would take minutes to send on mobile data
+    const small = await shrinkPhoto(a);
+    await upload(small.uri, small.mimeType, `photo-${Date.now()}.jpg`);
   };
 
   return (

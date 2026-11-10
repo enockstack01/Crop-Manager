@@ -35,8 +35,8 @@ export function ScanScreen() {
       // loaded only when needed: the model code is large and does not run in Expo Go
       const { diagnoseOffline } = await import('../ml/offline');
       setResult(await diagnoseOffline(photo, { crop: forCrop }));
-    } catch {
-      setError(t('This phone could not run the scan. Close other apps and try again.'));
+    } catch (e: any) {
+      setError(e?.kind === 'photo' ? t('The photo could not be read. Choose another photo or take a new one.') : t('This phone could not run the scan. Close other apps and try again.'));
     } finally {
       setBusy(false);
     }
@@ -57,8 +57,8 @@ export function ScanScreen() {
       return;
     }
     const res = fromCamera
-      ? await ImagePicker.launchCameraAsync({ quality: 0.7, mediaTypes: ['images'] })
-      : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ['images'] });
+      ? await ImagePicker.launchCameraAsync({ quality: 1, mediaTypes: ['images'] }) // the picker does not decode and re-encode the full photo: the scan reads it once, at a small size
+      : await ImagePicker.launchImageLibraryAsync({ quality: 1, mediaTypes: ['images'] });
     if (res.canceled || !res.assets?.length) return;
     await run(res.assets[0].uri);
   };

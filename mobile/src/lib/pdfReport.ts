@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
+import { deliverFile } from './saveFile';
+import { fileNameFor } from './fileName';
 import { AGRICODERS_DISC } from './brandImages';
 import { mediaUrl } from '../env';
 import { t } from '../i18n';
@@ -99,9 +100,7 @@ function html(o: { kind: string; title: string; meta?: (string | undefined | nul
 export async function sharePdf(o: { kind: string; title: string; meta?: (string | undefined | null)[]; sections: PdfSection[]; landscape?: boolean }) {
   const landscape = o.landscape ?? wide(o.sections);
   const { uri } = await Print.printToFileAsync({ html: html(o), width: landscape ? 842 : 595, height: landscape ? 595 : 842 });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: o.title, UTI: 'com.adobe.pdf' });
-  }
+  await deliverFile(uri, fileNameFor(o.title, 'pdf'), 'application/pdf', 'com.adobe.pdf');
   return uri;
 }
 
