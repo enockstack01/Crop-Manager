@@ -16,3 +16,6 @@ export function fileNameFor(title: string, ext: string, now: Date = new Date()):
   const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   return `${slug || 'cropmanager'}-${day}.${ext.replace(/^\./, '')}`;
 }
+
+/** Android names a chosen folder "primary:Documents" (storage:path); a farmer should read "Documents". */
+export const folderLabel = (name?: string | null): string => String(name || '').split(':').pop()?.trim() || '';

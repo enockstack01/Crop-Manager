@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Directory, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { t } from '../i18n';
+import { folderLabel } from './fileName';
 
 /*
  * What happens to a finished PDF, Excel or CSV file. Sharing alone was not enough: a farmer who wants the file ON the phone (to open later or
@@ -45,7 +46,7 @@ async function saveToPhone(fromUri: string, name: string, mime: string): Promise
     try {
       const out = dir.createFile(name, mime);
       out.write(bytes);
-      return dir.name || t('the folder you chose');
+      return folderLabel(dir.name) || t('the folder you chose');
     } catch (e) {
       if (attempt === 1) throw e;
       dir = null; // the remembered folder is gone or no longer allowed: ask again

@@ -4,7 +4,7 @@
  *   node mobile/scripts/test-files.mjs
  */
 import { planShrink, MAX_SIDE } from '../src/lib/photoPlan.ts';
-import { fileNameFor } from '../src/lib/fileName.ts';
+import { fileNameFor, folderLabel } from '../src/lib/fileName.ts';
 
 let passed = 0;
 let failures = 0;
@@ -32,6 +32,11 @@ ok(fileNameFor('Report', '.pdf', day) === 'report-2026-11-10.pdf', 'a dot before
 ok(fileNameFor('x'.repeat(200), 'pdf', day).length <= 50 + '-2026-11-10.pdf'.length, 'a very long title is shortened');
 ok(!/[\\/:*?"<>|\s]/.test(fileNameFor('a/b\\c:d*e?f"g<h>i|j k', 'pdf', day)), 'no character a phone file system refuses');
 ok(fileNameFor('Ukuvuna kwa Mahindi', 'pdf', day) === 'ukuvuna-kwa-mahindi-2026-11-10.pdf', 'any language written with letters works');
+
+console.log('3. the folder name shown after saving');
+ok(folderLabel('primary:Documents') === 'Documents', 'the storage prefix Android adds is removed');
+ok(folderLabel('Documents') === 'Documents' && folderLabel('primary:Documents/CropManager') === 'Documents/CropManager', 'plain and nested names are kept');
+ok(folderLabel('') === '' && folderLabel(null) === '' && folderLabel(undefined) === '', 'no name gives an empty label');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);
