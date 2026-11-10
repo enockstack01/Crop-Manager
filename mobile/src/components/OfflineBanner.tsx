@@ -23,7 +23,7 @@ export function OfflineBanner() {
   const text = !online
     ? pending
       ? t('Offline: {{count}} change(s) saved on this phone', { count: pending })
-      : t('Offline: showing saved data')
+      : t('Offline: you can keep working. Changes are saved on this phone.')
     : syncing
       ? t('Syncing {{count}} change(s)…', { count: pending })
       : t('{{count}} change(s) waiting to sync: tap to retry', { count: pending });

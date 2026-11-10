@@ -69,3 +69,11 @@ export function autoDownloadVerdict(i: { ready: boolean; enabled: boolean; net: 
   if (i.freeBytes !== null && i.freeBytes < i.remainingBytes + STORAGE_MARGIN) return { ok: false, reason: 'storage' };
   return { ok: true, reason: 'ok' };
 }
+
+/**
+ * Whether the offline tools page covers the whole app. A phone that has a saved, signed-in account keeps the normal app with no internet (records
+ * and dashboards come from the copy on the phone, changes wait and are sent later), so the page covers it only when: the phone is offline, can
+ * run the assistant and holds no saved account (`savedAccount` false; null = not read yet, never covers), or the person opened it themselves (`forced`).
+ */
+export const offlineTakeover = (noInternet: boolean, canRunAssistant: boolean, savedAccount: boolean | null, forced: boolean) =>
+  forced || (noInternet && canRunAssistant && savedAccount === false);

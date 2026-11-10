@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, RefreshControl, View } from 'react-native';
+import { Alert, Linking, Pressable, RefreshControl, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius } from '../../theme/theme';
 import { AppText, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen, StatTile, useLayout } from '../../components/ui';
@@ -10,6 +10,17 @@ import { formatDate, formatNumber } from '../../lib/format';
 import { useOrgDashboard } from '../../lib/orgApi';
 import { OrgGate, UsageMeter } from './OrgGate';
 import { t } from '../../i18n';
+
+/** Opens a location in the phone's map app, or in the browser if no map app is installed; says so instead of failing silently. */
+async function openLocation(lat: number, lng: number) {
+  const web = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  try {
+    await Linking.openURL(`geo:${lat},${lng}?q=${lat},${lng}`).catch(() => Linking.openURL(web));
+  } catch {
+    Alert.alert(t('Could not open the map'), `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+  }
+}
+const goodPoint = (p: any) => p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180;
 
 const ha = (v: number) => `${(Math.round(v * 10) / 10).toLocaleString('en-US')} ha`;
 const kg = (v: number) => (v >= 1000 ? `${(Math.round(v / 100) / 10).toLocaleString('en-US')} t` : `${Math.round(v).toLocaleString('en-US')} kg`);
@@ -70,19 +81,19 @@ function Body({ org, navigation }: { org: any; navigation: any }) {
 
       <View style={{ height: 16 }} />
       <ChartCard title="Map of field locations" icon="location-dot">
-        {d.land.points?.length ? (
+        {(d.land.points || []).filter(goodPoint).length ? (
           <View>
-            {d.land.points.slice(0, 40).map((p: any, i: number) => (
+            {(d.land.points as any[]).filter(goodPoint).slice(0, 40).map((p: any, i: number) => (
               <Pressable
                 key={`${p.lat},${p.lng},${i}`}
-                onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`)}
+                onPress={() => openLocation(Number(p.lat), Number(p.lng))}
                 accessibilityRole="link"
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, borderBottomWidth: i === Math.min(d.land.points.length, 40) - 1 ? 0 : 1, borderBottomColor: colors.border }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, borderBottomWidth: i === Math.min((d.land.points as any[]).filter(goodPoint).length, 40) - 1 ? 0 : 1, borderBottomColor: colors.border }}
               >
                 <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#2E7D32', borderWidth: 1, borderColor: '#14532D' }} />
                 <View style={{ flex: 1 }}>
                   <AppText weight="700" style={{ fontSize: 13 }}>{p.name}</AppText>
-                  <AppText style={{ fontSize: 12, color: colors.textLight }}>{[p.farm, `${Math.round(p.ha * 10) / 10} ha`, `${Number(p.lat).toFixed(4)}, ${Number(p.lng).toFixed(4)}`].filter(Boolean).join(' · ')}</AppText>
+                  <AppText style={{ fontSize: 12, color: colors.textLight }}>{[p.farm, `${Math.round((Number(p.ha) || 0) * 10) / 10} ha`, `${Number(p.lat).toFixed(4)}, ${Number(p.lng).toFixed(4)}`].filter(Boolean).join(' · ')}</AppText>
                 </View>
                 <AppText style={{ fontSize: 12, color: colors.primary }}>{t('Open map')}</AppText>
               </Pressable>

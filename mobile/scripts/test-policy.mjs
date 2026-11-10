@@ -3,7 +3,7 @@
  *
  *   node mobile/scripts/test-policy.mjs
  */
-import { autoDownloadVerdict, GRACE_MS, isOnline, offlineModeNow, STORAGE_MARGIN, llmSupported, offlineModeApplies } from '../src/lib/modePolicy.ts';
+import { autoDownloadVerdict, GRACE_MS, isOnline, offlineModeNow, STORAGE_MARGIN, llmSupported, offlineModeApplies, offlineTakeover } from '../src/lib/modePolicy.ts';
 
 let passed = 0;
 let failures = 0;
@@ -62,6 +62,14 @@ console.log('offline mode by phone type');
 ok(offlineModeApplies(true, true), 'a 64-bit phone with no internet switches to the offline assistant');
 ok(!offlineModeApplies(true, false), 'a 32-bit phone with no internet keeps the normal app (no offline assistant screen)');
 ok(!offlineModeApplies(false, true) && !offlineModeApplies(false, false), 'with internet nobody is switched');
+
+console.log('9. a saved account keeps the whole app usable offline');
+ok(!offlineTakeover(true, true, true, false), 'offline with a saved account: the normal app stays (records, lists, dashboards from the phone)');
+ok(offlineTakeover(true, true, false, false), 'offline with no saved account: the offline tools page is shown');
+ok(!offlineTakeover(true, true, null, false), 'while the saved-account check has not finished the page never flashes over the app');
+ok(!offlineTakeover(false, true, false, false), 'online: never');
+ok(!offlineTakeover(true, false, false, false), 'a 32-bit phone is never switched to the offline-assistant page');
+ok(offlineTakeover(false, false, true, true), 'a person who opened the offline tools themselves gets them');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

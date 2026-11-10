@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
+import { onlineManager } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
 import { useAuth } from '@clerk/clerk-expo';
@@ -7,7 +8,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { spacing } from '../theme/theme';
 import { AppText } from '../components/ui';
 import { Button } from '../components/Button';
-import { ScanScreen } from './ScanScreen';
+import { OfflineTools } from '../features/offline/OfflineTools';
 
 /**
  * Shown when the signed-in user's profile can't be loaded — replaces the old
@@ -17,17 +18,17 @@ export function ConnectionErrorScreen({ error, retrying, onRetry }: { error: any
   const { colors } = useTheme();
   const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
-  const network = !!error?.network;
-  const [scanning, setScanning] = useState(false);
+  const network = !!error?.network || !onlineManager.isOnline(); // no internet counts as a network problem, whatever the error says
+  const [tools, setTools] = useState(false);
 
-  // the leaf scan runs on the phone, so it is offered here too: with no signal and nothing saved, it still works
-  if (scanning) {
+  // the offline tools run on the phone, so they are offered here too: with no signal and nothing saved, they still work
+  if (tools) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
         <View style={{ padding: spacing.md, alignItems: 'flex-start' }}>
-          <Button title="Back" icon="arrow-left" kind="ghost" onPress={() => setScanning(false)} />
+          <Button title="Back" icon="arrow-left" kind="ghost" onPress={() => setTools(false)} />
         </View>
-        <View style={{ flex: 1 }}><ScanScreen /></View>
+        <View style={{ flex: 1 }}><OfflineTools /></View>
       </View>
     );
   }
@@ -58,7 +59,7 @@ export function ConnectionErrorScreen({ error, retrying, onRetry }: { error: any
 
       <View style={{ alignSelf: 'stretch', gap: spacing.sm, marginTop: spacing.xl, maxWidth: 420, width: '100%' }}>
         <Button title="Try again" icon="refresh" loading={retrying} onPress={onRetry} />
-        {network ? <Button title="Scan a leaf on this phone" icon="leaf" kind="secondary" onPress={() => setScanning(true)} /> : null}
+        {network ? <Button title="Use the offline tools" icon="leaf" kind="secondary" onPress={() => setTools(true)} /> : null}
         <Button title="Sign out" kind="ghost" icon="logout" onPress={() => signOut()} />
       </View>
     </View>

@@ -157,8 +157,8 @@ export async function buildDashboard(org, filters, settings, { fresh = false } =
     avg_ha: d.farms.length ? farmHa / d.farms.length : 0,
     fields: d.fields.length,
     by_district: Object.values(byDistrict).map((x) => ({ district: x.district, farmers: x.farmers.size, farms: x.farms, ha: x.ha })).sort((a, b) => b.ha - a.ha),
-    points: d.fields.filter((f) => f.latitude != null && f.longitude != null).slice(0, 600).map((f) => ({
-      lat: f.latitude, lng: f.longitude, name: f.name, farm: farmName[String(f.farm_id)] || '', ha: toHa(f.area, f.area_unit),
+    points: d.fields.filter((f) => Number.isFinite(f.latitude) && Number.isFinite(f.longitude) && Math.abs(f.latitude) <= 90 && Math.abs(f.longitude) <= 180 && !(f.latitude === 0 && f.longitude === 0)).slice(0, 600).map((f) => ({
+      lat: f.latitude, lng: f.longitude, name: f.name || '', farm: farmName[String(f.farm_id)] || '', ha: toHa(f.area, f.area_unit) || 0,
     })),
   };
 

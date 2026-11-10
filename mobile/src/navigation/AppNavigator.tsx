@@ -19,6 +19,7 @@ import { WeatherScreen } from '../screens/WeatherScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
 import { ScanScreen } from '../screens/ScanScreen';
+import { OfflineToolsScreen } from '../features/offline/OfflineTools';
 import { OfflineAssistantScreen } from '../screens/OfflineAssistantScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 import { useProfile } from '../lib/useResource';
@@ -83,7 +84,8 @@ function screens(Nav: typeof Tabs | typeof Drawer, isAdmin: boolean) {
       ))}
 
       <S name="assistant" component={AssistantScreen} options={{ title: 'AI Assistant' }} />
-      <S name="scan" component={ScanScreen} options={{ title: 'Scan a leaf' }} />
+      <S name="scan" component={ScanScreen} options={{ title: 'Scan a plant' }} />
+      <S name="offline-tools" component={OfflineToolsScreen} options={{ title: 'Offline tools' }} />
       <S name="offline-assistant" component={OfflineAssistantScreen} options={{ title: 'Offline assistant' }} />
       <S name="calculators" component={CalculatorsStack} options={{ title: 'Calculators', headerShown: false }} />
       <S name="reports" component={ReportsScreen} options={{ title: 'Reports' }} />

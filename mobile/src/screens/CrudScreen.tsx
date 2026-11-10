@@ -19,7 +19,7 @@ import { InventoryStockSheet } from './InventoryStockSheet';
 import type { FilterDef, ModuleConfig } from '../navigation/modules';
 import { t } from '../i18n';
 
-const PER_PAGE = 15;
+export const PER_PAGE = 15;
 
 /*
  * A module page laid out like the web's (client/src/pages/*.jsx + tables.css):

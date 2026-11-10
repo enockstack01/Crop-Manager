@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { QueryClient } from '@tanstack/react-query';
+import { onlineManager, QueryClient, useQueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -41,6 +42,10 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { useToast } from './components/Toast';
 import { onSyncFailure, setSyncUser, startOfflineSupport } from './lib/offline';
 import { t } from './i18n';
+import { forgetAccount, rememberAccount } from './lib/savedAccount';
+import { prefetchForOffline } from './lib/prefetch';
+import { useOfflineTools } from './components/OfflineGate';
+import { Button } from './components/Button';
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
@@ -61,7 +66,7 @@ function ApiTokenBridge() {
   // offline changes sync only for the person who made them; signing out clears the saved data
   useEffect(() => {
     setSyncUser(isSignedIn && userId ? userId : null);
-    if (isSignedIn === false) queryClient.clear();
+    if (isSignedIn === false) { queryClient.clear(); forgetAccount(); }
   }, [isSignedIn, userId]);
 
   useEffect(() => onSyncFailure((msg) => toast(`${t('A change made offline could not be saved:')} ${msg}`, 'error', 6000)), [toast]);
@@ -83,6 +88,16 @@ function RootGate() {
   useEffect(() => {
     if (!isLoading) splashReady();
   }, [isLoading, splashReady]);
+
+  // with a profile on hand, this phone can open the account without internet next time; the lists are saved in the background
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!profile) return undefined;
+    rememberAccount();
+    const id = setTimeout(() => { prefetchForOffline(qc); }, 3000);
+    const off = onlineManager.subscribe((online) => { if (online) setTimeout(() => prefetchForOffline(qc), 4000); });
+    return () => { clearTimeout(id); off(); };
+  }, [profile, qc]);
 
   // the language saved on the profile (chosen on any device) wins over this device's
   useEffect(() => {
@@ -141,12 +156,25 @@ function NavRoot() {
 }
 
 /** Mounts the app once Clerk has restored the session (the splash covers the wait). */
+/** Shown while the sign-in service answers; if it does not (no internet), the offline tools are offered after a few seconds. */
+function ConnectingScreen() {
+  const { openOfflineTools } = useOfflineTools();
+  const [slow, setSlow] = useState(false);
+  useEffect(() => { const id = setTimeout(() => setSlow(true), 8000); return () => clearTimeout(id); }, []);
+  return (
+    <View style={{ flex: 1 }}>
+      <Loading label="Connecting to CropManager…" />
+      {slow ? <View style={{ padding: 20, paddingBottom: 40 }}><Button title="Use the offline tools" icon="leaf" kind="secondary" onPress={openOfflineTools} /></View> : null}
+    </View>
+  );
+}
+
 function AppShell() {
   const { isLoaded } = useAuth();
   // every screen re-renders in a newly chosen language (navigation restarts on the dashboard)
   const { i18n } = useTranslation();
   // only visible if the splash times out first (e.g. no internet to reach Clerk)
-  if (!isLoaded) return <Loading label="Connecting to CropManager…" />;
+  if (!isLoaded) return <ConnectingScreen />;
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: WEEK, buster: 'v1' }}>
       <ToastProvider>
