@@ -72,9 +72,9 @@ export function OfflineTools() {
                 {dl.phase === 'ready' ? t('The offline assistant is ready') : dl.phase === 'downloading' ? t('Downloading the offline assistant: {{pct}}%', { pct }) : t('The offline assistant is not on this phone yet')}
               </AppText>
             </View>
-            {dl.phase !== 'ready' ? (
+            {dl.phase !== 'ready' && dl.phase !== 'downloading' ? (
               <AppText style={{ fontSize: 13, lineHeight: 19 }}>
-                {dl.have > 0 && dl.phase !== 'downloading' ? t('The offline assistant download is paused at {{pct}}%. It continues by itself when you are back online.', { pct }) : t('It downloads by itself the next time you are online on Wi-Fi.')}
+                {dl.have > 0 ? t('The offline assistant download is paused at {{pct}}%. It continues by itself when you are back online.', { pct }) : t('It downloads by itself the next time you are online on Wi-Fi.')}
               </AppText>
             ) : null}
           </View>

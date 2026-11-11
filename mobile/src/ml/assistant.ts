@@ -79,27 +79,30 @@ export async function downloadModel({ onProgress, signal }: { onProgress?: (have
     const end = Math.min(have + CHUNK - 1, MODEL.bytes - 1);
     const want = end - have + 1;
     let bytes: Uint8Array | null = null;
+    // Each piece is downloaded by the phone's own downloader straight into a small temporary file, never through fetch(): on Android every
+    // fetch() response reserves a 4 MB buffer that is only released when the garbage collector runs, so about 190 pieces ran the app out of
+    // memory (an OutOfMemoryError after roughly a quarter of the model) and the app closed.
+    const tmp = new File(d, `${MODEL.file}.piece`);
     for (let attempt = 0; attempt < 5 && !bytes; attempt += 1) {
       try {
+        if (tmp.exists) tmp.delete();
         // this piece gets its own timer; the person's Stop (signal) also ends it
         const piece = new AbortController();
         const onStop = () => piece.abort();
         signal?.addEventListener('abort', onStop);
         const timer = setTimeout(() => piece.abort(), CHUNK_TIMEOUT_MS);
-        let buf: Uint8Array;
         try {
-          const res = await fetch(MODEL.url, { headers: { Range: `bytes=${have}-${end}` }, signal: piece.signal });
-          if (res.status !== 206) throw new Error(`the server answered ${res.status}`); // a 200 would be the whole file: not what we asked for
-          buf = new Uint8Array(await res.arrayBuffer());
+          const task = File.createDownloadTask(MODEL.url, tmp, { headers: { Range: `bytes=${have}-${end}` }, signal: piece.signal });
+          try { await task.downloadAsync(); } finally { try { task.release(); } catch { /* already released */ } }
         } finally {
           clearTimeout(timer);
           signal?.removeEventListener('abort', onStop);
         }
-        if (buf.length !== want) throw new Error('a piece arrived incomplete');
-        bytes = buf;
+        if (!tmp.exists || tmp.size !== want) throw new Error('a piece arrived incomplete');
+        bytes = await tmp.bytes();
       } catch (e: any) {
-        if (signal?.aborted) throw new Error('cancelled');
-        if (attempt === 4) throw e;
+        if (signal?.aborted) { try { if (tmp.exists) tmp.delete(); } catch { /* nothing to clean */ } throw new Error('cancelled'); }
+        if (attempt === 4) { try { if (tmp.exists) tmp.delete(); } catch { /* nothing to clean */ } throw e; }
         await new Promise((r) => setTimeout(r, 1500 * (attempt + 1))); // wait a little longer each time
       }
     }
@@ -111,6 +114,7 @@ export async function downloadModel({ onProgress, signal }: { onProgress?: (have
       h.close();
     }
     hash.update(bytes!);
+    try { if (tmp.exists) tmp.delete(); } catch { /* removed with the next piece */ }
     have += want;
     saveHash(hash);
     onProgress?.(have, MODEL.bytes);

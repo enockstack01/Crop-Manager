@@ -12,7 +12,7 @@ import { formatCurrency } from '../lib/format';
 import { aiAdvice, aiChat, aiInsights, aiParseRecord, aiSeasonSummary } from '../lib/ai';
 import { AiDisclaimer, AiStatusBar, ErrorNote, Note, Thinking } from '../features/ai/AiBits';
 import { DiagnoseSheet } from '../features/ai/DiagnoseSheet';
-import { t } from '../i18n';
+import i18n, { t } from '../i18n';
 
 const TABS = [
   { id: 'ask', icon: 'comments', label: 'Ask' },
@@ -72,7 +72,21 @@ function Ask() {
       const { reply } = await aiChat(next);
       setMessages([...next, { role: 'assistant', content: reply }]);
     } catch (e: any) {
-      setError(e?.message || t('The AI assistant could not answer.'));
+      // the server could not be reached: answer with the offline assistant if it is on this phone
+      let answered = false;
+      if (e?.network) {
+        try {
+          const m = await import('../ml/assistant'); // loaded only when needed: it brings in the language-model code
+          if (m.modelReady()) {
+            const reply = await m.askOffline(messages as any, question, m.noteLangFor(i18n.language));
+            setMessages([...next, { role: 'assistant', content: `${reply}
+
+${t('Answered on this phone by the offline assistant, without your farm records. It is small and can make mistakes.')}` }]);
+            answered = true;
+          }
+        } catch { /* falls through to the message below */ }
+      }
+      if (!answered) setError(e?.network ? t('The AI assistant could not be reached. Check your connection and try again, or use the offline tools.') : (e?.message || t('The AI assistant could not answer.')));
     } finally {
       setBusy(false);
     }

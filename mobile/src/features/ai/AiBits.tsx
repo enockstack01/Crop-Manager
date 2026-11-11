@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import { NavigationContext } from '@react-navigation/native';
 import { ActivityIndicator, Image, View } from 'react-native';
 import { mediaUrl } from '../../env';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radius } from '../../theme/theme';
 import { AppText, Badge } from '../../components/ui';
 import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
+import { useOfflineState } from '../../lib/offline';
 import { aiStatus } from '../../lib/ai';
 import { t } from '../../i18n';
 
@@ -17,25 +20,80 @@ export function AiDisclaimer() {
   );
 }
 
-export function AiStatusBar() {
+/**
+ * Whether the online AI assistant can be used right now. Three honest states instead of one vague error:
+ *  - no internet: says so and opens the offline tools (scan a plant, ask the offline assistant), which need no internet
+ *  - internet but the check failed: says the assistant could not be reached, with a button to try again (and the offline tools)
+ *  - assistant switched off on the server: asks the administrator to switch it on
+ * `tools` is false inside a sheet that already shows the offline result itself.
+ */
+export function AiStatusBar({ tools = true }: { tools?: boolean }) {
   const { colors } = useTheme();
+  const nav = useContext(NavigationContext) as any;
+  const { online } = useOfflineState();
   const [s, setS] = useState<any>(null);
+  const [tries, setTries] = useState(0);
+  const [checking, setChecking] = useState(false);
+
   useEffect(() => {
+    if (!online) { setS(null); return undefined; }
     let live = true;
-    aiStatus().then((d) => live && setS(d)).catch(() => live && setS({ enabled: false, error: true }));
+    setChecking(true);
+    // one quiet second try: the first request after the phone reconnects often fails while the connection settles
+    const ask = () => aiStatus().catch(() => new Promise<any>((r) => setTimeout(r, 2000)).then(() => aiStatus()));
+    ask()
+      .then((d) => live && setS(d))
+      .catch(() => live && setS({ enabled: false, error: true }))
+      .finally(() => live && setChecking(false));
     return () => { live = false; };
-  }, []);
+  }, [online, tries]);
+
+  const toolsButton = tools && nav?.navigate ? (
+    <Button title="Open the offline tools" icon="leaf" kind="secondary" size="sm" onPress={() => nav.navigate('offline-tools')} />
+  ) : null;
+
+  if (!online) {
+    return (
+      <View style={{ gap: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.orange, borderRadius: radius.lg, backgroundColor: colors.card }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Icon name="cloud-off-outline" size={14} color={colors.orange} />
+          <AppText weight="700" style={{ fontSize: 13, flex: 1 }}>{t('You are offline')}</AppText>
+        </View>
+        <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('The online AI assistant needs internet. On this phone you can still scan a plant and ask the offline assistant, with no internet.')}</AppText>
+        {toolsButton ? <View style={{ alignSelf: 'flex-start' }}>{toolsButton}</View> : null}
+      </View>
+    );
+  }
+
   if (!s) return null;
+  const failed = !!s.error;
   const off = !s.enabled;
   const hourLeft = s.hourly_remaining != null && s.remaining != null && s.hourly_remaining < s.remaining;
   if (!off && s.remaining == null) return null;
+
+  if (failed) {
+    return (
+      <View style={{ gap: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.orange, borderRadius: radius.lg, backgroundColor: colors.card }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Icon name="plug-circle-xmark" size={14} color={colors.orange} />
+          <AppText weight="700" style={{ fontSize: 13, flex: 1 }}>{t('Could not reach the AI assistant')}</AppText>
+        </View>
+        <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight }}>{t('Your connection may be weak, or the service is busy. Try again in a moment. The offline tools work without internet.')}</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button title="Try again" icon="refresh" size="sm" loading={checking} onPress={() => setTries((n) => n + 1)} />
+          {toolsButton}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingHorizontal: 12,
       borderWidth: 1, borderColor: off ? colors.orange : colors.border, borderRadius: radius.pill, marginBottom: 12 }}>
       <Icon name={off ? 'plug-circle-xmark' : 'bolt'} size={12} color={off ? colors.orange : colors.primary} />
       <AppText style={{ fontSize: 12, color: colors.textLight, flexShrink: 1 }}>
         {off
-          ? (s.error ? t('Could not check the AI assistant.') : t('The AI assistant is not set up yet. Your administrator needs to switch it on.'))
+          ? t('The AI assistant is not set up yet. Your administrator needs to switch it on.')
           : hourLeft ? t('{{count}} AI requests left this hour', { count: s.hourly_remaining }) : t('{{count}} AI requests left today', { count: s.remaining })}
       </AppText>
     </View>

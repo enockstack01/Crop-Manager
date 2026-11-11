@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { onlineManager } from '@tanstack/react-query';
 import { API_URL } from '../env';
 
 // generous timeout: a sleeping free-tier host can take 30–60s to wake on the first request
@@ -41,11 +42,20 @@ export class ApiError extends Error {
 
 api.interceptors.response.use(
   (res) => res,
-  (error: AxiosError<any>) => {
+  async (error: AxiosError<any>) => {
     if (!error.response) {
       const timedOut = error.code === 'ECONNABORTED' || /timeout/i.test(error.message);
+      // A read that fails before any answer is tried once more: the first request after the phone reconnects, changes network or wakes
+      // from sleep often fails while the connection settles. Writes are never repeated here (they have their own offline queue).
+      const cfg: any = error.config;
+      if (cfg && !timedOut && (cfg.method || 'get').toLowerCase() === 'get' && !cfg.__retried && onlineManager.isOnline()) {
+        cfg.__retried = true;
+        await new Promise((r) => setTimeout(r, 1500));
+        return api.request(cfg);
+      }
+      const offline = !onlineManager.isOnline();
       return Promise.reject(
-        new ApiError(timedOut ? 'The server took too long to respond' : 'Could not reach the server', undefined, true),
+        new ApiError(timedOut ? 'The server took too long to respond' : offline ? 'No internet connection' : 'Could not reach the server', undefined, true),
       );
     }
     const message =

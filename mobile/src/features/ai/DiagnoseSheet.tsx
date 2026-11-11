@@ -116,7 +116,7 @@ export function DiagnoseSheet({ visible, onClose, input, onUse, autoCamera = fal
         </View>
       }
     >
-      <AiStatusBar />
+      <AiStatusBar tools={false} />
       <PhotoSetField urls={photos} onChange={setPhotos} autoCamera={autoCamera && visible} />
       <TextAreaField
         label="What do you see? (optional)"
