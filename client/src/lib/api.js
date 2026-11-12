@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { plainDeep } from './plainText.js';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -23,7 +24,11 @@ api.interceptors.request.use(async (config) => {
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // every AI answer reads as plain, well-formed text (no markdown, no dashes between words, no decorative symbols), however it was stored
+    if (/^\/?ai\//.test(String(res.config?.url || '')) && res.data && typeof res.data === 'object') res.data = plainDeep(res.data);
+    return res;
+  },
   (error) => {
     if (!error.response) {
       // never reached the API (server down, offline, or timed out)

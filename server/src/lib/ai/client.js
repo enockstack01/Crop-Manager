@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import createHttpError from '../httpError.js';
 import { resolveModel } from './models.js';
+import { plainDeep, plainText } from './plainText.js';
 
 /**
  * Model access for every CropManager AI feature. The key is read from the server environment and is never
@@ -42,8 +43,8 @@ export function friendly(err) {
   return createHttpError(502, 'The AI assistant could not answer. Please try again.', { code: 'ai_failed' });
 }
 
-/** The app shows plain text: take out markdown symbols the model sometimes adds. */
-const clean = (t) => t.replace(/\*\*/g, '').replace(/__/g, '').replace(/^#{1,6}\s*/gm, '').replace(/^\s*[*]\s+/gm, '- ').trim();
+/** The apps show plain text: markdown, dashes between words and decorative symbols the model sometimes adds are taken out (plainText.js). */
+const clean = plainText;
 
 const usageOf = (msg) => ({
   input_tokens: msg.usage?.input_tokens || 0,
@@ -89,7 +90,7 @@ export async function askTool({ task = 'report', system, messages, tool, maxToke
         // a reply that was cut off, or that left out required fields, is asked for once more
         const missing = (tool.input_schema?.required || []).filter((k) => block.input?.[k] === undefined || block.input[k] === '');
         const cut = msg.stop_reason === 'max_tokens';
-        if (!cut && !missing.length) return { data: block.input, usage, tier };
+        if (!cut && !missing.length) return { data: plainDeep(block.input), usage, tier };
         if (!cut && (!partial || missing.length < partial.missing)) partial = { data: block.input, missing: missing.length };
         if (attempt < 2 && Date.now() - started < 45_000) {
           console.warn(`[ai] ${task}: ${cut ? 'reply cut off' : `reply missing ${missing.join(', ')}`}; asking again`);
@@ -98,9 +99,9 @@ export async function askTool({ task = 'report', system, messages, tool, maxToke
             : `Your last answer left out required fields: ${missing.join(', ')}. Fill EVERY required field this time, keeping each one short.`;
           continue;
         }
-        if (partial) return { data: partial.data, usage, tier };
+        if (partial) return { data: plainDeep(partial.data), usage, tier };
         if (cut) throw new Error('reply was cut off');
-        return { data: block.input, usage, tier };
+        return { data: plainDeep(block.input), usage, tier };
       }
       if (msg.stop_reason === 'max_tokens') throw new Error('reply was cut off');
       // it answered in words: ask once more for the function call

@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { onlineManager } from '@tanstack/react-query';
+import { plainDeep } from './plainText';
 import { API_URL } from '../env';
 
 // generous timeout: a sleeping free-tier host can take 30–60s to wake on the first request
@@ -41,7 +42,11 @@ export class ApiError extends Error {
 }
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // every AI answer reads as plain, well-formed text (no markdown, no dashes between words, no decorative symbols), however it was stored
+    if (/^\/?ai\//.test(String(res.config?.url || '')) && res.data && typeof res.data === 'object') res.data = plainDeep(res.data);
+    return res;
+  },
   async (error: AxiosError<any>) => {
     if (!error.response) {
       const timedOut = error.code === 'ECONNABORTED' || /timeout/i.test(error.message);

@@ -1,3 +1,4 @@
+import { plainText } from '../lib/plainText.ts';
 /*
  * Reading and checking what the small model writes. Pure functions with no phone code, so they can be tested on a computer
  * (mobile/scripts/test-note.mjs). Whatever the model says, anything that looks like a dose or a product is dropped, as is chatter.
@@ -22,7 +23,7 @@ export const stripSpecial = (s: string) =>
   s.replace(/<\|channel>[\s\S]*?<channel\|>/g, ' ').replace(/<\|[^>\n]{1,30}>|<[^>\s|]{1,30}\|>|<(?:start|end)_of_turn>|<\/?(?:bos|eos)>/g, ' ');
 
 export const cleanText = (s: string, max: number) => {
-  const first = stripSpecial(s).replace(/\*\*|\*|_{2,}|`/g, '').replace(/\s+/g, ' ').trim();
+  const first = plainText(stripSpecial(s)).replace(/\s+/g, ' ').trim();
   // keep whole sentences that pass the filters, up to the length limit
   const kept: string[] = [];
   for (const raw of first.match(/[^.!?]+[.!?]*\s*/g) || [first]) {
