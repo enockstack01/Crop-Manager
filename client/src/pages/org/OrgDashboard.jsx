@@ -6,7 +6,6 @@ import { baseOptions, breakdownOptions, LEAF, useIsDark } from '../../features/d
 import { formatDate, formatNumber } from '../../lib/format.js';
 import { useOrgDashboard } from '../../lib/orgApi.js';
 import { OrgGate, UsageMeter } from './OrgGate.jsx';
-import { OrgMap } from './OrgMap.jsx';
 import { t } from '../../i18n/index.js';
 
 const ha = (v) => `${(Math.round(v * 10) / 10).toLocaleString('en-US')} ha`;
@@ -98,8 +97,7 @@ function Body({ org }) {
           <Tile label="Total area" value={ha(d.land.total_ha)} />
           <Tile label="Average farm size" value={ha(d.land.avg_ha)} />
         </div>
-        <div className="org-two">
-          <OrgMap points={d.land.points} />
+        <div>
           <div>
             <div className="farm-profile-section">{t('Land by district')}</div>
             {d.land.by_district.length ? (

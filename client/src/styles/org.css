@@ -184,12 +184,6 @@ button.org-tile:hover {
   gap: 20px;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
 }
-.org-map {
-  height: 300px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  z-index: 0;
-}
 .org-list {
   list-style: none;
   margin: 0 0 10px;
