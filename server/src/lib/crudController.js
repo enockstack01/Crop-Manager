@@ -72,6 +72,7 @@ export function crudController(resource) {
       // money records default to the owner's default currency (Settings)
       if (hasCurrency && !body.currency) body.currency = req.profile?.currency || 'USD';
       await assertOwnLinks(links, body, req.userId);
+      assertValid(resource, body);
       const doc = new Model({ ...body, user_id: req.userId });
       await doc.save();
       res.status(201).json(await readOne(doc._id, req.userId));
@@ -83,6 +84,7 @@ export function crudController(resource) {
       const body = stripReadOnly(req.body);
       if (hasCurrency && !body.currency) delete body.currency; // keep the record's currency
       await assertOwnLinks(links, body, req.userId);
+      assertValid(resource, { ...doc.toObject(), ...body }); // the record as it will be after this change
       doc.set(body);
       await doc.save();
       res.json(await readOne(doc._id, req.userId));
@@ -96,6 +98,12 @@ export function crudController(resource) {
 
     readOne,
   };
+}
+
+/** A resource can carry its own rule (resources.js `validate`): it returns a message when the record must not be saved. */
+function assertValid(resource, record) {
+  const message = resource.validate?.(record);
+  if (message) throw createHttpError(400, message, { code: 'invalid_record' });
 }
 
 function stripReadOnly(body = {}) {

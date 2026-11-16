@@ -110,3 +110,12 @@
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
+
+/* exact point of a field: asked every time, never taken from the device by itself */
+.field-location { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; background: var(--card-bg, #fff); }
+.fl-title { font-weight: 700; font-size: 15px; }
+.fl-lead, .fl-help { margin: 6px 0 10px; font-size: 13px; line-height: 1.5; color: var(--text-light); }
+.fl-warn { color: var(--danger, #b3261e); }
+.fl-ask { display: grid; gap: 8px; margin-bottom: 8px; }
+.fl-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.fl-here { display: grid; gap: 4px; justify-items: start; }

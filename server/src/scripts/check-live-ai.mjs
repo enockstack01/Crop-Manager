@@ -44,7 +44,7 @@ try {
   console.log(`3. AI status: HTTP ${status.status} ${JSON.stringify(status.body).slice(0, 300)}`);
   const chat = await call('POST', '/ai/chat', token, { messages: [{ role: 'user', content: 'Say OK.' }] });
   console.log(`4. chat: HTTP ${chat.status} ${JSON.stringify(chat.body).slice(0, 300)}`);
-  const diag = await call('POST', '/ai/advice', token, { topic: 'weeding' });
+  const diag = await call('POST', '/ai/advice', token, { topic: 'protection' });
   console.log(`5. advice (a second feature): HTTP ${diag.status} ${JSON.stringify(diag.body).slice(0, 160)}`);
 } finally {
   try { if (user) await clerkClient.users.deleteUser(user.id); } catch { /* gone */ }

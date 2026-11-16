@@ -19,6 +19,8 @@ const cycle = (withCrop = true) => ({
  * Declarative registry — one entry drives a full REST CRUD surface at /api/:path
  * via crudController + generic routes.
  */
+import { coordinateError } from './lib/fieldLocation.js';
+
 export const resources = [
   {
     path: 'farms', name: 'Farm', model: M.Farm,
@@ -28,6 +30,8 @@ export const resources = [
     path: 'fields', name: 'Field', model: M.Field,
     search: ['name', 'code', 'soil_type'], filters: ['farm_id', 'status'],
     relations: [farm],
+    // a field is saved only with its exact coordinates: the weather for the field is read at that point
+    validate: (record) => coordinateError(record.latitude, record.longitude),
   },
   {
     path: 'crops', name: 'Crop', model: M.Crop,

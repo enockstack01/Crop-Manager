@@ -4,6 +4,9 @@ import { formatCurrency, formatDate, formatNumber } from '../lib/format';
 import { mediaUrl } from '../env';
 import { Image } from 'react-native';
 import { STATUS_TONES } from '../theme/theme';
+import { FieldLocation } from '../components/FieldLocation';
+import { coordinateError } from '../lib/fieldLocation';
+import { t } from '../i18n';
 import { FormApi, DateField, NumberField, SelectField, TextAreaField, TextField, MoneyField } from '../components/fields';
 import { PhotoField } from '../components/PhotoField';
 import { Button } from '../components/Button';
@@ -110,7 +113,7 @@ const fields: ModuleConfig = {
       { key: 'status', placeholder: 'All Statuses', options: FIELD_STATUS.map((s) => ({ value: s, label: s })) },
     ];
   },
-  row: (r) => ({ title: r.name, subtitle: r.farms?.name || '—', badge: r.status ? { label: r.status, tone: tone(r.status) } : null, right: `${formatNumber(r.area)} ${r.area_unit || 'ha'}` }),
+  row: (r) => ({ title: r.name, subtitle: coordinateError(r.latitude, r.longitude) ? `${r.farms?.name || '—'} · ${t('Add coordinates')}` : (r.farms?.name || '—'), badge: coordinateError(r.latitude, r.longitude) ? { label: 'No coordinates', tone: 'warning' as Tone } : r.status ? { label: r.status, tone: tone(r.status) } : null, right: `${formatNumber(r.area)} ${r.area_unit || 'ha'}` }),
   detail: (r) => [
     ['Field Name', r.name], ['Farm', r.farms?.name], ['Code', r.code],
     ['Area', `${formatNumber(r.area)} ${r.area_unit || 'ha'}`], ['Location', r.location],
@@ -123,6 +126,8 @@ const fields: ModuleConfig = {
   },
   fromRow: (r) => ({ farm_id: r.farm_id || '' }),
   toPayload: (v) => ({ ...v, area: numOrNull(v.area), soil_ph: numOrNull(v.soil_ph), latitude: numOrNull(v.latitude), longitude: numOrNull(v.longitude) }),
+  // the weather for a field is read at its exact point: a field is saved only with its coordinates
+  validate: (v) => { const m = coordinateError(v.latitude, v.longitude); return m ? t(m) : null; },
   Form: (f) => {
     const { items: farmList } = useAll('farms');
     return (
@@ -135,8 +140,7 @@ const fields: ModuleConfig = {
         <SelectField label="Area Unit" {...f.bind('area_unit')} options={AREA_UNITS} placeholder="" />
         <TextField label="Soil Type" {...f.bind('soil_type')} placeholder="e.g. Sandy loam" />
         <NumberField label="Soil pH" {...f.bind('soil_ph')} />
-        <NumberField label="Latitude" {...f.bind('latitude')} />
-        <NumberField label="Longitude" {...f.bind('longitude')} />
+        <FieldLocation f={f} />
         <SelectField label="Status" {...f.bind('status')} options={FIELD_STATUS} placeholder="" />
         <TextAreaField label="Notes" {...f.bind('notes')} />
       </>

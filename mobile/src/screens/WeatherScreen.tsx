@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
 import { api } from '../lib/api';
 import { aiWeatherBriefing } from '../lib/ai';
 import { useTheme } from '../theme/ThemeProvider';
@@ -9,37 +10,31 @@ import { AppText, ChartCard, EmptyState, Grid, Loading, PageHeader, Screen } fro
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
 import { SelectField } from '../components/fields';
-import { LocationCard } from '../components/LocationPrompt';
-import { useDeviceLocation, Coords } from '../lib/location';
 import { t } from '../i18n';
-
-/** Select value meaning "where I am now" (the phone's position) instead of one of the farms. */
-const HERE = 'here';
 
 export const WEATHER_ICON: Record<string, string> = {
   clear: 'sun', partly: 'cloud-sun', clouds: 'cloud', fog: 'smog', drizzle: 'cloud-rain', rain: 'cloud-showers-heavy', storm: 'bolt', snow: 'snowflake',
 };
 const LEVEL_ICON: Record<string, string> = { warn: 'triangle-exclamation', watch: 'eye', info: 'circle-check' };
 
-export const useWeather = (farmId?: string, here?: Coords | null) =>
+/** Weather at the exact point of a field: the one chosen, else the first field that has coordinates. The phone's own position is never used. */
+export const useWeather = (fieldId?: string) =>
   useQuery({
-    queryKey: ['weather', farmId || '', here?.lat ?? '', here?.lon ?? ''],
-    queryFn: () => api.get('/weather', { params: here ? { lat: here.lat, lon: here.lon } : farmId ? { farm_id: farmId } : {} }).then((r) => r.data),
+    queryKey: ['weather', 'field', fieldId || ''],
+    queryFn: () => api.get('/weather', { params: fieldId ? { field_id: fieldId } : {} }).then((r) => r.data),
     staleTime: 5 * 60 * 1000,
   });
 
 const day = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, o);
 const hour = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
-/** Weather for the farm: now, next hours, 7 days, advice for the farm's crops and the water plan. */
+/** Weather at the exact point of a field: now, next hours, 7 days, advice for the field's crops and the water plan. */
 export function WeatherScreen() {
   const { colors } = useTheme();
-  // '' = automatic: the phone's position when location is on, else the first farm
-  const [choice, setChoice] = useState('');
-  const loc = useDeviceLocation();
-  const useHere = !!loc.coords && (choice === HERE || choice === '');
-  const farmId = choice && choice !== HERE ? choice : '';
-  const { data, isLoading, isError, refetch, isFetching } = useWeather(farmId || undefined, useHere ? loc.coords : null);
+  const navigation = useNavigation<any>();
+  // '' = automatic: the first field that has coordinates
+  const [fieldId, setFieldId] = useState('');
+  const { data, isLoading, isError, refetch, isFetching } = useWeather(fieldId || undefined);
   const [briefing, setBriefing] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -48,7 +43,7 @@ export function WeatherScreen() {
     setBusy(true);
     setErr('');
     try {
-      setBriefing((await aiWeatherBriefing(useHere ? loc.coords : null)).briefing);
+      setBriefing((await aiWeatherBriefing(fieldId || data?.field_id || undefined)).briefing);
     } catch (e: any) {
       setErr(e?.message || t('Could not get the briefing'));
     } finally {
@@ -60,11 +55,32 @@ export function WeatherScreen() {
   if (isError || !data) {
     return <EmptyState icon="cloud" title="Weather is not available right now" description="Check your connection and try again." actionLabel="Try again" onAction={refetch} />;
   }
+  const picker = data.fields?.length ? (
+    <View style={{ marginBottom: 14 }}>
+      <SelectField
+        label="Field"
+        value={fieldId || data.field_id || ''}
+        onChangeValue={setFieldId}
+        placeholder=""
+        options={data.fields.map((f: any) => ({ value: f.id, label: `${f.name}${f.farm_name ? ` · ${f.farm_name}` : ''}${f.has_coordinates ? '' : ` (${t('no coordinates')})`}` }))}
+      />
+    </View>
+  ) : null;
   if (!data.located) {
+    const missing = data.reason === 'field_no_coordinates';
     return (
       <Screen>
-        <LocationCard />
-        <EmptyState icon="location-dot" title="Add your farm location" description="Add a farm with its location (district, province, country) or a field with GPS coordinates, and the weather for your land will appear here." />
+        <PageHeader title="Weather" subtitle="Forecast and advice at the exact point of your field." />
+        {picker}
+        <EmptyState
+          icon="location-dot"
+          title={missing ? 'This field has no coordinates yet' : data.reason === 'no_coordinates' ? 'Add the coordinates of a field' : 'Add a field with its coordinates'}
+          description={missing || data.reason === 'no_coordinates'
+            ? 'The weather is shown for the exact point of a field. Open the field and enter its latitude and longitude.'
+            : 'The weather is shown for the exact point of a field. Add a field and enter its exact latitude and longitude.'}
+          actionLabel="Go to Fields"
+          onAction={() => navigation.navigate('fields')}
+        />
       </Screen>
     );
   }
@@ -75,18 +91,14 @@ export function WeatherScreen() {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}>
-      <PageHeader title="Weather" subtitle="Forecast and advice for your farm." />
+      <PageHeader title="Weather" subtitle="Forecast and advice at the exact point of your field." />
 
-      <LocationCard />
+      {picker}
 
-      {data.farms.length > 1 || loc.coords ? (
-        <View style={{ marginBottom: 14 }}>
-          <SelectField
-            value={useHere ? HERE : farmId || data.farm_id || ''}
-            onChangeValue={setChoice}
-            placeholder=""
-            options={[...(loc.coords ? [{ value: HERE, label: t('My current location') }] : []), ...data.farms.map((f: any) => ({ value: f.id, label: f.name }))]}
-          />
+      {data.approximate ? (
+        <View style={{ gap: 8, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: colors.orange, borderRadius: radius.lg, backgroundColor: colors.card }}>
+          <AppText style={{ fontSize: 13, lineHeight: 19 }}>{t('This weather is approximate: it is for the place name of your farm, not for a field. Add the exact coordinates of a field to see the weather at the field.')}</AppText>
+          <View style={{ alignSelf: 'flex-start' }}><Button title="Go to Fields" size="sm" kind="secondary" onPress={() => navigation.navigate('fields')} /></View>
         </View>
       ) : null}
 
@@ -97,7 +109,10 @@ export function WeatherScreen() {
             <AppText weight="800" style={{ fontSize: 40, lineHeight: 44, color: '#fff' }}>{Math.round(c.temp)}°C</AppText>
             <AppText style={{ fontSize: 14, color: '#fff' }}>{t(c.description ? c.description[0].toUpperCase() + c.description.slice(1) : '')}</AppText>
             <AppText style={{ fontSize: 12, color: '#fff', opacity: 0.85, marginTop: 4 }}>
-              {data.location.name}{data.location.place && data.location.place !== data.location.name ? ` · ${data.location.place}` : ''}
+              {data.location.name}{data.location.farm_name ? ` · ${data.location.farm_name}` : ''}
+            </AppText>
+            <AppText style={{ fontSize: 12, color: '#fff', opacity: 0.85 }}>
+              {t('Exact point')}: {Number(data.location.lat).toFixed(6)}, {Number(data.location.lon).toFixed(6)}
             </AppText>
           </View>
         </View>
@@ -146,8 +161,8 @@ export function WeatherScreen() {
           </ScrollView>
         </ChartCard>
 
-        <ChartCard title={t('Advice for your farm')} icon="seedling">
-          {data.crops.length ? <AppText style={{ fontSize: 12, color: colors.textLight, marginBottom: 10 }}>{t('Based on your active crops: {{crops}}', { crops: data.crops.join(', ') })}</AppText> : null}
+        <ChartCard title={t('Advice for this field')} icon="seedling">
+          {data.crops.length ? <AppText style={{ fontSize: 12, color: colors.textLight, marginBottom: 10 }}>{t('Based on the active crops in this field: {{crops}}', { crops: data.crops.join(', ') })}</AppText> : null}
           <View style={{ gap: 10 }}>
             {data.advice.map((a: any, i: number) => (
               <View key={i} style={{ flexDirection: 'row', gap: 10, padding: 10, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: levelColor(a.level), borderRadius: 8 }}>

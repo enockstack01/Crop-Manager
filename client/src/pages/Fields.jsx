@@ -5,6 +5,9 @@ import { StatusBadge } from '../components/ui.jsx';
 import { useAll } from '../lib/useResource.js';
 import { formatNumber } from '../lib/format.js';
 import { AREA_UNITS, FIELD_STATUS } from '../lib/options.js';
+import { t } from '../i18n/index.js';
+import { FieldLocation } from '../components/FieldLocation.jsx';
+import { coordinateError } from '../lib/fieldLocation.js';
 
 const INITIAL = {
   farm_id: '', name: '', code: '', area: '', area_unit: 'hectares', location: '',
@@ -13,7 +16,7 @@ const INITIAL = {
 
 const num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
 
-function FieldFormBody({ bind }) {
+function FieldFormBody({ values, set, bind }) {
   const { items: farms } = useAll('farms');
   return (
     <>
@@ -39,10 +42,7 @@ function FieldFormBody({ bind }) {
         <TextField label="Soil Type" {...bind('soil_type')} placeholder="e.g. Sandy loam" />
         <NumberField label="Soil pH" {...bind('soil_ph')} step="0.1" />
       </FormRow>
-      <FormRow>
-        <NumberField label="Latitude" {...bind('latitude')} step="0.000001" />
-        <NumberField label="Longitude" {...bind('longitude')} step="0.000001" />
-      </FormRow>
+      <FieldLocation values={values} set={set} bind={bind} />
       <SelectField label="Status" {...bind('status')} options={FIELD_STATUS} />
       <TextArea label="Notes" {...bind('notes')} />
     </>
@@ -57,6 +57,7 @@ function FieldForm(props) {
       title="Field"
       initial={INITIAL}
       fromRow={(r) => ({ farm_id: r.farm_id || '' })}
+      validate={(v) => { const m = coordinateError(v.latitude, v.longitude); return m ? t(m) : null; }}
       toPayload={(v) => ({
         ...v,
         area: num(v.area),
@@ -92,6 +93,7 @@ export default function Fields() {
         { key: 'farm', label: 'Farm', render: (r) => r.farms?.name || '—' },
         { key: 'code', label: 'Code', render: (r) => <span className="badge badge-neutral">{r.code || '—'}</span> },
         { key: 'area', label: 'Area', sortable: true, render: (r) => `${formatNumber(r.area)} ${r.area_unit || 'ha'}` },
+        { key: 'coordinates', label: 'Coordinates', render: (r) => (coordinateError(r.latitude, r.longitude) ? <span className="badge badge-warning">{t('Add coordinates')}</span> : `${Number(r.latitude).toFixed(5)}, ${Number(r.longitude).toFixed(5)}`) },
         { key: 'soil_type', label: 'Soil Type', render: (r) => r.soil_type || '—' },
         { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
       ]}

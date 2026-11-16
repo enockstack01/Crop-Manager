@@ -231,7 +231,9 @@ export const weatherBriefing = asyncHandler(async (req, res) => {
   if (!aiConfigured()) throw createHttpError(503, 'The AI assistant is not set up yet. Ask your administrator to switch it on.', { code: 'ai_not_configured' });
   await assertWithinLimit(req.profile);
   if (aiMock()) { await logUsage(req.userId, 'weather', {}, 'mock'); return res.json({ briefing: mockFor('chat') }); }
-  const reply = await runChat(req, [{ role: 'user', content: 'Call the weather tool and give me a weather briefing for my farm for the coming week: what to do and what to avoid for my crops and fields (planting, fertilizer, spraying, irrigation, harvest, disease risk). Name my crops and fields where it matters. Short numbered steps, at most 220 words.' }]);
+  // the briefing is for one field's exact point: the one chosen in the app, else the first field with coordinates
+  const fieldId = clip(req.body?.field_id, 40);
+  const reply = await runChat(req, [{ role: 'user', content: `Call the weather tool${fieldId ? ` with field_id "${fieldId}"` : ''} and give me a weather briefing for that field for the coming week: what to do and what to avoid for my crops and fields (planting, fertilizer, spraying, irrigation, harvest, disease risk). Name my crops and fields where it matters. Short numbered steps, at most 220 words.` }]);
   res.json({ briefing: reply });
 });
 

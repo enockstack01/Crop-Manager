@@ -38,6 +38,11 @@ export function friendly(err) {
   if (status === 401 || status === 403) return createHttpError(503, 'The AI assistant could not start. Ask your administrator to check its settings.', { code: 'ai_auth' });
   if (status === 404) return createHttpError(503, 'The selected AI model is not available. Ask your administrator to choose another one.', { code: 'ai_model' });
   if (status === 429 || status === 529 || status === 503) return createHttpError(503, 'The AI assistant is busy right now. Please try again in a minute.', { code: 'ai_busy' });
+  // the account behind the assistant has no credit left: only an administrator can fix it, so say so instead of blaming the request
+  if (status === 400 && /credit balance|billing|insufficient/i.test(String(err?.message || ''))) {
+    console.error('[ai] the AI account is out of credit');
+    return createHttpError(503, 'The AI assistant is paused because its account has no credit left. Ask your administrator to add credit.', { code: 'ai_billing' });
+  }
   if (status === 400) return createHttpError(400, 'The AI assistant could not read that request. Try again with a clearer photo or shorter text.', { code: 'ai_bad_request' });
   console.error('[ai]', err?.message || err);
   return createHttpError(502, 'The AI assistant could not answer. Please try again.', { code: 'ai_failed' });

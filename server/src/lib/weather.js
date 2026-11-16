@@ -1,4 +1,5 @@
 import { Farm, Field, CropCycle, Crop } from '../models/index.js';
+import { hasCoordinates } from './fieldLocation.js';
 
 /*
  * Weather for a farm. OpenWeatherMap when OPENWEATHER_API_KEY works; otherwise (no key, or the key is not
@@ -44,21 +45,45 @@ export async function geocode(q) {
   return null;
 }
 
-/** Where to look at the weather: a chosen point, else the chosen/first farm (a field's GPS, else its place name). */
-export async function resolveLocation(userId, { lat, lon, farm_id } = {}) {
-  const farms = await Farm.find({ user_id: userId }).lean();
+/**
+ * Where to look at the weather. The weather is always for the exact point of a field (its own latitude and longitude), never for the position
+ * of the phone that is recording data:
+ *   a given point (lat, lon)  -> that point (kept for older apps)
+ *   field_id                  -> that field's coordinates
+ *   nothing chosen            -> the first field that has coordinates (of the chosen farm if farm_id is given)
+ *   no field has coordinates  -> an approximate fallback from a farm's place name, marked `approximate` so the screens ask for coordinates
+ */
+export async function resolveLocation(userId, { lat, lon, farm_id, field_id } = {}) {
+  const [farms, fields] = await Promise.all([Farm.find({ user_id: userId }).lean(), Field.find({ user_id: userId }).sort({ created_at: 1 }).lean()]);
   const options = farms.map((f) => ({ id: String(f._id), name: f.name }));
-  if (Number.isFinite(lat) && Number.isFinite(lon)) return { point: { lat, lon, name: null }, options, farm: null };
+  const farmOf = (f) => farms.find((x) => String(x._id) === String(f.farm_id));
+  const fieldOptions = fields.map((f) => ({
+    id: String(f._id), name: f.name, farm_id: String(f.farm_id), farm_name: farmOf(f)?.name || '',
+    has_coordinates: hasCoordinates(f), lat: hasCoordinates(f) ? Number(f.latitude) : null, lon: hasCoordinates(f) ? Number(f.longitude) : null,
+  }));
+  if (Number.isFinite(lat) && Number.isFinite(lon)) return { point: { lat, lon, name: null, source: 'point' }, options, fieldOptions, farm: null, field: null };
+
+  let field = null;
+  if (field_id) {
+    field = fields.find((f) => String(f._id) === String(field_id)) || null;
+    if (field && !hasCoordinates(field)) return { point: null, options, fieldOptions, farm: farmOf(field) || null, field, reason: 'field_no_coordinates' };
+  }
+  if (!field) field = fields.find((f) => hasCoordinates(f) && (!farm_id || String(f.farm_id) === String(farm_id))) || fields.find(hasCoordinates) || null;
+  if (field) {
+    const farm = farmOf(field) || null;
+    return { point: { lat: Number(field.latitude), lon: Number(field.longitude), name: field.name, farm_name: farm?.name || '', source: 'field' }, options, fieldOptions, farm, field };
+  }
+
+  // no field has coordinates yet: an approximate answer from a farm's place name, so the page is not empty while the farmer adds them
   const farm = farms.find((f) => String(f._id) === String(farm_id)) || farms[0];
-  if (!farm) return { point: null, options, farm: null };
-  const field = await Field.findOne({ user_id: userId, farm_id: farm._id, latitude: { $ne: null }, longitude: { $ne: null } }).lean();
-  if (field) return { point: { lat: field.latitude, lon: field.longitude, name: farm.name, source: 'field' }, options, farm };
+  const reason = fields.length ? 'no_coordinates' : 'no_field';
+  if (!farm) return { point: null, options, fieldOptions, farm: null, field: null, reason };
   const parts = [farm.location, farm.district, farm.province, farm.country].filter(Boolean);
   for (let i = 0; i < parts.length; i += 1) {
     const hit = await geocode(parts.slice(i).join(', ')) || (i < parts.length - 1 ? null : await geocode(parts[i]));
-    if (hit) return { point: { ...hit, name: farm.name, place: hit.name, source: 'place' }, options, farm };
+    if (hit) return { point: { ...hit, name: farm.name, place: hit.name, source: 'place', approximate: true }, options, fieldOptions, farm, field: null, reason };
   }
-  return { point: null, options, farm };
+  return { point: null, options, fieldOptions, farm, field: null, reason };
 }
 
 /* ---------------------------------------------------------------- providers */
@@ -137,7 +162,7 @@ async function fromOpenMeteo(lat, lon) {
 
 /** Weather at a point (cached 10 minutes). */
 export async function weatherAt(lat, lon) {
-  const k = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  const k = `${lat.toFixed(3)},${lon.toFixed(3)}`; // about 100 m: the weather of one field is not shared with a field kilometres away
   const hit = cache.get(k);
   if (hit && Date.now() - hit.at < TTL) return hit.data;
   let data;
@@ -213,8 +238,10 @@ export function adviceFrom(weather, cycles = []) {
 }
 
 /** Open crop cycles with the names the advice needs. */
-export async function openCycles(userId) {
-  const cycles = await CropCycle.find({ user_id: userId, status: { $in: ['Planned', 'Planted', 'Growing', 'Ready for Harvest'] } }).limit(30).lean();
+export async function openCycles(userId, { field_id } = {}) {
+  const filter = { user_id: userId, status: { $in: ['Planned', 'Planted', 'Growing', 'Ready for Harvest'] } };
+  if (field_id) filter.field_id = field_id; // the weather is for one field: its own crops
+  const cycles = await CropCycle.find(filter).limit(30).lean();
   const [crops, fields] = await Promise.all([Crop.find({ user_id: userId }).lean(), Field.find({ user_id: userId }).lean()]);
   const nm = (l, id) => l.find((x) => String(x._id) === String(id))?.name || null;
   return cycles.map((c) => ({ status: c.status, crop_name: nm(crops, c.crop_id), field_name: nm(fields, c.field_id), planted: c.planting_date, expected_harvest: c.expected_harvest_date }));
@@ -223,16 +250,23 @@ export async function openCycles(userId) {
 /** Everything the weather page, the calculators and the assistant need for one user. */
 export async function weatherForUser(userId, opts = {}) {
   const loc = await resolveLocation(userId, opts);
-  if (!loc.point) return { located: false, farms: loc.options };
+  if (!loc.point) return { located: false, farms: loc.options, fields: loc.fieldOptions, field_id: loc.field ? String(loc.field._id) : opts.field_id || null, reason: loc.reason || 'no_field' };
   const weather = await weatherAt(loc.point.lat, loc.point.lon);
-  const cycles = await openCycles(userId);
+  const cycles = await openCycles(userId, { field_id: loc.field ? loc.field._id : undefined });
   const crops = [...new Set(cycles.map((c) => c.crop_name).filter(Boolean))];
   const kc = crops.length ? crops.map(cropFactor).reduce((a, b) => a + b, 0) / crops.length : 1;
   return {
     located: true,
+    approximate: !!loc.point.approximate,
+    reason: loc.reason || null,
     farms: loc.options,
+    fields: loc.fieldOptions,
     farm_id: loc.farm ? String(loc.farm._id) : opts.farm_id || null,
-    location: { name: loc.point.name || weather.place.name, place: loc.point.place || weather.place.name, lat: loc.point.lat, lon: loc.point.lon, country: weather.place.country || loc.point.country || null, source: loc.point.source || 'point' },
+    field_id: loc.field ? String(loc.field._id) : null,
+    location: {
+      name: loc.point.name || weather.place.name, farm_name: loc.point.farm_name || loc.farm?.name || '', place: loc.point.place || weather.place.name,
+      lat: loc.point.lat, lon: loc.point.lon, country: weather.place.country || loc.point.country || null, source: loc.point.source || 'point',
+    },
     ...weather,
     water: waterBalance(weather, { kc }),
     advice: adviceFrom(weather, cycles),

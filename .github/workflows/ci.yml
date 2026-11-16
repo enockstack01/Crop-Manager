@@ -85,6 +85,7 @@ jobs:
           node scripts/test-apiurl.mjs
           node scripts/test-files.mjs
           node scripts/test-plaintext.mjs
+          node scripts/test-fieldlocation.mjs
       - name: No high or critical advisories
         run: npm audit --omit=dev --audit-level=high
 

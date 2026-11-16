@@ -40,16 +40,16 @@ const json = async (r) => { try { return await r.json(); } catch { return {}; } 
 try {
   console.log('1. records of one farmer cannot point at another farmer\'s data');
   const farmA = await json(await call(A, 'POST', '/api/farms', { name: 'A farm', location: 'x' }));
-  const fieldA = await json(await call(A, 'POST', '/api/fields', { farm_id: farmA.id, name: 'A field', area: 1 }));
+  const fieldA = await json(await call(A, 'POST', '/api/fields', { farm_id: farmA.id, name: 'A field', area: 1, latitude: -1.95, longitude: 30.06 }));
   const cropA = await json(await call(A, 'POST', '/api/crops', { name: 'A maize', category: 'Cereal' }));
   ok(!!farmA.id && !!fieldA.id && !!cropA.id, 'the owner can create a farm, a field and a crop');
 
   const farmB = await json(await call(B, 'POST', '/api/farms', { name: 'B farm', location: 'y' }));
-  const fieldB = await json(await call(B, 'POST', '/api/fields', { farm_id: farmB.id, name: 'B field', area: 1 }));
+  const fieldB = await json(await call(B, 'POST', '/api/fields', { farm_id: farmB.id, name: 'B field', area: 1, latitude: -1.5, longitude: 29.6 }));
   const cropB = await json(await call(B, 'POST', '/api/crops', { name: 'B beans', category: 'Legume' }));
   ok(!!fieldB.id, 'another farmer can use their own farm');
 
-  const steal = await call(B, 'POST', '/api/fields', { farm_id: farmA.id, name: 'sneaky', area: 1 });
+  const steal = await call(B, 'POST', '/api/fields', { farm_id: farmA.id, name: 'sneaky', area: 1, latitude: -1.5, longitude: 29.6 });
   ok(steal.status === 400 || steal.status === 404, 'a field cannot be created inside someone else\'s farm', `status ${steal.status}`);
   ok((await M.Field.countDocuments({ user_id: B, name: 'sneaky' })) === 0, 'and nothing was saved');
 
