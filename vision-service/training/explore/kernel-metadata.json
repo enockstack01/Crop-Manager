@@ -1,0 +1,23 @@
+{
+  "id": "enocknshimiyimana/greenhouse-fruit-explore",
+  "title": "Greenhouse fruit explore",
+  "code_file": "explore.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [
+    "kritikseth/fruit-and-vegetable-image-recognition",
+    "misrakahmed/vegetable-image-dataset",
+    "thinguynvn/cantaloupe-classification",
+    "sujaykapadnis/watermelon-disease-recognition-dataset",
+    "nirmalsankalana/watermelon-disease-dataset",
+    "abhisheksubhashswami/fruits-and-vegetables",
+    "mdtaquiansari/chili-pepper-cleaned"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

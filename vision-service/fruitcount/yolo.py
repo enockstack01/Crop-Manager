@@ -8,6 +8,7 @@ package is installed. If either is missing, or the crop has no class in the mode
 from __future__ import annotations
 
 import base64
+import json
 import os
 from pathlib import Path
 
@@ -22,6 +23,7 @@ IOU = float(os.environ.get('FRUIT_YOLO_IOU', '0.50'))
 IMGSZ = int(os.environ.get('FRUIT_YOLO_IMGSZ', '800'))
 _model = None
 _tried = False
+MIN_MAP = float(os.environ.get('FRUIT_YOLO_MIN_MAP', '0.35'))  # a crop is counted by the trained model only if it scored at least this (mAP50) on held-out photos
 
 
 def weights_path() -> Path:
@@ -50,13 +52,23 @@ def classes() -> list[str]:
     return [str(v) for v in m.names.values()] if m is not None else []
 
 
+def reliable_classes() -> list[str]:
+    """Classes the trained model may count: those that scored well enough in its own test (models/fruit_yolo_report.json)."""
+    report = weights_path().parent / 'fruit_yolo_report.json'
+    try:
+        scores = json.loads(report.read_text())['per_class_map50']
+    except Exception:  # no report: trust every class the model has
+        return classes()
+    return [c for c in classes() if scores.get(c, 0) >= MIN_MAP]
+
+
 def available_for(crop_class: str | None) -> bool:
-    return bool(crop_class) and crop_class in classes()
+    return bool(crop_class) and crop_class in reliable_classes()
 
 
 def count_with_yolo(data: bytes, crop_class: str) -> dict:
     m = load()
-    if m is None or crop_class not in classes():
+    if m is None or crop_class not in reliable_classes():
         raise ValueError('The trained fruit model is not available for this crop.')
     img = decode(data)
     warnings, numbers = quality(img)

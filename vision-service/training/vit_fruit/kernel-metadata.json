@@ -1,0 +1,30 @@
+{
+  "id": "enocknshimiyimana/greenhouse-vit-fruit",
+  "title": "Greenhouse vit fruit",
+  "code_file": "train_vit_fruit.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [
+    "enocknshimiyimana/crop-vit-pack",
+    "razwansultan/tomato-disease-dataset-both-leaf-and-fruit",
+    "samihaahasann/tomato-leaf-and-fruit-disease-image-dataset",
+    "sujaykapadnis/cucumber-disease-recognition-dataset",
+    "ahsanurparul/brinjal-dataset",
+    "nikitkashyap/fruit-infection-disease-dataset",
+    "muhammad0subhan/fruit-and-vegetable-disease-healthy-vs-rotten",
+    "akarshangupta/high-quality-crop-disease-image-dataset-for-cnns",
+    "mdtaquiansari/chili-pepper-cleaned",
+    "misrakahmed/vegetable-image-dataset",
+    "kritikseth/fruit-and-vegetable-image-recognition",
+    "thinguynvn/cantaloupe-classification",
+    "abhisheksubhashswami/fruits-and-vegetables",
+    "moltean/fruits"
+  ],
+  "competition_sources": [],
+  "kernel_sources": ["enocknshimiyimana/crop-vit-large-finetune"],
+  "model_sources": []
+}

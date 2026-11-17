@@ -1,0 +1,1 @@
+{"boxes_per_crop": {"tomato": 14886, "sweet_pepper": 17321, "hot_pepper": 403, "cucumber": 3827, "eggplant": 351, "strawberry": 4497, "zucchini": 830, "melon": 623, "green_bean": 2609}, "images": {"train": 3790, "val": 446, "test": 223}}

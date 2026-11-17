@@ -23,7 +23,7 @@ app = FastAPI(title='CropManager fruit counter', version=VERSION)
 
 @app.get('/health')
 def health():
-    return {'ok': True, 'opencv': cv2.__version__, 'method': VERSION, 'colors': sorted(COLORS), 'protected': bool(TOKEN), 'trained_model': yolo.classes()}
+    return {'ok': True, 'opencv': cv2.__version__, 'method': VERSION, 'colors': sorted(COLORS), 'protected': bool(TOKEN), 'trained_model': yolo.classes(), 'trained_model_used_for': yolo.reliable_classes()}
 
 
 @app.post('/count')
