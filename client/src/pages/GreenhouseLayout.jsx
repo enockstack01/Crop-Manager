@@ -4,13 +4,15 @@ import { Modal } from '../components/Modal.jsx';
 import { FormRow, NumberField, SelectField, TextField, useForm } from '../components/form.jsx';
 import { useConfirm } from '../components/Confirm.jsx';
 import { useToast } from '../components/Toast.jsx';
-import { markerColor, STATUS_COLOR, webglAvailable } from '../lib/greenhouseColors.js';
+import { HEALTH_COLOR, markerColor, STATUS_COLOR, webglAvailable } from '../lib/greenhouseColors.js';
 import { formatDate, formatNumber } from '../lib/format.js';
 import { useGhCrops, useGhHouses, useGhLayout, useGhMutations, useGhPlant, VERDICTS } from '../lib/greenhouse.js';
 import { CountForm } from './Greenhouse.jsx';
+import { HealthCard, HEALTH } from '../components/HealthCard.jsx';
 import { t } from '../i18n/index.js';
 
 const Scene = lazy(() => import('../components/GreenhouseScene.jsx'));
+const HEALTH_LEGEND = [['healthy', 'Healthy'], ['sick', 'Possible disease'], ['unsure', 'Not sure'], ['not_checked', 'Disease not checked'], ['none', 'Not counted yet']];
 const LEGEND = [['match', 'Matches'], ['close', 'Close'], ['mismatch', 'Does not match'], ['inconclusive', 'Not sure'], ['not_checked', 'Not checked'], ['none', 'Not counted yet']];
 
 /** The same greenhouse as a flat plan: rows down, plants across. Always works, and is the keyboard and small-screen way to pick a plant. */
@@ -130,6 +132,19 @@ function PlantPanel({ house, plant, onRecord, onClose }) {
         <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} aria-label={t('Close')}><i className="fas fa-xmark" /></button>
       </div>
       <button type="button" className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={() => onRecord(plant)}><i className="fas fa-camera" /> {t('Record a count on this plant')}</button>
+      {data?.data?.length > 0 && (<><div className="gh-side-title">{t('Health card')}</div><HealthCard health={data.data[0].verification?.health} /></>)}
+      {data?.data?.length > 1 && (
+        <>
+          <div className="gh-side-title">{t('Health history')}</div>
+          <ul className="gh-health-hist">
+            {data.data.filter((c) => c.verification?.health && c.verification.health.status !== 'not_checked').slice(0, 12).map((c) => {
+              const hm = HEALTH[c.verification.health.status] || HEALTH.not_checked;
+              return <li key={c.id}><span className="org-muted">{formatDate(c.count_date)}</span><span className={`badge badge-${hm.tone}`}>{t(hm.label)}</span><span>{c.verification.health.plant?.disease || ''}{c.verification.health.sick_fruit ? ` · ${c.verification.health.sick_fruit} ${t('fruit')}` : ''}</span></li>;
+            })}
+          </ul>
+        </>
+      )}
+      <div className="gh-side-title">{t('Counts')}</div>
       {isLoading ? <Loading /> : !data?.data?.length ? (
         <p className="org-muted">{t('No fruit counted on this plant yet.')}</p>
       ) : (
@@ -143,6 +158,7 @@ function PlantPanel({ house, plant, onRecord, onClose }) {
                   <strong>{c.recorded_count}</strong> {t('fruit')}
                   <div className="org-muted">{formatDate(c.count_date)}{c.verification?.detected != null ? ` · ${t('photo shows')} ${c.verification.detected}` : ''}</div>
                   <span className={`badge badge-${m.tone}`}><i className={`fas ${m.icon}`} /> {t(m.label)}</span>
+                  {c.verification?.health?.status === 'sick' && <span className="badge badge-danger" style={{ marginLeft: 4 }}><i className="fas fa-virus" /> {c.verification.health.plant?.disease || t('Possible disease')}</span>}
                 </div>
               </li>
             );
@@ -205,6 +221,7 @@ export default function LayoutTab() {
         <div className="gh-seg" role="group" aria-label={t('Colour by')}>
           <button type="button" className={colorBy === 'status' ? 'on' : ''} onClick={() => setColorBy('status')}>{t('Photo check')}</button>
           <button type="button" className={colorBy === 'fruit' ? 'on' : ''} onClick={() => setColorBy('fruit')}>{t('Fruit count')}</button>
+          <button type="button" className={colorBy === 'health' ? 'on' : ''} onClick={() => setColorBy('health')}>{t('Health')}</button>
         </div>
         <div className="gh-seg" role="group" aria-label={t('Clicking a plant')}>
           <button type="button" className={mode === 'look' ? 'on' : ''} onClick={() => setMode('look')}><i className="fas fa-eye" /> {t('Look')}</button>
@@ -230,6 +247,7 @@ export default function LayoutTab() {
           <span><strong>{formatNumber(s.counted)}</strong> {t('counted')}</span>
           <span><strong>{formatNumber(s.not_counted)}</strong> {t('not counted yet')}</span>
           <span><strong>{formatNumber(s.fruit)}</strong> {t('fruit')}</span>
+          <span><strong>{formatNumber(s.sick_plants || 0)}</strong> {t('plants with possible disease')}</span>
           <span><strong>{s.average_per_counted_plant}</strong> {t('per counted plant')}</span>
         </div>
       )}
@@ -243,6 +261,7 @@ export default function LayoutTab() {
           )}
           <div className="gh-legend">
             {colorBy === 'status' ? LEGEND.map(([k, label]) => <span key={k}><i style={{ background: STATUS_COLOR[k] }} />{t(label)}</span>)
+              : colorBy === 'health' ? HEALTH_LEGEND.map(([k, label]) => <span key={k}><i style={{ background: HEALTH_COLOR[k] }} />{t(label)}</span>)
               : <span>{t('Lighter is less fruit, red is the most fruit on one plant. Grey is not counted yet.')}</span>}
             {view === '3d' && <span className="gh-hint">{t('Drag to turn, scroll to zoom, click a plant.')}</span>}
           </div>

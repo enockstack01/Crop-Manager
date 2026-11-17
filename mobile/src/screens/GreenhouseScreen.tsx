@@ -16,6 +16,7 @@ import { formatDate, formatNumber } from '../lib/format';
 import { COLOR_HEX, VERDICTS, countProblem, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhMutations } from '../lib/greenhouse';
 import { t } from '../i18n';
 import { LayoutTab } from './GreenhouseLayout';
+import { HealthCard } from '../components/HealthCard';
 
 const TABS = [
   { id: 'dashboard', icon: 'chart-column', label: 'Dashboard' },
@@ -52,6 +53,7 @@ function CheckResult({ verification: v, annotatedUrl, photoUrl }: { verification
           <StatTile label="The photo shows" value={formatNumber(v.detected)} sub={v.confidence ? `${t('Confidence')}: ${t(v.confidence)}` : undefined} />
         </Grid>
       ) : null}
+      <HealthCard health={v.health} />
       {photoUrl ? <Image source={{ uri: mediaUrl(photoUrl) }} resizeMode="contain" style={{ width: '100%', height: 220, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }} accessibilityLabel={t('Your photo')} /> : null}
       {annotatedUrl ? (
         <View style={{ gap: 4 }}>

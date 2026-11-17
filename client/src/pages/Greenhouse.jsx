@@ -11,6 +11,7 @@ import { formatDate, formatNumber } from '../lib/format.js';
 import { useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhMutations, VERDICTS } from '../lib/greenhouse.js';
 import { t } from '../i18n/index.js';
 import LayoutTab from './GreenhouseLayout.jsx';
+import { HealthCard } from '../components/HealthCard.jsx';
 
 const TABS = [
   { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
@@ -67,6 +68,7 @@ function CheckResult({ verification: v, annotatedUrl, photoUrl }) {
           <Tile label="The photo shows" value={formatNumber(v.detected)} sub={v.confidence ? `${t('Confidence')}: ${t(v.confidence)}` : ''} />
         </div>
       )}
+      <HealthCard health={v.health} />
       {(photoUrl || annotatedUrl) && (
         <div className="gh-photos">
           {photoUrl && <figure><img src={photoUrl} alt={t('Your photo')} /><figcaption>{t('Your photo')}</figcaption></figure>}

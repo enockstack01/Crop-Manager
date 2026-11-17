@@ -29,6 +29,13 @@ export function countProblem(v: { crop_id?: string; row_id?: string; recorded_co
 export const STATUS_COLOR: Record<string, string> = {
   match: '#2E7D32', close: '#7CB342', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#546E7A', failed: '#EF6C00', none: '#B0BEC5',
 };
+export const HEALTH_COLOR: Record<string, string> = { healthy: '#2E7D32', sick: '#C62828', unsure: '#F9A825', not_checked: '#546E7A', none: '#B0BEC5' };
+export const HEALTH: Record<string, { label: string; tone: Tone; icon: string }> = {
+  healthy: { label: 'Healthy', tone: 'success', icon: 'leaf' },
+  sick: { label: 'Possible disease', tone: 'danger', icon: 'virus' },
+  unsure: { label: 'Not sure', tone: 'warning', icon: 'circle-question' },
+  not_checked: { label: 'Disease not checked', tone: 'neutral', icon: 'circle-minus' },
+};
 const hex2 = (n: number) => n.toString(16).padStart(2, '0');
 
 /** White to red for how much fruit, relative to the most on any plant. */
@@ -40,8 +47,9 @@ export function heatColor(n: number, max: number): string {
   return `#${hex2(c[0])}${hex2(c[1])}${hex2(c[2])}`;
 }
 
-export function markerColor(p: { latest?: { recorded_count: number; status?: string } | null }, colorBy: 'status' | 'fruit', max: number): string {
+export function markerColor(p: { latest?: { recorded_count: number; status?: string; health?: { status?: string } | null } | null }, colorBy: 'status' | 'fruit' | 'health', max: number): string {
   if (!p.latest) return STATUS_COLOR.none;
+  if (colorBy === 'health') return HEALTH_COLOR[p.latest.health?.status || 'not_checked'] || HEALTH_COLOR.not_checked;
   return colorBy === 'fruit' ? heatColor(p.latest.recorded_count, max) : (STATUS_COLOR[p.latest.status || 'not_checked'] || STATUS_COLOR.not_checked);
 }
 

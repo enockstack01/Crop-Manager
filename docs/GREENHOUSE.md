@@ -23,6 +23,14 @@ The manager sets up each greenhouse once under **Greenhouse > Layout**: its name
 - **Not automatic:** plant positions come from the layout the manager enters. They are not found from photos, because a photo does not say where in the house it was taken.
 - A count belongs to a plant when it has the same greenhouse name, row ID and plant. Counts recorded before a layout existed keep working and appear on the matching plant. Removing a layout never deletes counts.
 
+## Disease check, health card and health history
+
+Every checked photo is also sent to the disease classifier (ViT-L) that the rest of the app uses, for the crop of the count.
+
+- **Plant level (always, when the classifier is on):** the whole photo is classified: healthy, a named disease with its confidence and the other likely ones, or not sure. This is what the classifier was trained for.
+- **Fruit level (only where it is valid):** each counted fruit is cut out of the photo and classified, and the fruit judged diseased get a dashed red ring and a ! on the marked photo and are listed by number on the health card. The classifier knows fruit (not only leaves) for banana, mango and papaya only. For tomato, peppers, cucumber, eggplant, strawberry, zucchini and beans it was trained on leaves, so the card says so and does **not** call single fruit sick or healthy. Judging single fruit of those crops needs a fruit-disease model trained on labelled fruit photos, which does not exist yet.
+- **Health card and history:** clicking a plant shows its latest health card and a list of earlier checks with the disease and how many fruit were sick; the 3D view and plan can be coloured by health; the layout summary counts plants with possible disease; the assistant can answer "which plants have disease?".
+
 ## Asking in plain words
 
 The chat assistant can read the greenhouse: "how many fruit on row 3 plant 7 in House 1?", "which plants have not been counted this week?", "which photos did not match?", "which plants have the most fruit?". It uses a read-only tool (`greenhouse_info`) scoped to the signed-in farmer.

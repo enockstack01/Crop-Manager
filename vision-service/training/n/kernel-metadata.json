@@ -1,0 +1,21 @@
+{
+  "id": "enocknshimiyimana/greenhouse-fruit-yolo11n",
+  "title": "Greenhouse fruit yolo11n",
+  "code_file": "train_kaggle.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "henningheyen/lvis-fruits-and-vegetables-dataset",
+    "jantyc/field-cucumber-object-detection-yolo-format",
+    "zidanealdanifr/melon-detection",
+    "nexuswho/tomatod",
+    "lemontyc/sweet-pepper"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

@@ -9,7 +9,7 @@ const LABEL = { match: 'matches the photo', close: 'close to the photo', mismatc
 
 const short = (p) => ({
   row: p.row_id, plant: p.plant_label, crop: p.crop_name,
-  latest: p.latest ? { date: p.latest.count_date, recorded: p.latest.recorded_count, photo_counted: p.latest.detected, result: LABEL[p.latest.status] || p.latest.status, counts_on_this_plant: p.latest.records } : 'never counted',
+  latest: p.latest ? { date: p.latest.count_date, recorded: p.latest.recorded_count, photo_counted: p.latest.detected, result: LABEL[p.latest.status] || p.latest.status, counts_on_this_plant: p.latest.records, health: p.latest.health ? { status: p.latest.health.status, disease: p.latest.health.disease, sick_fruit: p.latest.health.sick_fruit, note: p.latest.health.message } : 'disease check not done' } : 'never counted',
 });
 
 export function greenhouseTool(userId) {
@@ -19,7 +19,7 @@ export function greenhouseTool(userId) {
     input_schema: {
       type: 'object',
       properties: {
-        view: { type: 'string', enum: ['overview', 'plant', 'row', 'mismatches', 'not_counted', 'top_plants'], description: 'overview: totals per greenhouse; plant: one plant with its history; row: every plant of one row; mismatches: plants whose photo did not match; not_counted: plants never counted or not counted for a number of days; top_plants: plants with the most or fewest fruit' },
+        view: { type: 'string', enum: ['overview', 'plant', 'row', 'mismatches', 'not_counted', 'top_plants', 'diseased'], description: 'overview: totals per greenhouse; plant: one plant with its history; row: every plant of one row; mismatches: plants whose photo did not match; not_counted: plants never counted or not counted for a number of days; top_plants: plants with the most or fewest fruit; diseased: plants whose last photo showed a disease (and which fruit)' },
         greenhouse: { type: 'string', description: 'Greenhouse name, for example House 1. Optional when the farmer has only one.' },
         row: { type: 'integer', description: 'Row number, from 1' },
         plant: { type: 'integer', description: 'Plant number in the row, from 1' },
@@ -69,6 +69,10 @@ export function greenhouseTool(userId) {
         const cut = new Date(Date.now() - Number(days) * 86400000).toISOString().slice(0, 10);
         const old = l.plants.filter((x) => !x.latest || x.latest.count_date < cut);
         return { greenhouse: h.name, days: Number(days), plants_not_counted_in_that_time: old.length, never_counted: old.filter((x) => !x.latest).length, examples: old.slice(0, n).map(short) };
+      }
+      if (view === 'diseased') {
+        const bad = l.plants.filter((x) => x.latest?.health?.status === 'sick');
+        return { greenhouse: h.name, plants_with_disease_signs: bad.length, plants: bad.slice(0, n).map(short) };
       }
       if (view === 'top_plants') {
         const ps = l.plants.filter((x) => x.latest).sort((a, b) => (order === 'fewest' ? a.latest.recorded_count - b.latest.recorded_count : b.latest.recorded_count - a.latest.recorded_count));

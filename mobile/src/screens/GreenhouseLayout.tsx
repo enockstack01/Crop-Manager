@@ -10,7 +10,8 @@ import { useConfirm } from '../components/Confirm';
 import { useToast } from '../components/Toast';
 import { mediaUrl } from '../env';
 import { formatDate, formatNumber } from '../lib/format';
-import { STATUS_COLOR, VERDICTS, houseProblem, markerColor, useGhCrops, useGhHouses, useGhLayout, useGhMutations, useGhPlant } from '../lib/greenhouse';
+import { HealthCard } from '../components/HealthCard';
+import { HEALTH, HEALTH_COLOR, STATUS_COLOR, VERDICTS, houseProblem, markerColor, useGhCrops, useGhHouses, useGhLayout, useGhMutations, useGhPlant } from '../lib/greenhouse';
 import { CountSheet } from './GreenhouseScreen';
 import { t } from '../i18n';
 
@@ -74,6 +75,28 @@ function PlantSheet({ house, plant, onClose, onRecord }: { house: any; plant: an
   return (
     <Sheet visible onClose={onClose} title={`${plant.row_id} ${plant.plant_label}`} footer={<Button title="Record a count on this plant" icon="camera" onPress={() => onRecord(plant)} />}>
       <AppText variant="caption" style={{ marginBottom: 10 }}>{house.name}{plant.crop_name ? ` · ${plant.crop_name}` : ''}</AppText>
+      {data?.data?.length ? (
+        <View style={{ gap: 8, marginBottom: 12 }}>
+          <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase' }}>{t('Health card')}</AppText>
+          <HealthCard health={data.data[0].verification?.health} />
+          {data.data.filter((c: any) => c.verification?.health && c.verification.health.status !== 'not_checked').length > 1 ? (
+            <View style={{ gap: 6 }}>
+              <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase' }}>{t('Health history')}</AppText>
+              {data.data.filter((c: any) => c.verification?.health && c.verification.health.status !== 'not_checked').slice(0, 12).map((c: any) => {
+                const hm = HEALTH[c.verification.health.status] || HEALTH.not_checked;
+                return (
+                  <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <AppText style={{ fontSize: 12, color: colors.textLight }}>{formatDate(c.count_date)}</AppText>
+                    <Badge label={t(hm.label)} tone={hm.tone} />
+                    <AppText style={{ fontSize: 12 }}>{c.verification.health.plant?.disease || ''}{c.verification.health.sick_fruit ? ` · ${c.verification.health.sick_fruit} ${t('fruit')}` : ''}</AppText>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+          <AppText weight="700" style={{ fontSize: 11, color: colors.textLight, textTransform: 'uppercase', marginTop: 4 }}>{t('Counts')}</AppText>
+        </View>
+      ) : null}
       {isLoading ? <Loading /> : !data?.data?.length ? (
         <AppText style={{ color: colors.textLight }}>{t('No fruit counted on this plant yet.')}</AppText>
       ) : (
@@ -106,7 +129,7 @@ export function LayoutTab() {
   const { data: crops = [] } = useGhCrops();
   const { removeHouse } = useGhMutations();
   const [houseId, setHouseId] = useState('');
-  const [colorBy, setColorBy] = useState<'status' | 'fruit'>('status');
+  const [colorBy, setColorBy] = useState<'status' | 'fruit' | 'health'>('status');
   const [mode, setMode] = useState<'look' | 'record'>('look');
   const [selected, setSelected] = useState<{ row: number; plant: number } | null>(null);
   const [form, setForm] = useState<'new' | any | null>(null);
@@ -146,7 +169,7 @@ export function LayoutTab() {
         <Button title="Remove" icon="trash" kind="secondary" size="sm" onPress={remove} />
       </View>
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-        <Seg value={colorBy} onChange={(v) => setColorBy(v as any)} options={[{ id: 'status', label: 'Photo check' }, { id: 'fruit', label: 'Fruit count' }]} />
+        <Seg value={colorBy} onChange={(v) => setColorBy(v as any)} options={[{ id: 'status', label: 'Photo check' }, { id: 'fruit', label: 'Fruit count' }, { id: 'health', label: 'Health' }]} />
         <Seg value={mode} onChange={(v) => setMode(v as any)} options={[{ id: 'look', label: 'Look' }, { id: 'record', label: 'Record' }]} />
       </View>
       <AppText variant="caption">{t(mode === 'record' ? 'Tap the plant you are standing at to record a count on it.' : 'Tap a plant to see its counts.')}</AppText>
@@ -183,7 +206,12 @@ export function LayoutTab() {
         </ScrollView>
       )}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-        {colorBy === 'status' ? LEGEND.map(([k, label]) => (
+        {colorBy === 'health' ? ([['healthy', 'Healthy'], ['sick', 'Possible disease'], ['unsure', 'Not sure'], ['not_checked', 'Disease not checked'], ['none', 'Not counted yet']] as [string, string][]).map(([k, label]) => (
+          <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: HEALTH_COLOR[k] }} />
+            <AppText style={{ fontSize: 12, color: colors.textLight }}>{t(label)}</AppText>
+          </View>
+        )) : colorBy === 'status' ? LEGEND.map(([k, label]) => (
           <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: STATUS_COLOR[k] }} />
             <AppText style={{ fontSize: 12, color: colors.textLight }}>{t(label)}</AppText>

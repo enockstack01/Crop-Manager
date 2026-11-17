@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 import createHttpError from '../httpError.js';
+import sharp from 'sharp';
 import { storage } from '../storage.js';
+import { checkHealth } from './health.js';
 
 /**
  * Checks a plant photo against the number of fruit the farmer recorded, using the Python and OpenCV fruit counter (vision-service/).
@@ -62,6 +64,22 @@ export async function askCounter(bytes, crop) {
   return body;
 }
 
+/** Draws a red ring and a cross on each fruit the disease check judged sick, on top of the counter's marked photo. */
+async function markSick(jpeg, fruits, size) {
+  try {
+    const meta = await sharp(jpeg).metadata();
+    const k = size?.[0] ? meta.width / size[0] : 1;
+    const w = Math.max(3, Math.round(meta.width / 200));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${meta.width}" height="${meta.height}">${fruits.map((f) => {
+      const r = Math.max(10, f.r * k * 1.35);
+      const x = f.x * k;
+      const y = f.y * k;
+      return `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#E53935" stroke-width="${w}" stroke-dasharray="${w * 3} ${w * 2}"/><text x="${x + r * 0.7}" y="${y - r * 0.7}" font-size="${Math.max(16, r * 0.9)}" font-family="sans-serif" font-weight="700" fill="#E53935" stroke="#fff" stroke-width="2">!</text>`;
+    }).join('')}</svg>`;
+    return await sharp(jpeg).composite([{ input: Buffer.from(svg) }]).jpeg({ quality: 85 }).toBuffer();
+  } catch { return jpeg; }
+}
+
 const REASONS = {
   blurry: 'the photo is blurry',
   too_dark: 'the photo is too dark',
@@ -100,31 +118,37 @@ export function decide({ detected, recorded, confidence, warnings = [], contrast
  */
 export async function verifyPhoto({ userId, photoUrl, crop, recorded }) {
   const base = { recorded, detected: null, difference: null, tolerance: toleranceFor(recorded), confidence: null, warnings: [], method: null, checked_at: new Date().toISOString() };
-  if (!counterConfigured()) {
-    return { verification: { ...base, status: 'not_checked', message: 'The photo was saved but not checked: the fruit counter is not connected yet. Ask your administrator to connect it.' }, annotated_url: null };
-  }
   const bytes = await readUserPhoto(userId, photoUrl);
+  if (!counterConfigured()) {
+    const health = await checkHealth(bytes, null, crop);
+    return { verification: { ...base, status: 'not_checked', health, message: 'The photo was saved but not checked: the fruit counter is not connected yet. Ask your administrator to connect it.' }, annotated_url: null };
+  }
   let seen;
   try {
     seen = await askCounter(bytes, crop);
   } catch (e) {
     const unreadable = e.kind === 'unreadable';
+    const health = unreadable ? null : await checkHealth(bytes, null, crop);
     return {
-      verification: { ...base, status: 'failed', message: unreadable ? `${e.message} Take a clearer photo.` : 'The photo was saved but could not be checked right now. Check it again later.' },
+      verification: { ...base, health, status: 'failed', message: unreadable ? `${e.message} Take a clearer photo.` : 'The photo was saved but could not be checked right now. Check it again later.' },
       annotated_url: null,
     };
   }
+  const health = await checkHealth(bytes, seen, crop);
   let annotated = null;
   if (seen.annotated_jpeg_b64) {
+    let jpeg = Buffer.from(seen.annotated_jpeg_b64, 'base64');
+    const sickFruit = (health.fruits || []).filter((f) => f.status === 'sick');
+    if (sickFruit.length) jpeg = await markSick(jpeg, sickFruit, seen.image_size); // a red ring on every fruit judged diseased
     const name = `${userId}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}-counted.jpg`; // the user id prefix keeps it theirs; the random part makes it unguessable
-    await storage.put(name, Buffer.from(seen.annotated_jpeg_b64, 'base64'));
+    await storage.put(name, jpeg);
     annotated = `/uploads/${name}`;
   }
   const verdict = decide({ detected: seen.count, recorded, confidence: seen.confidence, warnings: seen.warnings || [], contrast: String(seen.method || '').startsWith('yolo') ? 'high' : crop.contrast }); // the trained model sees green fruit: the colour-only caution does not apply to it
   return {
     verification: {
       ...base, status: verdict.status, detected: seen.count, difference: verdict.difference, tolerance: verdict.tolerance, confidence: seen.confidence,
-      warnings: seen.warnings || [], method: seen.method || 'opencv', message: verdict.message,
+      warnings: seen.warnings || [], method: seen.method || 'opencv', message: verdict.message, health,
     },
     annotated_url: annotated,
   };

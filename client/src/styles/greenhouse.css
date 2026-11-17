@@ -71,3 +71,12 @@
 }
 .gh-scene { position: relative; }
 .gh-tip { position: absolute; z-index: 3; pointer-events: none; background: rgba(20, 40, 25, .92); color: #fff; font-size: 12.5px; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+.gh-health { border: 1px solid var(--border, #d7ddd6); border-radius: 12px; padding: 12px; margin: 10px 0; font-size: 13.5px; }
+.gh-health-head { display: flex; gap: 8px; align-items: center; }
+.gh-fruit-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gh-chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: #eceff1; }
+.gh-chip.sick { background: #ffebee; color: #b71c1c; font-weight: 600; }
+.gh-chip.healthy { background: #e8f5e9; color: #1b5e20; }
+.gh-side-title { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .65; margin: 14px 0 6px; font-weight: 700; }
+.gh-health-hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.gh-health-hist li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

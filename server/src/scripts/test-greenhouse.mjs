@@ -11,6 +11,7 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { connectDB } from '../config/db.js';
 import * as M from '../models/index.js';
+import { greenhouseTool } from '../lib/ai/greenhouseTool.js';
 import { storage } from '../lib/storage.js';
 import { decide, toleranceFor } from '../lib/greenhouse/verify.js';
 import { CATALOG } from '../lib/greenhouse/catalog.js';
@@ -32,7 +33,7 @@ for (const u of [A, B]) await M.Profile.create({ user_id: u, email: `${u}@ghtest
 
 /* ---- the stand-in counter */
 const seen = [];
-const mode = { count: 12, confidence: 'high', warnings: [], status: 200 };
+const mode = { dets: [], size: [400, 300], count: 12, confidence: 'high', warnings: [], status: 200 };
 const TOKEN = 'ghtest-secret';
 const fake = http.createServer((req, res) => {
   const chunks = [];
@@ -46,7 +47,7 @@ const fake = http.createServer((req, res) => {
     res.statusCode = mode.status;
     res.setHeader('Content-Type', 'application/json');
     if (mode.status !== 200) { res.end(JSON.stringify({ detail: mode.status === 400 ? 'The photo could not be read.' : 'boom' })); return; }
-    res.end(JSON.stringify({ count: mode.count, confidence: mode.confidence, warnings: mode.warnings, detections: [], method: 'stand-in', annotated_jpeg_b64: Buffer.from('marked-photo').toString('base64') }));
+    res.end(JSON.stringify({ count: mode.count, confidence: mode.confidence, warnings: mode.warnings, detections: mode.dets, image_size: mode.size, method: 'stand-in', annotated_jpeg_b64: Buffer.from('marked-photo').toString('base64') }));
   });
 });
 await new Promise((r) => fake.listen(0, r));
@@ -61,7 +62,7 @@ const start = async (port, env) => {
   }
   return { child, base };
 };
-const api = await start(5088, { FRUIT_COUNTER_URL: counterUrl, FRUIT_COUNTER_TOKEN: TOKEN, GREENHOUSE_CHECKS_PER_MINUTE: '1000' });
+const api = await start(5088, { FRUIT_COUNTER_URL: counterUrl, FRUIT_COUNTER_TOKEN: TOKEN, GREENHOUSE_CHECKS_PER_MINUTE: '1000', VISION_TEST_STUB: 'ok' });
 const bare = await start(5089, { GREENHOUSE_CHECKS_PER_MINUTE: '3' }); // no counter connected; and a low limit to see it work
 const call = (srv) => (user, method, path, body) => fetch(srv.base + path, { method, headers: { 'x-dev-user': user, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
 const req = call(api);
@@ -232,7 +233,7 @@ try {
   ok((await req(A, 'DELETE', `/api/greenhouse/houses/${h.id}`)).status === 200 && (await M.FruitCount.countDocuments({ user_id: A, greenhouse: 'House Renamed' })) === 2, 'removing a layout keeps the fruit counts');
 
   console.log('6c. asking about the greenhouse in plain words (the assistant\'s tool)');
-  const { greenhouseTool } = await import('../lib/ai/greenhouseTool.js');
+  
   const h2 = await json(await req(A, 'POST', '/api/greenhouse/houses', { ...hbody, name: 'Tool House' }));
   await M.FruitCount.updateMany({ user_id: A, greenhouse: 'House Renamed' }, { $set: { greenhouse: 'Tool House' } });
   const tool = greenhouseTool(A).handlers.greenhouse_info;
@@ -247,6 +248,29 @@ try {
   ok(top.plants[0].latest.recorded === 18, 'and the plants with the most fruit');
   ok((await greenhouseTool(B).handlers.greenhouse_info({ view: 'overview' })).note, 'another farmer\'s question never reaches this data');
   await req(A, 'DELETE', `/api/greenhouse/houses/${h2.id}`);
+
+  console.log('6d. disease check of the photo (the same classifier as the rest of the app)');
+  const sharpMod = (await import('sharp')).default;
+  const realJpeg = async (user) => { const name = `${user}-${Date.now()}-real${Math.random().toString(36).slice(2, 6)}.jpg`; await storage.put(name, await sharpMod({ create: { width: 400, height: 300, channels: 3, background: '#3a7d2a' } }).jpeg().toBuffer()); return `/uploads/${name}`; };
+  mode.dets = [{ x: 100, y: 100, r: 40 }, { x: 250, y: 150, r: 40 }];
+  mode.count = 2;
+  const tomatoCount = await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: cherry.id, greenhouse: 'Health House', row_id: 'R1', plant_label: 'P1', recorded_count: 2, photo_url: await realJpeg(A), count_date: today }));
+  const th = tomatoCount.verification.health;
+  ok(th && th.plant && ['sick', 'healthy', 'unsure'].includes(th.plant.status) && th.crop === 'Tomato', 'the whole photo is checked for disease with the classifier, for the crop', JSON.stringify(th));
+  ok(th.fruits === null && /trained on leaves/.test(th.fruit_note), 'for a crop whose fruit the classifier was not trained on it says so instead of judging single fruit');
+  const banana = await json(await req(A, 'POST', '/api/greenhouse/crops', { name: 'Banana', fruit_colors: ['yellow'] }));
+  const bc = await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: banana.id, greenhouse: 'Health House', row_id: 'R1', plant_label: 'P2', recorded_count: 2, photo_url: await realJpeg(A), count_date: today }));
+  const bh = bc.verification.health;
+  ok(Array.isArray(bh.fruits) && bh.fruits.length === 2 && bh.fruits.every((f) => f.index >= 1 && f.r > 0 && ['sick', 'healthy', 'unsure', 'not_checked'].includes(f.status)), 'for a crop it knows, every counted fruit is classified and numbered like the marked photo', JSON.stringify(bh));
+  ok(bh.sick_fruit === bh.fruits.filter((f) => f.status === 'sick').length && (bh.sick_fruit === 0 || /numbers/.test(bh.message)), 'the sick fruit are counted and named by number');
+  const hHouse = await json(await req(A, 'POST', '/api/greenhouse/houses', { name: 'Health House', length_m: 10, width_m: 4, rows: 2, plants_per_row: 3, crop_id: cherry.id }));
+  const hl = await json(await req(A, 'GET', `/api/greenhouse/houses/${hHouse.id}/layout`));
+  const hp = hl.plants.find((p) => p.row === 1 && p.plant === 1);
+  ok(hp.latest.health && hp.latest.health.status === th.status && 'sick_plants' in hl.summary, 'the layout shows the health of each plant and how many plants look diseased');
+  const gt = greenhouseTool(A).handlers.greenhouse_info;
+  ok((await gt({ view: 'plant', greenhouse: 'Health House', row: 1, plant: 1 })).latest.health.status === th.status && Array.isArray((await gt({ view: 'diseased', greenhouse: 'Health House' })).plants), 'and the assistant can answer about disease on a plant');
+  await req(A, 'DELETE', `/api/greenhouse/houses/${hHouse.id}`);
+  mode.dets = [];
 
   console.log('7. removing crops and counts');
   ok((await req(A, 'DELETE', `/api/greenhouse/crops/${cherry.id}`)).status === 409, 'a crop with counts cannot be removed by accident');

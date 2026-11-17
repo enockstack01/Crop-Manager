@@ -101,6 +101,11 @@ export const removeHouse = asyncHandler(async (req, res) => {
 });
 
 /** The plants of one greenhouse with the latest count on each, ready to draw. */
+/** The short form of a health check for the layout: status, the disease, and how many fruit look sick. */
+export const healthOf = (h) => (h && h.status && h.status !== 'not_checked' ? {
+  status: h.status, disease: h.plant?.disease || null, sick_fruit: h.sick_fruit || 0, checked_fruit: h.checked_fruit || 0, message: h.message || '',
+} : null);
+
 export async function buildLayout(userId, h) {
   const [counts, crops] = await Promise.all([
     FruitCount.find({ user_id: userId, greenhouse: h.name }).sort({ count_date: -1, created_at: -1 }).lean(),
@@ -119,6 +124,7 @@ export async function buildLayout(userId, h) {
   const plants = [];
   let counted = 0;
   let fruit = 0;
+  let sick = 0;
   for (let r = 1; r <= h.rows; r += 1) {
     const cropId = (h.row_crops && h.row_crops[r - 1]) || (h.crop_id ? String(h.crop_id) : '');
     for (let p = 1; p <= h.plants_per_row; p += 1) {
@@ -127,6 +133,7 @@ export async function buildLayout(userId, h) {
       if (c) {
         counted += 1;
         fruit += c.recorded_count;
+        if (c.verification?.health?.status === 'sick') sick += 1;
       }
       plants.push({
         row: r, plant: p, row_id, plant_label,
@@ -134,14 +141,14 @@ export async function buildLayout(userId, h) {
         crop_id: cropId || null, crop_name: cropName.get(cropId) || null,
         latest: c ? {
           id: String(c._id), count_date: c.count_date, recorded_count: c.recorded_count, status: c.verification?.status || 'not_checked',
-          detected: c.verification?.detected ?? null, photo_url: c.photo_url, annotated_url: c.annotated_url || null, records: total.get(`${row_id}|${plant_label}`),
+          detected: c.verification?.detected ?? null, health: healthOf(c.verification?.health), photo_url: c.photo_url, annotated_url: c.annotated_url || null, records: total.get(`${row_id}|${plant_label}`),
         } : null,
       });
     }
   }
   return {
     house: view(h), plants,
-    summary: { plants: plants.length, counted, not_counted: plants.length - counted, fruit, average_per_counted_plant: counted ? Math.round((fruit / counted) * 10) / 10 : 0 },
+    summary: { plants: plants.length, counted, sick_plants: sick, not_counted: plants.length - counted, fruit, average_per_counted_plant: counted ? Math.round((fruit / counted) * 10) / 10 : 0 },
   };
 }
 
