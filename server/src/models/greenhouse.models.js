@@ -30,3 +30,18 @@ FruitCountSchema.index({ user_id: 1, count_date: -1 });
 
 export const GreenhouseCrop = mongoose.model('GreenhouseCrop', GreenhouseCropSchema);
 export const FruitCount = mongoose.model('FruitCount', FruitCountSchema);
+
+/** A greenhouse laid out as rows of plants: its size, the rows, and the plants in each row. Every plant is "R<row> P<plant>", counted from 1. */
+const GreenhouseHouseSchema = ownedSchema({
+  name: { type: String, required: true, trim: true },
+  length_m: { type: Number, required: true, min: 1, max: 500 },
+  width_m: { type: Number, required: true, min: 1, max: 200 },
+  rows: { type: Number, required: true, min: 1, max: 100 },
+  plants_per_row: { type: Number, required: true, min: 1, max: 300 },
+  crop_id: { ...ref('GreenhouseCrop'), default: null },
+  row_crops: { type: [String], default: [] }, // optional: a different crop for a row, by row number - 1 ('' = the greenhouse crop)
+  notes: { type: String, trim: true },
+});
+GreenhouseHouseSchema.index({ user_id: 1, name: 1 }, { unique: true });
+
+export const GreenhouseHouse = mongoose.model('GreenhouseHouse', GreenhouseHouseSchema);

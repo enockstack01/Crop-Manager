@@ -14,6 +14,15 @@ export const useGhCrops = () =>
 export const useGhCounts = (params: Record<string, any>) =>
   useQuery({ queryKey: ['greenhouse', 'counts', params], queryFn: () => api.get('/greenhouse/counts', { params }).then((r) => r.data), placeholderData: (prev: any) => prev });
 
+export const useGhHouses = () =>
+  useQuery({ queryKey: ['greenhouse', 'houses'], queryFn: () => api.get('/greenhouse/houses').then((r) => r.data.data as any[]), staleTime: 30_000 });
+
+export const useGhLayout = (id?: string) =>
+  useQuery({ queryKey: ['greenhouse', 'layout', id], queryFn: () => api.get(`/greenhouse/houses/${id}/layout`).then((r) => r.data), enabled: !!id, staleTime: 15_000 });
+
+export const useGhPlant = (id?: string, row?: number, plant?: number) =>
+  useQuery({ queryKey: ['greenhouse', 'plant', id, row, plant], queryFn: () => api.get(`/greenhouse/houses/${id}/plants/${row}/${plant}`).then((r) => r.data), enabled: !!(id && row && plant) });
+
 const LONG = { timeout: 90000 }; // the photo is counted on the server: allow time
 
 export function useGhMutations() {
@@ -27,6 +36,9 @@ export function useGhMutations() {
     updateCount: useMutation({ mutationFn: ({ id, ...body }: any) => api.put(`/greenhouse/counts/${id}`, body, LONG).then((r) => r.data), ...opts }),
     removeCount: useMutation({ mutationFn: (id: string) => api.delete(`/greenhouse/counts/${id}`).then((r) => r.data), ...opts }),
     reverify: useMutation({ mutationFn: (id: string) => api.post(`/greenhouse/counts/${id}/verify`, {}, LONG).then((r) => r.data), ...opts }),
+    addHouse: useMutation({ mutationFn: (body: any) => api.post('/greenhouse/houses', body).then((r) => r.data), ...opts }),
+    updateHouse: useMutation({ mutationFn: ({ id, ...body }: any) => api.put(`/greenhouse/houses/${id}`, body).then((r) => r.data), ...opts }),
+    removeHouse: useMutation({ mutationFn: (id: string) => api.delete(`/greenhouse/houses/${id}`).then((r) => r.data), ...opts }),
     check: useMutation({ mutationFn: (body: any) => api.post('/greenhouse/check', body, LONG).then((r) => r.data) }),
   };
 }

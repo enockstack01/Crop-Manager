@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { limiter as rateLimit } from '../lib/rateLimit.js';
 import * as g from '../controllers/greenhouse.controller.js';
+import * as h from '../controllers/greenhouseHouses.controller.js';
 
 const router = Router();
 
@@ -12,6 +13,12 @@ const heavy = rateLimit({
 });
 
 router.get('/dashboard', g.dashboard);
+router.get('/houses', h.listHouses);
+router.post('/houses', h.createHouse);
+router.get('/houses/:id/layout', h.getLayout);
+router.get('/houses/:id/plants/:row/:plant', h.plantHistory);
+router.put('/houses/:id', h.updateHouse);
+router.delete('/houses/:id', h.removeHouse);
 router.get('/catalog', g.catalog);
 router.get('/crops', g.listCrops);
 router.post('/crops', g.addCrop);

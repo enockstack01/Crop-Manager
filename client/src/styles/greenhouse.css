@@ -33,3 +33,39 @@
 .gh-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
 .gh-colors { display: flex; gap: 10px; flex-wrap: wrap; }
 .gh-colors label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+
+/* ---- layout and 3D ---- */
+.gh-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.gh-toolbar .form-control { width: auto; min-width: 150px; }
+.gh-toolbar-sp { flex: 1; }
+.gh-seg { display: inline-flex; border: 1px solid var(--border, #d7ddd6); border-radius: 10px; overflow: hidden; background: var(--surface, #fff); }
+.gh-seg button { border: 0; background: transparent; padding: 8px 12px; font: inherit; font-size: 13px; cursor: pointer; color: inherit; }
+.gh-seg button.on { background: var(--primary, #2e7d32); color: #fff; }
+.gh-seg button:disabled { opacity: .4; cursor: not-allowed; }
+.gh-stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 12px; font-size: 14px; }
+.gh-stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.gh-stage:has(.gh-side) { grid-template-columns: minmax(0, 1fr) 320px; }
+.gh-scene { width: 100%; border-radius: 14px; overflow: hidden; background: linear-gradient(#cfe8f6, #eaf3e6); border: 1px solid var(--border, #d7ddd6); }
+.gh-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 12.5px; align-items: center; }
+.gh-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.gh-hint { margin-left: auto; opacity: .7; }
+.gh-plan { overflow: auto; max-height: 520px; padding: 12px; border: 1px solid var(--border, #d7ddd6); border-radius: 14px; background: var(--surface, #fff); }
+.gh-plan-grid { display: grid; gap: 3px; width: max-content; align-items: center; }
+.gh-plan-row { font-size: 11px; opacity: .7; text-align: right; padding-right: 4px; }
+.gh-plan-cell { width: 30px; height: 30px; border: 2px solid transparent; border-radius: 7px; font-size: 11px; color: #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .55); cursor: pointer; padding: 0; }
+.gh-plan-cell.sel { border-color: #1565c0; outline: 2px solid #fff; }
+.gh-plan-cell:focus-visible { outline: 3px solid #1565c0; }
+.gh-side { border: 1px solid var(--border, #d7ddd6); border-radius: 14px; padding: 14px; background: var(--surface, #fff); max-height: 560px; overflow: auto; }
+.gh-side-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.gh-side-head h4 { margin: 0 0 2px; font-size: 18px; }
+.gh-hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.gh-hist li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; }
+.gh-hist img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+.gh-check { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 14px; }
+.gh-rowcrops { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; max-height: 240px; overflow: auto; }
+.gh-rowcrop { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.gh-rowcrop span { width: 32px; text-align: right; opacity: .7; }
+@media (max-width: 900px) {
+  .gh-stage:has(.gh-side) { grid-template-columns: minmax(0, 1fr); }
+  .gh-toolbar .form-control { min-width: 0; flex: 1 1 100%; }
+}

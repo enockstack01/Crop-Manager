@@ -18,3 +18,4 @@ __pycache__/
 # built APKs
 dist-apk/
 .testuser.json
+vision-service/models/*.pt

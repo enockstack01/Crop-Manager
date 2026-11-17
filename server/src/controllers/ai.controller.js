@@ -9,6 +9,7 @@ import { labelCropFor } from '../lib/vision/cropMap.js';
 import { aiConfigured, aiMock, askAgent, askTool } from '../lib/ai/client.js';
 import { farmTools } from '../lib/ai/farmTools.js';
 import { weatherTool } from './weather.controller.js';
+import { greenhouseTool } from '../lib/ai/greenhouseTool.js';
 import { weatherForUser } from '../lib/weather.js';
 import { assertWithinLimit, logFailure, logUsage, usageFor } from '../lib/ai/usage.js';
 import { buildFarmContext, contextText } from '../lib/ai/farmContext.js';
@@ -243,7 +244,9 @@ export async function runChat(req, turns, { extraSystem = '', extra } = {}) {
   const { ctx } = await buildFarmContext(req.userId, req.profile);
   const h = req.body?.here;
   const here = h && Number.isFinite(Number(h.lat)) && Number.isFinite(Number(h.lon)) && Math.abs(h.lat) <= 90 && Math.abs(h.lon) <= 180 ? { lat: Number(h.lat), lon: Number(h.lon) } : undefined; // the phone's position, when shared
-  const w = weatherTool(req.userId, here);
+  const w0 = weatherTool(req.userId, here);
+  const gh = greenhouseTool(req.userId);
+  const w = { tools: [...w0.tools, ...gh.tools], handlers: { ...w0.handlers, ...gh.handlers } };
   const { tools, handlers } = farmTools(req.userId, extra ? { tools: [...w.tools, ...extra.tools], handlers: { ...w.handlers, ...extra.handlers } } : w);
   try {
     const out = await askAgent({

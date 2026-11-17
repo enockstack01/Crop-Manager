@@ -10,9 +10,11 @@ import { baseOptions, breakdownOptions, LEAF, useIsDark } from '../features/dash
 import { formatDate, formatNumber } from '../lib/format.js';
 import { useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhMutations, VERDICTS } from '../lib/greenhouse.js';
 import { t } from '../i18n/index.js';
+import LayoutTab from './GreenhouseLayout.jsx';
 
 const TABS = [
   { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
+  { id: 'layout', icon: 'fa-cube', label: 'Layout and 3D' },
   { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
   { id: 'crops', icon: 'fa-seedling', label: 'My crops' },
 ];
@@ -188,13 +190,13 @@ function DashboardTab({ go }) {
 }
 
 /* --------------------------------------------------------------- counts */
-function CountForm({ crops, editing, onClose, onSaved }) {
+export function CountForm({ crops, editing, preset, onClose, onSaved }) {
   const toast = useToast();
   const { createCount, updateCount, check } = useGhMutations();
   const form = useForm(editing ? {
     crop_id: editing.crop_id, greenhouse: editing.greenhouse || '', row_id: editing.row_id, plant_label: editing.plant_label || '', count_date: editing.count_date,
     recorded_count: String(editing.recorded_count), photo_url: editing.photo_url, notes: editing.notes || '',
-  } : { crop_id: crops[0]?.id || '', greenhouse: '', row_id: '', plant_label: '', count_date: today(), recorded_count: '', photo_url: '', notes: '' });
+  } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_url: '', notes: '' });
   const [err, setErr] = useState('');
   const [result, setResult] = useState(null); // { verification, annotated_url, photo_url }
   const v = form.values;
@@ -462,6 +464,7 @@ export default function Greenhouse() {
         ))}
       </div>
       {tab === 'dashboard' && <DashboardTab go={go} />}
+      {tab === 'layout' && <LayoutTab />}
       {tab === 'counts' && <CountsTab key={JSON.stringify(start)} start={start} />}
       {tab === 'crops' && <CropsTab />}
     </>

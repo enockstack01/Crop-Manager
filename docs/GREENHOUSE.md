@@ -13,6 +13,20 @@ The photo is counted by a Python and OpenCV service and the result is compared w
 
 Both the website (`/greenhouse`) and the phone app (menu and home shortcut) have it.
 
+## Greenhouse layout, 3D view and recording on the plan
+
+The manager sets up each greenhouse once under **Greenhouse > Layout**: its name, length and width in metres, the number of rows, the plants in each row, the main crop, and optionally a different crop for some rows. The system then creates a place for every plant, named like `R3 P7` (row 3, plant 7), with a position inside the house.
+
+- **Website:** a 3D greenhouse (three.js): the house, a bed for each row, and every plant. A marker on each plant is coloured by the result of its last photo check, or by how much fruit it has, and is bigger when there is more fruit. Drag to turn, scroll to zoom, click a plant to see its counts, photos and checks. A flat **Plan** view of the same layout is also there (and is used automatically when the browser has no 3D).
+- **Recording:** switch from *Look* to *Record* and click the plant you are standing at: the fruit count form opens already filled with the greenhouse, row and plant. The agronomist uses the same view as the manager.
+- **Phone:** the same layout as a plan (rows and plants as coloured squares) with the same look and record modes. The phone does not draw the 3D view.
+- **Not automatic:** plant positions come from the layout the manager enters. They are not found from photos, because a photo does not say where in the house it was taken.
+- A count belongs to a plant when it has the same greenhouse name, row ID and plant. Counts recorded before a layout existed keep working and appear on the matching plant. Removing a layout never deletes counts.
+
+## Asking in plain words
+
+The chat assistant can read the greenhouse: "how many fruit on row 3 plant 7 in House 1?", "which plants have not been counted this week?", "which photos did not match?", "which plants have the most fruit?". It uses a read-only tool (`greenhouse_info`) scoped to the signed-in farmer.
+
 ## The verdict on each photo
 
 | Verdict | Meaning |
@@ -57,4 +71,6 @@ The counter is classical computer vision (colour segmentation, then splitting of
 - It counts fruit it can **see**. Fruit hidden behind leaves or behind other fruit cannot be counted, so "fewer than recorded" is often a hidden-fruit problem, not a recording mistake. The message says so.
 - Green fruit on green plants (cucumber, zucchini, green beans, unripe tomatoes) cannot be told from leaves reliably. They are marked "photo check not conclusive" and always get a "not sure" verdict.
 
-A trained detection model (for example YOLO, trained on labelled photos of your own crops) would be the next step for higher accuracy. The service interface would not change: it still takes a photo and returns a count, a confidence and a marked photo.
+## The trained fruit model (YOLO11x)
+
+`vision-service/training/train_kaggle.py` fine-tunes YOLO11x on labelled public datasets (boxes on every fruit) for nine classes: tomato, sweet pepper, hot pepper, cucumber, eggplant, strawberry, zucchini, melon, green bean. It runs on Kaggle (see `kernel-metadata.json`). When its weights are placed at `vision-service/models/fruit_yolo11x.pt` (or `FRUIT_YOLO_WEIGHTS`) and `ultralytics` is installed (`requirements-yolo.txt`), the counter uses it for those crops and falls back to colour counting for any other crop or if the model fails. The result says which method counted (`method`). The model needs a few GB of memory: it will not run on the smallest free hosting.

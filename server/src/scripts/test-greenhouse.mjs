@@ -24,7 +24,7 @@ const ok = (c, label, extra = '') => { if (c) { passed += 1; console.log(`  ok  
 
 await connectDB();
 const cleanup = async () => {
-  await Promise.all([M.GreenhouseCrop, M.FruitCount, M.Profile].map((Model) => Model.deleteMany({ user_id: new RegExp(`^${PREFIX}`) })));
+  await Promise.all([M.GreenhouseCrop, M.FruitCount, M.GreenhouseHouse, M.Profile].map((Model) => Model.deleteMany({ user_id: new RegExp(`^${PREFIX}`) })));
   await storage.removeWithPrefix(PREFIX);
 };
 await cleanup();
@@ -198,6 +198,55 @@ try {
   await json(await req(A, 'POST', '/api/greenhouse/counts', { ...base, row_id: 'R5', plant_label: 'P1', recorded_count: 10, count_date: today, photo_url: await photo(A) })); // the photo shows 25
   const d2 = await json(await req(A, 'GET', '/api/greenhouse/dashboard'));
   ok(d2.alerts.mismatches.length === 1 && d2.alerts.mismatches[0].row_id === 'R5' && d2.alerts.mismatches[0].detected === 25, 'a photo that does not match is listed with both numbers');
+
+  console.log('6b. greenhouse layouts and plants');
+  const hbody = { name: 'Layout House', length_m: 30, width_m: 8, rows: 4, plants_per_row: 10, crop_id: cherry.id, row_crops: ['', '', pepper.id, ''] };
+  const h = await json(await req(A, 'POST', '/api/greenhouse/houses', hbody));
+  ok(!!h.id && h.rows === 4 && h.plants_per_row === 10 && h.row_crops[2] === pepper.id, 'a greenhouse is set up with size, rows, plants per row and a crop for a row');
+  ok((await req(A, 'POST', '/api/greenhouse/houses', hbody)).status === 409, 'the same name twice is refused');
+  for (const [patch, label] of [[{ name: '' }, 'no name'], [{ rows: 0 }, 'no rows'], [{ plants_per_row: 301 }, 'too many plants in a row'], [{ length_m: -3 }, 'a negative length'], [{ rows: 100, plants_per_row: 100, name: 'Huge' }, 'more plants than a layout can hold'], [{ crop_id: bCrop.id, name: 'Other crop' }, 'another farmer\'s crop']]) {
+    const r = await req(A, 'POST', '/api/greenhouse/houses', { ...hbody, ...patch });
+    ok(r.status === 400, `${label} is refused`, `status ${r.status}`);
+  }
+  const lay = await json(await req(A, 'GET', `/api/greenhouse/houses/${h.id}/layout`));
+  ok(lay.plants.length === 40 && lay.summary.plants === 40 && lay.summary.counted === 0 && lay.summary.not_counted === 40, 'the layout has a place for every plant, none counted yet');
+  const p23 = lay.plants.find((p) => p.row === 2 && p.plant === 3);
+  ok(p23.row_id === 'R2' && p23.plant_label === 'P3' && p23.crop_name === 'Cherry tomato' && lay.plants.find((p) => p.row === 3).crop_name === 'Sweet pepper (bell pepper)', 'plants are named R2 P3 and take the crop of their row');
+  ok(lay.plants[0].x > 0 && lay.plants[0].x < 30 && lay.plants[0].z > 0 && lay.plants[0].z < 8 && lay.plants[39].x > lay.plants[0].x, 'every plant has a position inside the greenhouse');
+  mode.count = 18;
+  const rec = await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: cherry.id, greenhouse: 'Layout House', row_id: 'R2', plant_label: 'P3', recorded_count: 18, photo_url: await photo(A), count_date: today }));
+  mode.count = 30;
+  await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: cherry.id, greenhouse: 'Layout House', row_id: 'R4', plant_label: 'P10', recorded_count: 12, photo_url: await photo(A), count_date: today }));
+  const lay2 = await json(await req(A, 'GET', `/api/greenhouse/houses/${h.id}/layout`));
+  const q = lay2.plants.find((p) => p.row === 2 && p.plant === 3);
+  ok(q.latest && q.latest.recorded_count === 18 && q.latest.status === 'match' && lay2.summary.counted === 2 && lay2.summary.fruit === 30, 'a count recorded on a plant shows on it in the layout');
+  ok(lay2.plants.find((p) => p.row === 4 && p.plant === 10).latest.status === 'mismatch', 'and a photo that does not match shows as such');
+  const hist = await json(await req(A, 'GET', `/api/greenhouse/houses/${h.id}/plants/2/3`));
+  ok(hist.data.length === 1 && hist.data[0].id === rec.id, 'the history of one plant lists its counts');
+  ok((await req(A, 'GET', `/api/greenhouse/houses/${h.id}/plants/9/3`)).status === 400, 'a plant outside the layout is refused');
+  ok((await req(B, 'GET', `/api/greenhouse/houses/${h.id}/layout`)).status === 404 && (await req(B, 'PUT', `/api/greenhouse/houses/${h.id}`, { name: 'x' })).status === 404 && (await req(B, 'DELETE', `/api/greenhouse/houses/${h.id}`)).status === 404, 'another farmer cannot see, change or remove it');
+  ok((await json(await req(B, 'GET', '/api/greenhouse/houses'))).data.length === 0, 'and does not see it in their list');
+  const ren = await json(await req(A, 'PUT', `/api/greenhouse/houses/${h.id}`, { name: 'House Renamed', rows: 5 }));
+  const lay3 = await json(await req(A, 'GET', `/api/greenhouse/houses/${h.id}/layout`));
+  ok(ren.name === 'House Renamed' && lay3.plants.length === 50 && lay3.summary.counted === 2, 'renaming a greenhouse and adding a row keeps the counts on their plants');
+  ok((await req(A, 'DELETE', `/api/greenhouse/houses/${h.id}`)).status === 200 && (await M.FruitCount.countDocuments({ user_id: A, greenhouse: 'House Renamed' })) === 2, 'removing a layout keeps the fruit counts');
+
+  console.log('6c. asking about the greenhouse in plain words (the assistant\'s tool)');
+  const { greenhouseTool } = await import('../lib/ai/greenhouseTool.js');
+  const h2 = await json(await req(A, 'POST', '/api/greenhouse/houses', { ...hbody, name: 'Tool House' }));
+  await M.FruitCount.updateMany({ user_id: A, greenhouse: 'House Renamed' }, { $set: { greenhouse: 'Tool House' } });
+  const tool = greenhouseTool(A).handlers.greenhouse_info;
+  const ov = await tool({ view: 'overview' });
+  ok(ov.greenhouses[0].greenhouse === 'Tool House' && ov.greenhouses[0].counted === 2 && ov.greenhouses[0].fruit === 30, 'the assistant can say how many plants and fruit a greenhouse has');
+  const one = await tool({ view: 'plant', row: 2, plant: 3 });
+  ok(one.latest.recorded === 18 && one.latest.result === 'matches the photo' && one.history.length === 1, 'it can answer for one plant: row 2 plant 3');
+  ok((await tool({ view: 'plant', row: 9, plant: 1 })).error && (await tool({ view: 'mismatches' })).plants_with_a_mismatch === 1, 'it says when a plant does not exist, and lists the photos that did not match');
+  const nc = await tool({ view: 'not_counted', days: 7 });
+  ok(nc.plants_not_counted_in_that_time === 38 && nc.never_counted === 38, 'it lists plants not counted lately');
+  const top = await tool({ view: 'top_plants', order: 'most', limit: 1 });
+  ok(top.plants[0].latest.recorded === 18, 'and the plants with the most fruit');
+  ok((await greenhouseTool(B).handlers.greenhouse_info({ view: 'overview' })).note, 'another farmer\'s question never reaches this data');
+  await req(A, 'DELETE', `/api/greenhouse/houses/${h2.id}`);
 
   console.log('7. removing crops and counts');
   ok((await req(A, 'DELETE', `/api/greenhouse/crops/${cherry.id}`)).status === 409, 'a crop with counts cannot be removed by accident');

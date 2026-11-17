@@ -33,6 +33,12 @@ export async function readUserPhoto(userId, url) {
   return bytes;
 }
 
+/** The class the trained fruit model uses for each built-in crop. Own crops have none: they are counted by colour. */
+export const YOLO_CLASS = {
+  cherry_tomato: 'tomato', tomato: 'tomato', sweet_pepper: 'sweet_pepper', hot_pepper: 'hot_pepper', cucumber: 'cucumber', eggplant: 'eggplant',
+  strawberry: 'strawberry', zucchini: 'zucchini', melon: 'melon', green_beans: 'green_bean',
+};
+
 /** Asks the counter. Resolves its answer, or throws an Error with a `kind` of 'down' or 'unreadable'. */
 export async function askCounter(bytes, crop) {
   const form = new FormData();
@@ -40,6 +46,7 @@ export async function askCounter(bytes, crop) {
   form.append('colors', (crop.fruit_colors?.length ? crop.fruit_colors : ['red']).join(','));
   form.append('shape', crop.shape === 'elongated' ? 'elongated' : 'round');
   form.append('contrast', crop.contrast === 'low' ? 'low' : 'high');
+  if (YOLO_CLASS[crop.catalog_key]) form.append('crop_class', YOLO_CLASS[crop.catalog_key]);
   let res;
   try {
     res = await fetch(`${counterUrl()}/count`, {
@@ -113,7 +120,7 @@ export async function verifyPhoto({ userId, photoUrl, crop, recorded }) {
     await storage.put(name, Buffer.from(seen.annotated_jpeg_b64, 'base64'));
     annotated = `/uploads/${name}`;
   }
-  const verdict = decide({ detected: seen.count, recorded, confidence: seen.confidence, warnings: seen.warnings || [], contrast: crop.contrast });
+  const verdict = decide({ detected: seen.count, recorded, confidence: seen.confidence, warnings: seen.warnings || [], contrast: String(seen.method || '').startsWith('yolo') ? 'high' : crop.contrast }); // the trained model sees green fruit: the colour-only caution does not apply to it
   return {
     verification: {
       ...base, status: verdict.status, detected: seen.count, difference: verdict.difference, tolerance: verdict.tolerance, confidence: seen.confidence,

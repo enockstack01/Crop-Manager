@@ -4,7 +4,8 @@ how many fruit it can see, with a confidence and a picture with every counted fr
 number the farmer recorded.
 
 Run it:   uvicorn app:app --host 0.0.0.0 --port 8090
-Settings: FRUIT_COUNTER_TOKEN   if set, every request must send it in the X-Token header (set the same value in the CropManager server)
+Settings: FRUIT_YOLO_WEIGHTS  path of the trained YOLO model (default models/fruit_yolo11x.pt); used when it exists and the crop is one it knows
+          FRUIT_COUNTER_TOKEN   if set, every request must send it in the X-Token header (set the same value in the CropManager server)
 """
 import os
 
@@ -12,6 +13,7 @@ import cv2
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 
 from fruitcount import COLORS, SHAPES, VERSION, count_fruits
+from fruitcount import yolo
 
 TOKEN = os.environ.get('FRUIT_COUNTER_TOKEN', '')
 MAX_BYTES = 25 * 1024 * 1024
@@ -21,7 +23,7 @@ app = FastAPI(title='CropManager fruit counter', version=VERSION)
 
 @app.get('/health')
 def health():
-    return {'ok': True, 'opencv': cv2.__version__, 'method': VERSION, 'colors': sorted(COLORS), 'protected': bool(TOKEN)}
+    return {'ok': True, 'opencv': cv2.__version__, 'method': VERSION, 'colors': sorted(COLORS), 'protected': bool(TOKEN), 'trained_model': yolo.classes()}
 
 
 @app.post('/count')
@@ -30,6 +32,7 @@ def count(
     colors: str = Form('red'),
     shape: str = Form('round'),
     contrast: str = Form('high'),
+    crop_class: str = Form(''),
     x_token: str | None = Header(default=None),
 ):
     if TOKEN and x_token != TOKEN:
@@ -43,6 +46,14 @@ def count(
     if shape not in SHAPES:
         raise HTTPException(status_code=400, detail=f'shape must be one of: {", ".join(SHAPES)}')
     try:
+        # the trained model first, when it knows this crop: it can find green fruit among green leaves. Otherwise the colour method.
+        if yolo.available_for(crop_class.strip().lower()):
+            try:
+                return yolo.count_with_yolo(data, crop_class.strip().lower())
+            except ValueError:
+                raise
+            except Exception:  # a model failure must never lose the check: fall back
+                pass
         return count_fruits(data, names, shape, 'low' if contrast == 'low' else 'high')
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

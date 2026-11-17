@@ -1,0 +1,1 @@
+ultralytics>=8.3  # optional: only for the trained fruit model (models/fruit_yolo11x.pt). Without it the colour method is used.

@@ -15,9 +15,11 @@ import { mediaUrl } from '../env';
 import { formatDate, formatNumber } from '../lib/format';
 import { COLOR_HEX, VERDICTS, countProblem, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhMutations } from '../lib/greenhouse';
 import { t } from '../i18n';
+import { LayoutTab } from './GreenhouseLayout';
 
 const TABS = [
   { id: 'dashboard', icon: 'chart-column', label: 'Dashboard' },
+  { id: 'layout', icon: 'cube', label: 'Layout' },
   { id: 'counts', icon: 'camera', label: 'Fruit counts' },
   { id: 'crops', icon: 'seedling', label: 'My crops' },
 ] as const;
@@ -144,14 +146,14 @@ function DashboardTab({ go }: { go: (id: TabId, opts?: any) => void }) {
 }
 
 /* --------------------------------------------------------------- counts */
-function CountSheet({ crops, editing, onClose }: { crops: any[]; editing: any | null; onClose: () => void }) {
+export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops: any[]; editing: any | null; preset?: any; onClose: () => void; onSaved?: () => void }) {
   const toast = useToast();
   const { colors } = useTheme();
   const { createCount, updateCount, check } = useGhMutations();
   const form = useForm(editing ? {
     crop_id: editing.crop_id, greenhouse: editing.greenhouse || '', row_id: editing.row_id, plant_label: editing.plant_label || '', count_date: editing.count_date,
     recorded_count: String(editing.recorded_count), photo_url: editing.photo_url as string | null, notes: editing.notes || '',
-  } : { crop_id: crops[0]?.id || '', greenhouse: '', row_id: '', plant_label: '', count_date: today(), recorded_count: '', photo_url: null as string | null, notes: '' });
+  } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_url: null as string | null, notes: '' });
   const [err, setErr] = useState('');
   const [result, setResult] = useState<any>(null);
   const v = form.values;
@@ -174,6 +176,7 @@ function CountSheet({ crops, editing, onClose }: { crops: any[]; editing: any | 
       const body = { ...v, recorded_count: Number(v.recorded_count) };
       const saved = editing ? await updateCount.mutateAsync({ id: editing.id, ...body }) : await createCount.mutateAsync(body);
       toast(t('Fruit count saved'));
+      onSaved?.();
       setResult({ verification: saved.verification, annotated_url: saved.annotated_url, photo_url: saved.photo_url, saved: true });
     } catch (e: any) { setErr(e?.message || t('Could not save')); }
   };
@@ -406,6 +409,7 @@ export function GreenhouseScreen() {
         ))}
       </ScrollView>
       {tab === 'dashboard' ? <DashboardTab go={go} /> : null}
+      {tab === 'layout' ? <LayoutTab /> : null}
       {tab === 'counts' ? <CountsTab key={JSON.stringify(start)} start={start} /> : null}
       {tab === 'crops' ? <CropsTab /> : null}
     </Screen>
