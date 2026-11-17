@@ -69,3 +69,5 @@
   .gh-stage:has(.gh-side) { grid-template-columns: minmax(0, 1fr); }
   .gh-toolbar .form-control { min-width: 0; flex: 1 1 100%; }
 }
+.gh-scene { position: relative; }
+.gh-tip { position: absolute; z-index: 3; pointer-events: none; background: rgba(20, 40, 25, .92); color: #fff; font-size: 12.5px; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }

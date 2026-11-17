@@ -8,7 +8,7 @@ import { markerColor, webglAvailable } from '../lib/greenhouseColors.js';
  * result of the last photo check (or by how much fruit it has) and is a little bigger the more fruit was counted. Click a plant to pick it.
  * Drag to turn, scroll to zoom, right-drag to move. One InstancedMesh per part keeps big houses (thousands of plants) smooth.
  */
-export default function GreenhouseScene({ layout, colorBy = 'status', selected, onPick, height = 460 }) {
+export default function GreenhouseScene({ layout, colorBy = 'status', selected, onPick, view = 'default', focusKey = '', height = 460 }) {
   const mount = useRef(null);
   const api = useRef({});
   const [failed, setFailed] = useState(false);
@@ -88,6 +88,26 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       const bed = new THREE.Mesh(bedGeo, bedMat);
       bed.position.set(spanX / 2, 0.09, (r + 0.5) * rowSpacing);
       scene.add(bed);
+      const cv = document.createElement('canvas');
+      cv.width = 128;
+      cv.height = 64;
+      const cx = cv.getContext('2d');
+      cx.fillStyle = 'rgba(255,255,255,0.9)';
+      cx.beginPath();
+      cx.roundRect(4, 8, 120, 48, 14);
+      cx.fill();
+      cx.fillStyle = '#1B5E20';
+      cx.font = 'bold 34px sans-serif';
+      cx.textAlign = 'center';
+      cx.textBaseline = 'middle';
+      cx.fillText(`R${r + 1}`, 64, 33);
+      const tex = own(new THREE.CanvasTexture(cv));
+      const label = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: tex, depthTest: false })));
+      const ls = Math.max(0.5, Math.min(rowSpacing * 0.9, 1.6));
+      label.scale.set(ls * 2, ls, 1);
+      label.position.set(-ls * 1.1, 0.4, (r + 0.5) * rowSpacing);
+      label.renderOrder = 5;
+      scene.add(label);
     }
 
     // the plants: foliage (green), and a fruit marker above it
@@ -133,7 +153,22 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       const p = pick(e);
       if (p) pickRef.current?.(p);
     };
-    const onMove = (e) => { renderer.domElement.style.cursor = pick(e) ? 'pointer' : 'grab'; };
+    const tip = document.createElement('div');
+    tip.className = 'gh-tip';
+    tip.style.display = 'none';
+    el.appendChild(tip);
+    const onMove = (e) => {
+      const p = pick(e);
+      renderer.domElement.style.cursor = p ? 'pointer' : 'grab';
+      if (!p) { tip.style.display = 'none'; return; }
+      const r = el.getBoundingClientRect();
+      tip.textContent = `${p.row_id} ${p.plant_label}${p.crop_name ? ` \u00b7 ${p.crop_name}` : ''} \u00b7 ${p.latest ? `${p.latest.recorded_count} fruit` : 'not counted yet'}`;
+      tip.style.left = `${Math.min(e.clientX - r.left + 14, r.width - 220)}px`;
+      tip.style.top = `${Math.max(4, e.clientY - r.top - 34)}px`;
+      tip.style.display = 'block';
+    };
+    const onLeave = () => { tip.style.display = 'none'; };
+    renderer.domElement.addEventListener('pointerleave', onLeave);
     renderer.domElement.addEventListener('pointerdown', onDown);
     renderer.domElement.addEventListener('pointerup', onUp);
     renderer.domElement.addEventListener('pointermove', onMove);
@@ -158,12 +193,29 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     const loop = () => {
       raf = requestAnimationFrame(loop);
       if (!visible) return;
+      api.current.step?.();
       controls.update();
       renderer.render(scene, camera);
     };
     loop();
 
+    let tween = null;
+    const flyTo = (pos, target) => { tween = { t: 0, fp: camera.position.clone(), ft: controls.target.clone(), tp: new THREE.Vector3(...pos), tt: new THREE.Vector3(...target) }; };
     api.current = { plants, fruit, ring, size, max, scene, camera, renderer, controls, el };
+    api.current.setView = (name) => {
+      if (name === 'top') flyTo([spanX / 2, reach * 1.25, spanZ / 2 + 0.01], [spanX / 2, 0, spanZ / 2]);
+      else if (name === 'side') flyTo([spanX / 2, reach * 0.18, spanZ / 2 + reach * 0.9], [spanX / 2, 0.5, spanZ / 2]);
+      else flyTo([spanX / 2, reach * 0.42, spanZ / 2 + reach * 0.6], [spanX / 2, 0, spanZ / 2]);
+    };
+    api.current.focus = (p) => flyTo([p.x, Math.max(1.6, size * 7), p.z + Math.max(2.4, size * 9)], [p.x, 0.6, p.z]);
+    api.current.step = () => {
+      if (!tween) return;
+      tween.t = Math.min(1, tween.t + 0.045);
+      const k = 1 - (1 - tween.t) ** 3;
+      camera.position.lerpVectors(tween.fp, tween.tp, k);
+      controls.target.lerpVectors(tween.ft, tween.tt, k);
+      if (tween.t >= 1) tween = null;
+    };
     api.current.paint = (by, sel) => {
       const c = new THREE.Color();
       plants.forEach((p, i) => {
@@ -188,6 +240,8 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       renderer.domElement.removeEventListener('pointerdown', onDown);
       renderer.domElement.removeEventListener('pointerup', onUp);
       renderer.domElement.removeEventListener('pointermove', onMove);
+      renderer.domElement.removeEventListener('pointerleave', onLeave);
+      tip.remove();
       controls.dispose();
       [leaf, fruit, stem].forEach((m) => m.dispose());
       disposables.forEach((d) => d.dispose?.());
@@ -200,6 +254,13 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
 
   // recolour and move the selection ring without rebuilding
   useEffect(() => { api.current.paint?.(colorBy, selected); }, [colorBy, selected, layout]);
+
+  useEffect(() => { api.current.setView?.(view); }, [view, layout]);
+  useEffect(() => {
+    const p = selected && layout?.plants.find((x) => x.row === selected.row && x.plant === selected.plant);
+    if (p && focusKey) api.current.focus?.(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey]);
 
   if (failed) return null;
   return <div ref={mount} className="gh-scene" style={{ height }} role="img" aria-label="3D view of the greenhouse. Use the plan view for a list you can use with the keyboard." />;
