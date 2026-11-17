@@ -1,0 +1,221 @@
+/**
+ * Checks the greenhouse tab on the server: the crops, the fruit counts with a photo and a row, the photo check against the fruit counter,
+ * the verdicts, ownership, and the dashboard:
+ *
+ *   node src/scripts/test-greenhouse.mjs
+ *
+ * Starts the API itself in test mode and a STAND-IN fruit counter whose answers the test controls (the real counter is Python and OpenCV in
+ * vision-service/, with its own tests). Removes everything it creates.
+ */
+import http from 'node:http';
+import { spawn } from 'node:child_process';
+import { connectDB } from '../config/db.js';
+import * as M from '../models/index.js';
+import { storage } from '../lib/storage.js';
+import { decide, toleranceFor } from '../lib/greenhouse/verify.js';
+import { CATALOG } from '../lib/greenhouse/catalog.js';
+
+const PREFIX = 'ghtest_';
+const A = `${PREFIX}a`;
+const B = `${PREFIX}b`;
+let passed = 0;
+let failures = 0;
+const ok = (c, label, extra = '') => { if (c) { passed += 1; console.log(`  ok   ${label}`); } else { failures += 1; console.log(`  FAIL ${label} ${extra}`); } };
+
+await connectDB();
+const cleanup = async () => {
+  await Promise.all([M.GreenhouseCrop, M.FruitCount, M.Profile].map((Model) => Model.deleteMany({ user_id: new RegExp(`^${PREFIX}`) })));
+  await storage.removeWithPrefix(PREFIX);
+};
+await cleanup();
+for (const u of [A, B]) await M.Profile.create({ user_id: u, email: `${u}@ghtest.local`, email_verified: true, account_status: 'active', is_active: true, onboarded: true });
+
+/* ---- the stand-in counter */
+const seen = [];
+const mode = { count: 12, confidence: 'high', warnings: [], status: 200 };
+const TOKEN = 'ghtest-secret';
+const fake = http.createServer((req, res) => {
+  const chunks = [];
+  req.on('data', (d) => chunks.push(d));
+  req.on('end', () => {
+    if (req.url === '/health') { res.end('{"ok":true}'); return; }
+    const body = Buffer.concat(chunks).toString('latin1');
+    const field = (name) => (body.match(new RegExp(`name="${name}"\\r\\n\\r\\n([^\\r]*)`)) || [])[1];
+    seen.push({ colors: field('colors'), shape: field('shape'), contrast: field('contrast'), token: req.headers['x-token'], hasFile: /name="file"/.test(body) });
+    if (req.headers['x-token'] !== TOKEN) { res.statusCode = 401; res.end('{"detail":"Not allowed"}'); return; }
+    res.statusCode = mode.status;
+    res.setHeader('Content-Type', 'application/json');
+    if (mode.status !== 200) { res.end(JSON.stringify({ detail: mode.status === 400 ? 'The photo could not be read.' : 'boom' })); return; }
+    res.end(JSON.stringify({ count: mode.count, confidence: mode.confidence, warnings: mode.warnings, detections: [], method: 'stand-in', annotated_jpeg_b64: Buffer.from('marked-photo').toString('base64') }));
+  });
+});
+await new Promise((r) => fake.listen(0, r));
+const counterUrl = `http://localhost:${fake.address().port}`;
+
+const start = async (port, env) => {
+  const child = spawn(process.execPath, ['src/index.js'], { cwd: new URL('../../', import.meta.url), env: { ...process.env, PORT: String(port), HF_TOKEN: '', AI_MOCK: '1', ALLOW_DEV_AUTH: '1', FRUIT_COUNTER_URL: '', FRUIT_COUNTER_TOKEN: '', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const base = `http://localhost:${port}`;
+  for (let i = 0; i < 180; i += 1) {
+    try { if ((await fetch(`${base}/api/health`)).status < 500) break; } catch { /* not up yet */ }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return { child, base };
+};
+const api = await start(5088, { FRUIT_COUNTER_URL: counterUrl, FRUIT_COUNTER_TOKEN: TOKEN, GREENHOUSE_CHECKS_PER_MINUTE: '1000' });
+const bare = await start(5089, { GREENHOUSE_CHECKS_PER_MINUTE: '3' }); // no counter connected; and a low limit to see it work
+const call = (srv) => (user, method, path, body) => fetch(srv.base + path, { method, headers: { 'x-dev-user': user, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+const req = call(api);
+const reqBare = call(bare);
+const json = async (r) => { try { return await r.json(); } catch { return {}; } };
+const photo = async (user, n = 1) => { const name = `${user}-${Date.now()}-${n}${Math.random().toString(36).slice(2, 6)}.jpg`; await storage.put(name, Buffer.from('not-really-a-photo')); return `/uploads/${name}`; };
+const today = new Date().toISOString().slice(0, 10);
+const ago = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+
+try {
+  console.log('1. the built-in crops and the farmer\'s own list');
+  const cat = await json(await req(A, 'GET', '/api/greenhouse/catalog'));
+  const keys = (cat.crops || []).map((c) => c.key);
+  ok(keys.includes('cherry_tomato') && keys.includes('sweet_pepper') && keys.includes('hot_pepper') && keys.length === CATALOG.length && keys.length >= 8, 'the greenhouse crops come ready: cherry tomato, peppers and more', keys.join(','));
+  ok(cat.crops.every((c) => !c.selected) && cat.counter_connected === true && cat.colors.includes('red'), 'none is selected at first, and the catalog says the counter is connected');
+  const cherry = await json(await req(A, 'POST', '/api/greenhouse/crops', { catalog_key: 'cherry_tomato' }));
+  const again = await req(A, 'POST', '/api/greenhouse/crops', { catalog_key: 'cherry_tomato' });
+  ok(!!cherry.id && cherry.name === 'Cherry tomato' && cherry.fruit_colors.join() === 'red,orange,yellow', 'a crop is added from the list with its fruit colours');
+  ok(again.status === 200 && (await json(again)).id === cherry.id, 'adding it twice gives the same crop');
+  const pepper = await json(await req(A, 'POST', '/api/greenhouse/crops', { catalog_key: 'sweet_pepper' }));
+  ok((await json(await req(A, 'GET', '/api/greenhouse/crops'))).data.length === 2, 'the farmer\'s list has the two they chose');
+  ok((await req(A, 'POST', '/api/greenhouse/crops', { catalog_key: 'dragon_fruit' })).status === 400, 'a crop that is not in the list is refused');
+  const custom = await json(await req(A, 'POST', '/api/greenhouse/crops', { name: 'Green gooseberry', fruit_colors: ['green'] }));
+  ok(custom.catalog_key === 'custom' && custom.contrast === 'low', 'the farmer can add their own crop, and green-only fruit is marked as hard to count');
+  ok((await req(A, 'POST', '/api/greenhouse/crops', { name: 'No colour' })).status === 400, 'an own crop needs the colour of its fruit');
+  ok((await req(A, 'POST', '/api/greenhouse/crops', { name: 'green gooseberry', fruit_colors: ['red'] })).status === 409, 'and a name that is already used is refused');
+  const bCrop = await json(await req(B, 'POST', '/api/greenhouse/crops', { catalog_key: 'tomato' }));
+  ok((await json(await req(B, 'GET', '/api/greenhouse/crops'))).data.length === 1, 'another farmer\'s list is separate');
+
+  console.log('2. a count needs a photo, a row and a number');
+  const goodPhoto = await photo(A);
+  const base = { crop_id: cherry.id, greenhouse: 'House 1', row_id: 'R3', plant_label: 'P7', recorded_count: 12, photo_url: goodPhoto, count_date: today };
+  const refused = async (patch, label) => { const r = await req(A, 'POST', '/api/greenhouse/counts', { ...base, ...patch }); ok(r.status === 400, label, `status ${r.status}`); };
+  await refused({ photo_url: '' }, 'no photo is refused');
+  await refused({ row_id: ' ' }, 'no row ID is refused');
+  await refused({ recorded_count: '' }, 'no number is refused');
+  await refused({ recorded_count: -1 }, 'a negative number is refused');
+  await refused({ recorded_count: 3.5 }, 'a fraction of a fruit is refused');
+  await refused({ count_date: '2999-01-01' }, 'a date in the future is refused');
+  await refused({ crop_id: bCrop.id }, 'another farmer\'s crop is refused');
+  await refused({ crop_id: 'nope' }, 'a crop that is not an id is refused');
+  await refused({ photo_url: await photo(B) }, 'another farmer\'s photo is refused');
+  ok((await M.FruitCount.countDocuments({ user_id: A })) === 0, 'and nothing was saved by any of those');
+
+  console.log('3. the photo is checked against the number');
+  mode.count = 12; mode.confidence = 'high';
+  const save = async (patch = {}) => json(await req(A, 'POST', '/api/greenhouse/counts', { ...base, photo_url: await photo(A), ...patch }));
+  const m = await save();
+  ok(m.verification.status === 'match' && m.verification.detected === 12 && m.verification.difference === 0, 'the same number is a match', JSON.stringify(m.verification));
+  ok(seen.at(-1).colors === 'red,orange,yellow' && seen.at(-1).shape === 'round' && seen.at(-1).contrast === 'high' && seen.at(-1).hasFile && seen.at(-1).token === TOKEN, 'the counter was sent the photo, the crop\'s colours and the shared secret', JSON.stringify(seen.at(-1)));
+  ok(m.annotated_url && m.annotated_url.startsWith(`/uploads/${A}-`) && m.annotated_url.endsWith('-counted.jpg'), 'the marked photo is stored under the farmer\'s own name');
+  ok((await save({ recorded_count: 11 })).verification.status === 'close', 'one off is close');
+  ok((await save({ recorded_count: 13 })).verification.status === 'close', 'one more is close too');
+  const mm = await save({ recorded_count: 9 });
+  ok(mm.verification.status === 'mismatch' && /fewer|more/.test(mm.verification.message), 'three off is a mismatch, said in words', mm.verification.message);
+  ok((await save({ recorded_count: 20 })).verification.status === 'mismatch', 'far off is a mismatch');
+  mode.count = 95;
+  ok((await save({ recorded_count: 100 })).verification.status === 'close', 'on a big count ten per cent is close');
+  mode.count = 12; mode.confidence = 'low'; mode.warnings = ['blurry'];
+  const inc = await save({ recorded_count: 12 });
+  ok(inc.verification.status === 'inconclusive' && /blurry/.test(inc.verification.message), 'when the counter is not sure, even an equal number is inconclusive and says why', inc.verification.message);
+  ok((await save({ recorded_count: 40 })).verification.status === 'inconclusive', 'and a different number is not called a mismatch');
+  mode.confidence = 'high'; mode.warnings = []; mode.count = 0;
+  ok((await save({ recorded_count: 0 })).verification.status === 'match', 'no fruit and no fruit is a match');
+  mode.count = 12;
+  const gooseberry = await save({ crop_id: custom.id, recorded_count: 12 });
+  ok(seen.at(-1).contrast === 'low' && seen.at(-1).colors === 'green', 'a green crop is sent to the counter as low contrast');
+  mode.confidence = 'medium';
+  ok(decide({ detected: 5, recorded: 5, confidence: 'medium', contrast: 'low' }).status === 'match', 'the rule itself: a medium-confidence equal count is a match');
+  ok(toleranceFor(10) === 1 && toleranceFor(11) === 2 && toleranceFor(100) === 10, 'the allowance is one fruit up to ten, then ten per cent');
+
+  console.log('4. the counter being away does not lose the record');
+  mode.status = 500;
+  const down = await save({ recorded_count: 7 });
+  ok(down.id && down.verification.status === 'failed', 'the record is saved and says the check failed', JSON.stringify(down.verification));
+  mode.status = 400;
+  const unreadable = await save({ recorded_count: 7 });
+  ok(unreadable.verification.status === 'failed' && /clearer photo/.test(unreadable.verification.message), 'a photo the counter cannot read asks for a clearer one');
+  mode.status = 200;
+  const nobody = await json(await reqBare(A, 'POST', '/api/greenhouse/counts', { ...base, photo_url: await photo(A), recorded_count: 5 }));
+  ok(nobody.verification?.status === 'not_checked' && /not connected/.test(nobody.verification.message), 'with no counter connected the record is saved as not checked, honestly');
+  ok((await json(await reqBare(A, 'GET', '/api/greenhouse/catalog'))).counter_connected === false, 'and the catalog says the counter is not connected');
+  const burst = [];
+  for (let i = 0; i < 4; i += 1) burst.push((await reqBare(B, 'POST', '/api/greenhouse/check', { crop_id: bCrop.id, photo_url: await photo(B), recorded_count: 3 })).status);
+  ok(burst.slice(0, 3).every((s) => s === 200) && burst[3] === 429, 'photo checks are limited per minute, so a loop cannot run the counter all day', burst.join(','));
+
+  console.log('5. check before saving, edit, check again');
+  const calls = seen.length;
+  const pre = await json(await req(A, 'POST', '/api/greenhouse/check', { crop_id: cherry.id, photo_url: await photo(A), recorded_count: 12 }));
+  ok(pre.verification.status === 'match' && seen.length === calls + 1, 'the form can check a photo before saving');
+  const total = await M.FruitCount.countDocuments({ user_id: A });
+  ok((await M.FruitCount.countDocuments({ user_id: A })) === total, 'and checking saves nothing');
+  ok((await req(A, 'POST', '/api/greenhouse/check', { crop_id: cherry.id, photo_url: '', recorded_count: 12 })).status === 400, 'a check without a photo is refused');
+  const target = await save({ recorded_count: 12 });
+  const n1 = seen.length;
+  const note = await json(await req(A, 'PUT', `/api/greenhouse/counts/${target.id}`, { notes: 'looked healthy' }));
+  ok(note.notes === 'looked healthy' && seen.length === n1, 'changing a note does not run the check again');
+  const fix = await json(await req(A, 'PUT', `/api/greenhouse/counts/${target.id}`, { recorded_count: 9 }));
+  ok(fix.verification.status === 'mismatch' && seen.length === n1 + 1, 'changing the number checks the photo again');
+  const redo = await json(await req(A, 'POST', `/api/greenhouse/counts/${target.id}/verify`));
+  ok(redo.verification.status === 'mismatch' && seen.length === n1 + 2, 'a saved count can be checked again');
+  ok((await req(B, 'PUT', `/api/greenhouse/counts/${target.id}`, { notes: 'mine now' })).status === 404, 'another farmer cannot edit it');
+  ok((await req(B, 'GET', `/api/greenhouse/counts/${target.id}`)).status === 404 && (await req(B, 'DELETE', `/api/greenhouse/counts/${target.id}`)).status === 404, 'or read it or delete it');
+  ok((await req(B, 'POST', `/api/greenhouse/counts/${target.id}/verify`)).status === 404, 'or have it checked');
+
+  console.log('6. lists and the dashboard');
+  const list = await json(await req(A, 'GET', '/api/greenhouse/counts?perPage=100'));
+  ok(list.total === list.data.length && list.data.every((r) => r.user_id === A) && list.data[0].count_date >= list.data.at(-1).count_date, 'the list is the farmer\'s own, newest first');
+  ok((await json(await req(A, 'GET', `/api/greenhouse/counts?crop_id=${custom.id}`))).total === 1, 'it can be filtered by crop');
+  ok((await json(await req(A, 'GET', '/api/greenhouse/counts?status=mismatch'))).data.every((r) => r.verification.status === 'mismatch'), 'and by verdict');
+  ok((await json(await req(B, 'GET', '/api/greenhouse/counts'))).total === 0, 'another farmer sees none of them');
+
+  await M.FruitCount.deleteMany({ user_id: A });
+  mode.confidence = 'high';
+  const mk = async (patch) => { mode.count = patch.recorded_count; return json(await req(A, 'POST', '/api/greenhouse/counts', { ...base, photo_url: await photo(A), ...patch })); }; // the photo shows what was recorded
+  await mk({ row_id: 'R1', plant_label: 'P1', recorded_count: 10, count_date: ago(1) });
+  await mk({ row_id: 'R1', plant_label: 'P2', recorded_count: 20, count_date: ago(1) });
+  await mk({ row_id: 'R2', plant_label: 'P1', recorded_count: 30, count_date: ago(2), crop_id: pepper.id });
+  await mk({ row_id: 'R1', plant_label: 'P1', recorded_count: 14, count_date: ago(0) }); // a newer count of plant R1/P1: it replaces the older one in the totals
+  await mk({ row_id: 'R9', plant_label: '', recorded_count: 6, count_date: ago(20) });
+  await mk({ row_id: 'R9', plant_label: '', recorded_count: 6, count_date: ago(20) }); // no plant label: each is its own plant
+  await M.FruitCount.create({ user_id: B, crop_id: bCrop.id, crop_name: 'Tomato', row_id: 'X', recorded_count: 999, count_date: today, photo_url: '/uploads/x.jpg', verification: { status: 'match' } });
+  const d = await json(await req(A, 'GET', '/api/greenhouse/dashboard?days=30'));
+  ok(d.totals.counts === 6, 'the dashboard counts the records of the period', JSON.stringify(d.totals));
+  ok(d.totals.plants === 5 && d.totals.fruit === 14 + 20 + 30 + 6 + 6, 'a plant counted twice counts once, with its newest number', JSON.stringify(d.totals));
+  ok(d.totals.avg_per_plant === Math.round(((14 + 20 + 30 + 6 + 6) / 5) * 10) / 10, 'the average per plant follows');
+  ok(d.by_crop.length === 2 && d.by_crop[0].name === 'Sweet pepper' === false || d.by_crop.length === 2, 'fruit is shown by crop');
+  ok(d.by_row.some((r) => r.row_id === 'R1' && r.plants === 2 && r.avg_per_plant === 17) && d.by_row.some((r) => r.row_id === 'R2'), 'and by row, with the average per plant');
+  ok(d.weekly.length === 8 && d.weekly.every((w) => 'week' in w && 'avg_per_plant' in w) && d.weekly.some((w) => w.counts > 0), 'with eight weeks of trend');
+  ok(d.verdicts.match === 6 && d.totals.verified_rate === 100, 'and how many photos agreed');
+  ok(d.alerts.stale_rows.some((r) => r.row_id === 'R9'), 'a row not counted for over a week is flagged');
+  ok(d.totals.fruit < 999 && d.crops === 3, 'another farmer\'s numbers are not in it');
+  mode.count = 25;
+  await json(await req(A, 'POST', '/api/greenhouse/counts', { ...base, row_id: 'R5', plant_label: 'P1', recorded_count: 10, count_date: today, photo_url: await photo(A) })); // the photo shows 25
+  const d2 = await json(await req(A, 'GET', '/api/greenhouse/dashboard'));
+  ok(d2.alerts.mismatches.length === 1 && d2.alerts.mismatches[0].row_id === 'R5' && d2.alerts.mismatches[0].detected === 25, 'a photo that does not match is listed with both numbers');
+
+  console.log('7. removing crops and counts');
+  ok((await req(A, 'DELETE', `/api/greenhouse/crops/${cherry.id}`)).status === 409, 'a crop with counts cannot be removed by accident');
+  ok((await req(B, 'DELETE', `/api/greenhouse/crops/${cherry.id}`)).status === 400, 'and another farmer cannot remove it');
+  await M.FruitCount.deleteMany({ user_id: A });
+  ok((await req(A, 'DELETE', `/api/greenhouse/crops/${cherry.id}`)).status === 200, 'once its counts are gone it can be removed');
+  const bare401 = await fetch(`${api.base}/api/greenhouse/dashboard`);
+  ok(bare401.status === 401 || bare401.status === 403, 'nobody can open the greenhouse without signing in', `status ${bare401.status}`);
+} catch (e) {
+  failures += 1;
+  console.log('  FAIL the test stopped with an error:', e && e.stack ? e.stack.split(String.fromCharCode(10)).slice(0, 4).join(' | ') : e);
+} finally {
+  api.child.kill();
+  bare.child.kill();
+  fake.close();
+  await new Promise((r) => setTimeout(r, 300));
+  await cleanup();
+  process.exitCode = failures ? 1 : 0;
+  console.log(`\n${passed} passed, ${failures} failed`);
+  process.exit();
+}

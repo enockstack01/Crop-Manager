@@ -22,6 +22,7 @@
     "test:plaintext": "node src/scripts/test-plaintext.mjs",
     "test:aierrors": "node src/scripts/test-aierrors.mjs",
     "test:fieldlocation": "node src/scripts/test-fieldlocation.mjs",
+    "test:greenhouse": "node src/scripts/test-greenhouse.mjs",
     "test:all": "node src/scripts/run-all-tests.mjs",
     "test:tenancy": "node src/scripts/test-tenancy.mjs",
     "test:invites": "node src/scripts/test-invites.mjs",

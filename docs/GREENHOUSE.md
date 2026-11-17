@@ -1,0 +1,60 @@
+# Greenhouse tab and the fruit counter
+
+A farmer chooses the greenhouse crops they grow, then records the fruit on a plant with a **photo**, a **row ID** and the **number of fruit**.
+The photo is counted by a Python and OpenCV service and the result is compared with the number the farmer recorded.
+
+## What the farmer sees
+
+| Where | What |
+| --- | --- |
+| Greenhouse > My crops | Ten greenhouse crops ready to tick (cherry tomato, tomato, sweet pepper, hot pepper, cucumber, eggplant, strawberry, zucchini, melon, green beans), and a form to add their own crop with its fruit colours. |
+| Greenhouse > Fruit counts | A list of counts, and "Add a fruit count": crop, greenhouse, **row ID**, plant, date, **number of fruit**, **photo**. A "Check the photo" button shows the result before saving. |
+| Greenhouse > Dashboard | Fruit counted, plants counted, average fruit per plant, share of photos that agree; fruit by crop; average per plant week by week; rows; photos that do not match; rows not counted for a week. |
+
+Both the website (`/greenhouse`) and the phone app (menu and home shortcut) have it.
+
+## The verdict on each photo
+
+| Verdict | Meaning |
+| --- | --- |
+| Matches | The photo shows exactly the number recorded. |
+| Close | Within one fruit (up to 10 fruit), then within 10 per cent. |
+| Does not match | The photo clearly shows a different number. The message says whether there is more or less fruit in the photo. |
+| Not sure | The counter itself is not sure (green fruit among green leaves, a blurry or dark photo, a background the colour of the fruit). It neither confirms nor contradicts the record, and says why. |
+| Not checked | The fruit counter is not connected. The record is saved. |
+| Check failed | The counter could not be reached or could not read the photo. The record is saved and can be checked again from its page. |
+
+Every checked photo also comes back with a copy of the photo with a ring and a number on every fruit that was counted, so the farmer can see exactly what the counter saw.
+
+## How it fits together
+
+```
+phone / website  -->  CropManager server (/api/greenhouse)  -->  fruit counter (vision-service, Python + OpenCV)
+                       stores crops, counts, verdicts             counts the fruit in the photo
+```
+
+- `vision-service/` is the counter: FastAPI, OpenCV, NumPy. It has its own tests (`python -m pytest vision-service/tests`) and a `Dockerfile`.
+- The server decides the verdict (`server/src/lib/greenhouse/verify.js`), stores the data (`greenhouse.models.js`) and serves the dashboard.
+- Everything is the signed-in farmer's own: a photo must be one they uploaded, a crop must be one of theirs, and the dashboard only sums their records.
+
+## Setting it up
+
+1. **Run the counter.** Locally: `cd vision-service && pip install -r requirements.txt && uvicorn app:app --port 8090`. In production: a Docker web service on Render from the `vision-service` folder (it listens on `$PORT`).
+2. **Tell the server where it is.** On the CropManager server set `FRUIT_COUNTER_URL` (for example `https://cropmanager-counter.onrender.com`). Optional shared secret: set `FRUIT_COUNTER_TOKEN` to the same value on both.
+3. Without `FRUIT_COUNTER_URL` the tab still works: photos are saved, and every record says "Not checked: the fruit counter is not connected".
+
+Optional: `GREENHOUSE_CHECKS_PER_MINUTE` (default 20) limits photo checks per farmer per minute, because each check runs the counter.
+
+A free Render service sleeps when idle, so the first check after a quiet spell can take up to a minute. The apps wait up to 90 seconds.
+
+## How accurate it is, honestly
+
+The counter is classical computer vision (colour segmentation, then splitting of touching fruit), not a trained model.
+
+- On **drawn test photos** with a known number of fruit it counted exactly in 97 to 100 per cent of cases and was never off by more than one, except one 4-fruit undercount on a very crowded photo.
+- On **real photos with no fruit** (about 180 diseased-leaf and field photos) it counted no fruit in 88 per cent of photos for red fruit (on average 0.4 per photo); for orange and yellow fruit colours it wrongly found fruit in about 40 per cent of such photos, mostly dry leaves and soil, on average 5 per photo. This is why a photo whose background is mostly fruit-coloured is reported as "not sure".
+- It has **not yet been measured on real greenhouse photos with a known count**: none were available. Before relying on it, take 20 to 30 photos of plants where you have counted the fruit by hand and compare. Adjusting the colour ranges in `vision-service/fruitcount/counter.py` for your crops and lighting is the first thing to do if it over- or under-counts.
+- It counts fruit it can **see**. Fruit hidden behind leaves or behind other fruit cannot be counted, so "fewer than recorded" is often a hidden-fruit problem, not a recording mistake. The message says so.
+- Green fruit on green plants (cucumber, zucchini, green beans, unripe tomatoes) cannot be told from leaves reliably. They are marked "photo check not conclusive" and always get a "not sure" verdict.
+
+A trained detection model (for example YOLO, trained on labelled photos of your own crops) would be the next step for higher accuracy. The service interface would not change: it still takes a photo and returns a count, a confidence and a marked photo.

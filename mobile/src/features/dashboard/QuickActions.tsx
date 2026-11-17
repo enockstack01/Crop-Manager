@@ -8,6 +8,7 @@ import { t } from '../../i18n';
 
 const ACTIONS = [
   { route: 'assistant', label: 'AI Assistant', icon: 'wand-magic-sparkles' },
+  { route: 'greenhouse', label: 'Greenhouse', icon: 'warehouse' },
   { route: 'scan', label: 'Scan a plant', icon: 'leaf' },
   { route: 'offline-tools', label: 'Offline tools', icon: 'cloud-off-outline' },
   { route: 'expenses', label: 'Expenses', icon: 'receipt' },

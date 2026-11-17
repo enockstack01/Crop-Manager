@@ -44,6 +44,10 @@ export const NAV_SECTIONS: NavSection[] = [
     items: ['crop-cycles', 'planting', 'activities', 'irrigation', 'fertilizers', 'crop-protection', 'scouting', 'harvest'].map(moduleItem),
   },
   {
+    label: 'Greenhouse',
+    items: [{ route: 'greenhouse', label: 'Greenhouse', icon: 'warehouse' }],
+  },
+  {
     label: 'Resources',
     items: ['inventory', 'equipment', 'maintenance'].map(moduleItem),
   },

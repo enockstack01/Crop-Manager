@@ -29,6 +29,7 @@ const CalculatorDetail = lazy(() => import('./pages/CalculatorDetail.jsx'));
 const Reports = lazy(() => import('./pages/Reports.jsx'));
 const Calendar = lazy(() => import('./pages/Calendar.jsx'));
 const Weather = lazy(() => import('./pages/Weather.jsx'));
+const Greenhouse = lazy(() => import('./pages/Greenhouse.jsx'));
 const Assistant = lazy(() => import('./pages/Assistant.jsx'));
 const Join = lazy(() => import('./pages/Join.jsx'));
 const OrgRegister = lazy(() => import('./pages/OrgRegister.jsx'));
@@ -108,6 +109,7 @@ export function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="weather" element={<Weather />} />
+        <Route path="greenhouse" element={<Greenhouse />} />
         <Route path="settings" element={<Settings />} />
 
         <Route path="org">

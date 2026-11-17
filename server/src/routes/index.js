@@ -16,6 +16,7 @@ import uploadsRouter from './uploads.routes.js';
 import adminRouter from './admin.routes.js';
 import { orgRouter, publicJoin, selfRouter } from './org.routes.js';
 import aiRouter from './ai.routes.js';
+import greenhouseRouter from './greenhouse.routes.js';
 import { markAllRead } from '../controllers/notifications.controller.js';
 
 const api = Router();
@@ -46,7 +47,7 @@ api.use(requireActiveAccount);
 // organization workspace and notifications are the only things an organization account reaches below
 api.use('/organizations', orgRouter);
 
-api.use(['/dashboard', '/export', '/calendar', '/weather', '/calculators', '/search', '/uploads', '/ai', '/inventory-items'], farmerOnly);
+api.use(['/dashboard', '/export', '/calendar', '/weather', '/calculators', '/search', '/uploads', '/ai', '/inventory-items', '/greenhouse'], farmerOnly);
 
 api.get('/dashboard', getDashboard);
 api.get('/dashboard/role', getRoleDashboard);
@@ -63,6 +64,9 @@ api.use('/uploads', uploadsRouter);
 
 // AI assistant: diagnosis reports, insights, advice, summaries, chat
 api.use('/ai', aiRouter);
+
+// greenhouse: crops, fruit counts with a photo check (Python and OpenCV fruit counter) and the greenhouse dashboard
+api.use('/greenhouse', greenhouseRouter);
 
 // resource-specific extras
 api.post('/inventory-items/:id/stock', adjustStock);

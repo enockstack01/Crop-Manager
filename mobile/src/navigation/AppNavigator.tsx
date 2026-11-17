@@ -20,6 +20,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { OfflineToolsScreen } from '../features/offline/OfflineTools';
+import { GreenhouseScreen } from '../screens/GreenhouseScreen';
 import { OfflineAssistantScreen } from '../screens/OfflineAssistantScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 import { useProfile } from '../lib/useResource';
@@ -83,6 +84,7 @@ function screens(Nav: typeof Tabs | typeof Drawer, isAdmin: boolean) {
         </S>
       ))}
 
+      <S name="greenhouse" component={GreenhouseScreen} options={{ title: 'Greenhouse' }} />
       <S name="assistant" component={AssistantScreen} options={{ title: 'AI Assistant' }} />
       <S name="scan" component={ScanScreen} options={{ title: 'Scan a plant' }} />
       <S name="offline-tools" component={OfflineToolsScreen} options={{ title: 'Offline tools' }} />

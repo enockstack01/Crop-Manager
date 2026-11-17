@@ -30,6 +30,10 @@ const SECTIONS = [
     ],
   },
   {
+    label: 'Greenhouse',
+    items: [{ to: '/greenhouse', icon: 'fa-warehouse', label: 'Greenhouse' }],
+  },
+  {
     label: 'Resources',
     items: [
       { to: '/inventory', icon: 'fa-boxes', label: 'Inventory' },
