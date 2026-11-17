@@ -69,7 +69,7 @@ export async function checkHealth(bytes, seen, crop) {
         const height = Math.min(meta.height - top, Math.round(pad * 2 * sy));
         if (width < 24 || height < 24) continue;
         const piece = await sharp(base).extract({ left, top, width, height }).jpeg({ quality: 90 }).toBuffer();
-        const res = await classify(piece, { crop: label });
+        const res = await classify(piece, { crop: label, part: 'fruit' }); // fruit classes only: a leaf class on a fruit photo means nothing
         if (res) res.predictions = res.predictions.filter((p) => p.part === 'fruit');
         list.push({ index: i + 1, x: d.x, y: d.y, r: d.r, ...readPredictions(res && res.predictions.length ? res : null) });
       }

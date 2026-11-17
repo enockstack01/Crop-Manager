@@ -126,9 +126,10 @@ async function toJpeg(buf) {
   return sharp(buf, { failOn: 'none' }).rotate().resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
 }
 
-async function callOnce(jpeg, labelCrop) {
+async function callOnce(jpeg, labelCrop, part) {
   const c = await connection();
-  const res = await withTimeout(c.predict('/classify', [new Blob([jpeg], { type: 'image/jpeg' }), labelCrop]), timeoutMs());
+  const args = [new Blob([jpeg], { type: 'image/jpeg' }), labelCrop, ...(part ? [part] : [])]; // the part filter (leaf or fruit) needs the newer Space
+  const res = await withTimeout(c.predict('/classify', args), timeoutMs());
   const out = validate(res?.data);
   if (!out) throw new Error('malformed reply from the Space');
   return out;
@@ -138,11 +139,11 @@ async function callOnce(jpeg, labelCrop) {
  * Classifies one photo. `crop` is a name from the 49 label crops (see cropMap.js) or '' to rank all classes.
  * Returns { model_version, confident, unrecognised, predictions: [{ label, confidence, crop, part, disease, family, healthy, names }] }, or null.
  */
-export async function classify(image, { crop = '', lang = 'en' } = {}) {
+export async function classify(image, { crop = '', lang = 'en', part = '' } = {}) {
   const stub = stubMode();
   if (stub && process.env.VISION_ENABLED !== '0') {
     if (stub === 'down') { note('stubbed: the Space is down'); return null; }
-    const picks = LABELS.filter((l) => !LABEL_CROPS.has(crop) || l.crop === crop).slice(0, 3);
+    const picks = LABELS.filter((l) => (!LABEL_CROPS.has(crop) || l.crop === crop) && (!part || l.part === part)).slice(0, 3);
     return { model_version: 'stub', confident: stub !== 'unsure', unrecognised: stub === 'unrecognised', predictions: picks.map((l, i) => ({ label: l.key, confidence: [0.91, 0.06, 0.02][i], ...describeLabel(l.key, lang) })) };
   }
   if (!enabled()) return null;
@@ -155,7 +156,7 @@ export async function classify(image, { crop = '', lang = 'en' } = {}) {
     let lastErr;
     for (let attempt = 0; attempt < 2 && !result; attempt += 1) {
       try {
-        result = await callOnce(jpeg, labelCrop);
+        result = await callOnce(jpeg, labelCrop, part);
       } catch (err) {
         lastErr = err;
         conn = null; // reconnect on the retry
