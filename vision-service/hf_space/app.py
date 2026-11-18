@@ -30,8 +30,11 @@ proc = ViTImageProcessor.from_pretrained(MODEL)
 vit = ViTForImageClassification.from_pretrained(MODEL, torch_dtype=torch.float16 if DEV == "cuda" else torch.float32).to(DEV).eval()
 card = json.loads((MODEL / "model_card.json").read_text())
 T, OOD_FLOOR, VERSION = float(card.get("temperature", 1.0)), card.get("ood_floor"), card["model_version"]
-LABELS = {l["key"]: l for l in json.loads((MODEL / "labels.json").read_text(encoding="utf-8"))["labels"]}
-ID2LABEL = vit.config.id2label
+_ROWS = json.loads((MODEL / "labels.json").read_text(encoding="utf-8"))["labels"]
+LABELS = {l["key"]: l for l in _ROWS}
+# the model's output index -> the label key the API returns (the config may carry display names instead of keys)
+ID2LABEL = {int(l["id"]): l["key"] for l in _ROWS}
+assert len(ID2LABEL) == vit.config.num_labels, "labels.json does not match the model"
 
 
 @gpu
@@ -59,10 +62,10 @@ def classify(image: Image.Image, crop: str = "", part: str = "") -> dict:
     return out
 
 
-demo = gr.Interface(fn=classify, inputs=[gr.Image(type="pil", label="Plant photo"), gr.Textbox(label="Crop (optional)"), gr.Textbox(label="Part: leaf or fruit (optional)")],
+demo = gr.Interface(fn=classify, inputs=[gr.Image(type="pil", label="Plant photo"), gr.Textbox(label="Crop (optional)", value=""), gr.Textbox(label="Part: leaf or fruit (optional)", value="")],
                     outputs=gr.JSON(), api_name="classify", title="Crop Health Detector",
                     description="Screening aid, not a diagnosis.", flagging_mode="never")
 demo.queue(max_size=16)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(show_error=True)
