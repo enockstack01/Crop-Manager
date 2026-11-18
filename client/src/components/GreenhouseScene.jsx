@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { markerColor, webglAvailable } from '../lib/greenhouseColors.js';
-import { fruitModel, habitOf, leafGeometry, rng } from '../lib/fruitModels.js';
+import { FLOWER_COLOR, flowerGeometry, fruitModel, habitOf, leafKind, leafKindOf, rng } from '../lib/fruitModels.js';
 
 /*
  * The 3D greenhouse: the house, a bed for every row, and a plant on every place of the layout. A plant's fruit marker is coloured by the
@@ -51,6 +51,8 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     controls.minDistance = Math.max(2, unit * 2);
     controls.maxDistance = reach * 4;
     controls.enableDamping = true;
+    controls.screenSpacePanning = false;
+    controls.autoRotateSpeed = 1.2;
 
     const disposables = [];
     const own = (o) => { disposables.push(o); return o; };
@@ -84,11 +86,16 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     // a bed for each row
     const rowSpacing = spanZ / house.rows;
     const bedMat = own(new THREE.MeshStandardMaterial({ color: '#5D4037', roughness: 1 }));
+    const dripGeo = own(new THREE.CylinderGeometry(0.012, 0.012, spanX * 0.98, 6).rotateZ(Math.PI / 2));
+    const dripMat = own(new THREE.MeshStandardMaterial({ color: '#212121', roughness: 0.6 }));
     const bedGeo = own(new THREE.BoxGeometry(spanX * 0.98, 0.18, Math.min(rowSpacing * 0.45, 0.9)));
     for (let r = 0; r < house.rows; r += 1) {
       const bed = new THREE.Mesh(bedGeo, bedMat);
       bed.position.set(spanX / 2, 0.09, (r + 0.5) * rowSpacing);
       scene.add(bed);
+      const drip = new THREE.Mesh(dripGeo, dripMat);
+      drip.position.set(spanX / 2, 0.2, (r + 0.5) * rowSpacing + Math.min(rowSpacing * 0.2, 0.35));
+      scene.add(drip);
       const cv = document.createElement('canvas');
       cv.width = 128;
       cv.height = 64;
@@ -121,12 +128,18 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     const LEAF_GREENS = ['#2E7D32', '#388E3C', '#43A047', '#1B5E20', '#4CAF50'];
 
     const stem = new THREE.InstancedMesh(own(new THREE.CylinderGeometry(size * 0.07, size * 0.1, 1, 6).translate(0, 0.5, 0)), own(new THREE.MeshStandardMaterial({ color: '#4E7D2A', roughness: 0.9 })), n);
-    const leavesPer = Math.max(...plants.map((p) => habitOf(p.crop_key).leaves));
-    const leaf = new THREE.InstancedMesh(own(leafGeometry()), own(new THREE.MeshStandardMaterial({ roughness: 0.75, side: THREE.DoubleSide })), n * leavesPer);
+    const kindCount = {};
+    plants.forEach((p) => { const k = leafKindOf(p.crop_key); kindCount[k] = (kindCount[k] || 0) + habitOf(p.crop_key).leaves; });
+    const leafMat = own(new THREE.MeshStandardMaterial({ roughness: 0.7, side: THREE.DoubleSide }));
+    const leafMeshes = Object.entries(kindCount).map(([k, c]) => { const m = new THREE.InstancedMesh(own(leafKind(k)), leafMat, c); m.userData.kind = k; m.userData.i = 0; return m; });
+    const leafOf = (k) => leafMeshes.find((m) => m.userData.kind === k);
+    const flowers = new THREE.InstancedMesh(own(flowerGeometry()), own(new THREE.MeshStandardMaterial({ roughness: 0.6 })), n * 2);
+    const poles = new THREE.InstancedMesh(own(new THREE.CylinderGeometry(0.012, 0.012, 1, 5).translate(0, 0.5, 0)), own(new THREE.MeshStandardMaterial({ color: '#9E9E9E', metalness: 0.4, roughness: 0.5 })), n);
+    let flowerN = 0;
+    let poleN = 0;
     const proxy = new THREE.InstancedMesh(own(new THREE.CylinderGeometry(size * 1.15, size * 1.15, 1, 8).translate(0, 0.5, 0)), own(new THREE.MeshBasicMaterial({ visible: false })), n);
     const ringsMesh = new THREE.InstancedMesh(own(new THREE.TorusGeometry(size * 1.35, size * 0.12, 8, 24).rotateX(Math.PI / 2)), own(new THREE.MeshBasicMaterial({ color: '#ffffff' })), n);
 
-    let leafN = 0;
     const byCrop = new Map(); // fruit model -> list of { m: matrix, color }
     plants.forEach((p, i) => {
       const h = habitOf(p.crop_key);
@@ -140,18 +153,40 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       dummy.scale.set(1, Math.max(H, size * 1.4), 1);
       dummy.updateMatrix();
       proxy.setMatrixAt(i, dummy.matrix);
-      // leaves spiral up the stem, the lower ones longer
+      // leaves spiral up the stem: the lower ones older, larger and drooping, the upper ones young and upright
       const reach = size * 1.05 * h.spread;
+      const lk = leafOf(leafKindOf(p.crop_key));
       for (let l = 0; l < h.leaves; l += 1) {
-        const f = 0.12 + (l / h.leaves) * 0.85;
+        const f = 0.1 + (l / h.leaves) * 0.88;
         dummy.position.set(p.x, 0.18 + H * f, p.z);
-        dummy.rotation.set(-(0.15 + 0.5 * f + rnd() * 0.25), l * 2.399 + rnd() * 0.6, 0, 'YXZ');
-        const len = reach * (1.15 - 0.45 * f) * (0.85 + rnd() * 0.3);
+        dummy.rotation.set(-(0.55 * f - 0.15 + rnd() * 0.25), l * 2.399 + rnd() * 0.6, 0, 'YXZ');
+        const len = reach * (1.2 - 0.5 * f) * (0.85 + rnd() * 0.3);
         dummy.scale.set(len, len, len);
         dummy.updateMatrix();
-        leaf.setMatrixAt(leafN, dummy.matrix);
-        leaf.setColorAt(leafN, tmpColor.set(LEAF_GREENS[Math.floor(rnd() * LEAF_GREENS.length)]).multiplyScalar(0.85 + rnd() * 0.3));
-        leafN += 1;
+        lk.setMatrixAt(lk.userData.i, dummy.matrix);
+        lk.setColorAt(lk.userData.i, tmpColor.set(LEAF_GREENS[Math.floor(rnd() * LEAF_GREENS.length)]).multiplyScalar(0.8 + 0.3 * f + rnd() * 0.15));
+        lk.userData.i += 1;
+      }
+      // flowers near the top
+      for (let q = 0; q < 2; q += 1) {
+        const a = rnd() * Math.PI * 2;
+        dummy.position.set(p.x + Math.cos(a) * reach * 0.4, 0.18 + H * (0.7 + rnd() * 0.28), p.z + Math.sin(a) * reach * 0.4);
+        dummy.rotation.set(-0.6, rnd() * 6.28, 0);
+        const fsz = size * 0.2;
+        dummy.scale.set(fsz, fsz, fsz);
+        dummy.updateMatrix();
+        flowers.setMatrixAt(flowerN, dummy.matrix);
+        flowers.setColorAt(flowerN, tmpColor.set(FLOWER_COLOR[p.crop_key] || FLOWER_COLOR.custom));
+        flowerN += 1;
+      }
+      // a support pole for the tall climbing crops
+      if (h.tall >= 2.2) {
+        dummy.position.set(p.x + size * 0.3, 0.18, p.z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(1, H * 1.18, 1);
+        dummy.updateMatrix();
+        poles.setMatrixAt(poleN, dummy.matrix);
+        poleN += 1;
       }
       // fruit: as many as were counted, up to what the scene can draw
       if (!p.latest) return;
@@ -190,9 +225,12 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
         }
       }
     });
-    leaf.count = leafN;
-    leaf.instanceMatrix.needsUpdate = true;
-    if (leaf.instanceColor) leaf.instanceColor.needsUpdate = true;
+    leafMeshes.forEach((m) => { m.count = m.userData.i; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+    flowers.count = flowerN;
+    flowers.instanceMatrix.needsUpdate = true;
+    if (flowers.instanceColor) flowers.instanceColor.needsUpdate = true;
+    poles.count = poleN;
+    poles.instanceMatrix.needsUpdate = true;
     stem.instanceMatrix.needsUpdate = true;
     proxy.instanceMatrix.needsUpdate = true;
     const fruitMeshes = [];
@@ -208,7 +246,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     });
     plants.forEach((p, i) => { dummy.position.set(p.x, 0.2, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); ringsMesh.setMatrixAt(i, dummy.matrix); });
     ringsMesh.instanceMatrix.needsUpdate = true;
-    scene.add(stem, leaf, proxy, ringsMesh, ...fruitMeshes);
+    scene.add(stem, ...leafMeshes, flowers, poles, proxy, ringsMesh, ...fruitMeshes);
 
     // selection ring
     const ring = new THREE.Mesh(own(new THREE.TorusGeometry(size * 1.6, size * 0.12, 8, 28)), own(new THREE.MeshBasicMaterial({ color: '#1565C0' })));
@@ -296,6 +334,46 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       controls.target.lerpVectors(tween.ft, tween.tt, k);
       if (tween.t >= 1) tween = null;
     };
+    const sph = new THREE.Spherical();
+    const off = new THREE.Vector3();
+    const orbit = (dTheta, dPhi, zoom) => {
+      off.copy(camera.position).sub(controls.target);
+      sph.setFromVector3(off);
+      sph.theta += dTheta;
+      sph.phi = Math.min(controls.maxPolarAngle, Math.max(0.08, sph.phi + dPhi));
+      sph.radius = Math.min(controls.maxDistance, Math.max(controls.minDistance, sph.radius * zoom));
+      off.setFromSpherical(sph);
+      camera.position.copy(controls.target).add(off);
+    };
+    const panBy = (right, forward) => {
+      const f = new THREE.Vector3();
+      camera.getWorldDirection(f);
+      f.y = 0;
+      f.normalize();
+      const r = new THREE.Vector3().crossVectors(f, new THREE.Vector3(0, 1, 0)).normalize();
+      const d = new THREE.Vector3().addScaledVector(r, right).addScaledVector(f, forward);
+      const nt = controls.target.clone().add(d);
+      nt.x = Math.min(spanX, Math.max(0, nt.x));
+      nt.z = Math.min(spanZ, Math.max(0, nt.z));
+      d.copy(nt).sub(controls.target);
+      controls.target.add(d);
+      camera.position.add(d);
+    };
+    const step = Math.max(0.6, reach * 0.04);
+    api.current.act = (name) => {
+      tween = null;
+      if (name === 'left') orbit(-0.12, 0, 1);
+      else if (name === 'right') orbit(0.12, 0, 1);
+      else if (name === 'up') orbit(0, -0.08, 1);
+      else if (name === 'down') orbit(0, 0.08, 1);
+      else if (name === 'in') orbit(0, 0, 0.9);
+      else if (name === 'out') orbit(0, 0, 1.1);
+      else if (name === 'pan-left') panBy(-step, 0);
+      else if (name === 'pan-right') panBy(step, 0);
+      else if (name === 'pan-forward') panBy(0, step);
+      else if (name === 'pan-back') panBy(0, -step);
+    };
+    api.current.autoRotate = (on) => { controls.autoRotate = !!on; };
     api.current.paint = (by, sel) => {
       plants.forEach((p, i) => ringsMesh.setColorAt(i, tmpColor.set(markerColor(p, by, max))));
       if (ringsMesh.instanceColor) ringsMesh.instanceColor.needsUpdate = true;
@@ -315,7 +393,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       renderer.domElement.removeEventListener('pointerleave', onLeave);
       tip.remove();
       controls.dispose();
-      [leaf, stem, proxy, ringsMesh, ...fruitMeshes].forEach((m) => m.dispose());
+      [...leafMeshes, flowers, poles, stem, proxy, ringsMesh, ...fruitMeshes].forEach((m) => m.dispose());
       disposables.forEach((d) => d.dispose?.());
       renderer.dispose();
       renderer.domElement.remove();
@@ -334,6 +412,44 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusKey]);
 
+  const [spin, setSpin] = useState(false);
+  useEffect(() => { api.current.autoRotate?.(spin); }, [spin, layout]);
+  const hold = useRef(null);
+  const fire = (name) => api.current.act?.(name);
+  const press = (name) => (e) => { e.preventDefault(); fire(name); clearInterval(hold.current); hold.current = setInterval(() => fire(name), 60); };
+  const release = () => clearInterval(hold.current);
+  useEffect(() => release, []);
+  const KEYS = { ArrowLeft: 'pan-left', ArrowRight: 'pan-right', ArrowUp: 'pan-forward', ArrowDown: 'pan-back', a: 'pan-left', d: 'pan-right', w: 'pan-forward', s: 'pan-back', q: 'left', e: 'right', r: 'up', f: 'down', '+': 'in', '=': 'in', '-': 'out' };
+  const onKey = (e) => { const a = KEYS[e.key]; if (a) { e.preventDefault(); fire(a); } };
+  const fullscreen = () => { const el = mount.current; if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen?.(); };
+  const Btn = ({ name, icon, label, cls = '' }) => (
+    <button type="button" className={`gh-ctl-btn ${cls}`} aria-label={label} title={label} onPointerDown={press(name)} onPointerUp={release} onPointerLeave={release} onPointerCancel={release}><i className={`fas ${icon}`} /></button>
+  );
+
   if (failed) return null;
-  return <div ref={mount} className="gh-scene" style={{ height }} role="img" aria-label="3D view of the greenhouse. Use the plan view for a list you can use with the keyboard." />;
+  return (
+    <div ref={mount} className="gh-scene" style={{ height }} tabIndex={0} onKeyDown={onKey} role="application" aria-label="3D view of the greenhouse. Arrow keys or W A S D move, Q and E turn, R and F tilt, plus and minus zoom. Use the plan view for a list.">
+      <div className="gh-ctl" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="gh-ctl-group" aria-label="Move">
+          <Btn name="pan-forward" icon="fa-chevron-up" label="Move forward" cls="n" />
+          <Btn name="pan-left" icon="fa-chevron-left" label="Move left" cls="w" />
+          <Btn name="pan-right" icon="fa-chevron-right" label="Move right" cls="e" />
+          <Btn name="pan-back" icon="fa-chevron-down" label="Move back" cls="s" />
+          <span className="gh-ctl-hub"><i className="fas fa-up-down-left-right" /></span>
+        </div>
+        <div className="gh-ctl-row">
+          <Btn name="left" icon="fa-rotate-left" label="Turn left" />
+          <Btn name="right" icon="fa-rotate-right" label="Turn right" />
+          <Btn name="up" icon="fa-arrows-up-to-line" label="Look from higher" />
+          <Btn name="down" icon="fa-arrows-down-to-line" label="Look from lower" />
+        </div>
+        <div className="gh-ctl-row">
+          <Btn name="in" icon="fa-magnifying-glass-plus" label="Zoom in" />
+          <Btn name="out" icon="fa-magnifying-glass-minus" label="Zoom out" />
+          <button type="button" className={`gh-ctl-btn ${spin ? 'on' : ''}`} aria-pressed={spin} aria-label="Turn the greenhouse slowly" title="Turn slowly" onClick={() => setSpin((v) => !v)}><i className="fas fa-sync" /></button>
+          <button type="button" className="gh-ctl-btn" aria-label="Full screen" title="Full screen" onClick={fullscreen}><i className="fas fa-expand" /></button>
+        </div>
+      </div>
+    </div>
+  );
 }

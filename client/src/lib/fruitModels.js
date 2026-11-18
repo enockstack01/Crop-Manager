@@ -222,3 +222,61 @@ export function rng(seed) {
   let s = (seed * 2654435761) >>> 0;
   return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
+
+
+/* ---- leaves: one geometry per leaf type, each about 1 unit long pointing +z, with a petiole and a fold along the mid-rib ---- */
+function bladeShape(pts) {
+  const sh = new THREE.Shape();
+  pts.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y)));
+  sh.closePath();
+  return sh;
+}
+function leaflet(len, wid, serr = 0, pos = [0, 0, 0], yaw = 0) {
+  const N = 14;
+  const side = [];
+  for (let i = 0; i <= N; i += 1) {
+    const t = i / N;
+    const w = wid * Math.sin(Math.PI * t ** 0.75) * (1 + serr * 0.3 * Math.sin(t * Math.PI * 12));
+    side.push([w, t * len]);
+  }
+  const pts = [...side, ...side.slice().reverse().map(([x, y]) => [-x, y])];
+  const g = new THREE.ShapeGeometry(bladeShape(pts), 3);
+  g.rotateX(Math.PI / 2); // flat, pointing +z
+  const a = g.attributes.position;
+  for (let i = 0; i < a.count; i += 1) a.setY(i, Math.abs(a.getX(i)) * 0.3 - a.getZ(i) * 0.1);
+  g.rotateY(yaw);
+  g.translate(...pos);
+  return g;
+}
+const stalk = (len, w = 0.018, z0 = 0) => { const b = new THREE.BoxGeometry(w, w, len); b.translate(0, 0, z0 + len / 2); return b; };
+
+const LEAVES = {
+  // tomato: a compound leaf, a mid-rib with pairs of toothed leaflets and one at the tip
+  compound: () => merge([stalk(1, 0.02), ...[0.3, 0.52, 0.74].flatMap((t) => [leaflet(0.3, 0.1, 1, [0, 0, t], 1.0), leaflet(0.3, 0.1, 1, [0, 0, t], -1.0)]), leaflet(0.34, 0.12, 1, [0, 0, 0.82], 0)]),
+  // cucumber, zucchini, melon: one big five-lobed blade on a long stalk
+  lobed: () => {
+    const pts = [];
+    for (let a = -150; a <= 150; a += 6) { const r = 0.5 * (0.7 + 0.3 * Math.abs(Math.cos((a * Math.PI) / 180 * 2.5))); const q = (a * Math.PI) / 180; pts.push([r * Math.sin(q), r * Math.cos(q)]); }
+    const g = new THREE.ShapeGeometry(bladeShape(pts), 3);
+    g.rotateX(Math.PI / 2);
+    const a = g.attributes.position;
+    for (let i = 0; i < a.count; i += 1) a.setY(i, Math.hypot(a.getX(i), a.getZ(i)) * 0.18 - a.getZ(i) * 0.05);
+    g.translate(0, 0, 0.5);
+    return merge([stalk(0.5, 0.02), g]);
+  },
+  // pepper, eggplant: a simple oval blade
+  oval: () => merge([stalk(0.2, 0.02), leaflet(0.8, 0.26, 0, [0, 0, 0.2])]),
+  // bean, strawberry: three toothed leaflets
+  trifoliate: () => merge([stalk(0.45, 0.02), leaflet(0.5, 0.17, 1, [0, 0, 0.45], 0), leaflet(0.42, 0.15, 1, [0, 0, 0.45], 0.95), leaflet(0.42, 0.15, 1, [0, 0, 0.45], -0.95)]),
+};
+export const LEAF_KIND = { cherry_tomato: 'compound', tomato: 'compound', cucumber: 'lobed', zucchini: 'lobed', melon: 'lobed', sweet_pepper: 'oval', hot_pepper: 'oval', eggplant: 'oval', green_beans: 'trifoliate', strawberry: 'trifoliate' };
+export const leafKindOf = (key) => LEAF_KIND[key] || 'oval';
+const leafCache = {};
+export const leafKind = (kind) => (leafCache[kind] ||= LEAVES[kind]());
+export const FLOWER_COLOR = { cherry_tomato: '#FDD835', tomato: '#FDD835', sweet_pepper: '#FAFAFA', hot_pepper: '#FAFAFA', cucumber: '#FDD835', eggplant: '#B39DDB', strawberry: '#FFFFFF', zucchini: '#FFB300', melon: '#FDD835', green_beans: '#F8BBD0', custom: '#FDD835' };
+export const flowerGeometry = () => {
+  const parts = [];
+  for (let i = 0; i < 5; i += 1) { const pt = new THREE.SphereGeometry(0.5, 6, 4); pt.scale(0.55, 0.16, 0.9); pt.translate(0, 0, 0.55); pt.rotateY((i / 5) * Math.PI * 2); parts.push(pt); }
+  const c = new THREE.SphereGeometry(0.28, 6, 4); parts.push(c);
+  return merge(parts);
+};
