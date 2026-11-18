@@ -112,6 +112,7 @@ export async function buildLayout(userId, h) {
     GreenhouseCrop.find({ user_id: userId }).lean(),
   ]);
   const cropName = new Map(crops.map((c) => [String(c._id), c.name]));
+  const cropKey = new Map(crops.map((c) => [String(c._id), c.catalog_key]));
   const latest = new Map();
   const total = new Map();
   for (const c of counts) {
@@ -138,7 +139,7 @@ export async function buildLayout(userId, h) {
       plants.push({
         row: r, plant: p, row_id, plant_label,
         x: Math.round((p - 0.5) * plantSpacing * 100) / 100, z: Math.round((r - 0.5) * rowSpacing * 100) / 100,
-        crop_id: cropId || null, crop_name: cropName.get(cropId) || null,
+        crop_id: cropId || null, crop_name: cropName.get(cropId) || null, crop_key: cropKey.get(cropId) || 'custom',
         latest: c ? {
           id: String(c._id), count_date: c.count_date, recorded_count: c.recorded_count, status: c.verification?.status || 'not_checked',
           detected: c.verification?.detected ?? null, health: healthOf(c.verification?.health), photo_url: c.photo_url, annotated_url: c.annotated_url || null, records: total.get(`${row_id}|${plant_label}`),

@@ -78,6 +78,7 @@ def new_samples(split):
     return out
 
 
+OLD_TRAIN_CAP = 3 if SMOKE else 70  # old photos per class kept in the mix when warm starting
 warm_path = next(iter(glob.glob(str(IN / '**' / 'model.pt'), recursive=True)), None)
 cap = OLD_TRAIN_CAP if warm_path else 120
 train_s = old_samples('train', cap) + new_samples('train')

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { markerColor, webglAvailable } from '../lib/greenhouseColors.js';
+import { fruitModel, habitOf, leafGeometry, rng } from '../lib/fruitModels.js';
 
 /*
  * The 3D greenhouse: the house, a bed for every row, and a plant on every place of the layout. A plant's fruit marker is coloured by the
@@ -110,25 +111,104 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       scene.add(label);
     }
 
-    // the plants: foliage (green), and a fruit marker above it
+    // the plants: a stem, leaves, the fruit that were counted (shaped and coloured like the real crop) and a status ring on the bed
     const n = plants.length;
     const size = Math.max(0.12, Math.min(unit * 0.38, 0.55));
-    const leafGeo = own(new THREE.IcosahedronGeometry(size, 1));
-    const leaf = new THREE.InstancedMesh(leafGeo, own(new THREE.MeshStandardMaterial({ color: '#43A047', roughness: 0.9, flatShading: true })), n);
-    const fruitGeo = own(new THREE.SphereGeometry(size * 0.7, 14, 10));
-    const fruit = new THREE.InstancedMesh(fruitGeo, own(new THREE.MeshStandardMaterial({ roughness: 0.45 })), n);
-    const stemGeo = own(new THREE.CylinderGeometry(size * 0.08, size * 0.08, size * 2.2, 6));
-    const stem = new THREE.InstancedMesh(stemGeo, own(new THREE.MeshStandardMaterial({ color: '#33691E' })), n);
-    const m4 = new THREE.Matrix4();
     const max = Math.max(1, ...plants.map((p) => p.latest?.recorded_count || 0));
+    const dummy = new THREE.Object3D();
+    const tmpColor = new THREE.Color();
+    const fruitCap = n <= 150 ? 18 : n <= 600 ? 10 : n <= 1500 ? 6 : 3;
+    const LEAF_GREENS = ['#2E7D32', '#388E3C', '#43A047', '#1B5E20', '#4CAF50'];
+
+    const stem = new THREE.InstancedMesh(own(new THREE.CylinderGeometry(size * 0.07, size * 0.1, 1, 6).translate(0, 0.5, 0)), own(new THREE.MeshStandardMaterial({ color: '#4E7D2A', roughness: 0.9 })), n);
+    const leavesPer = Math.max(...plants.map((p) => habitOf(p.crop_key).leaves));
+    const leaf = new THREE.InstancedMesh(own(leafGeometry()), own(new THREE.MeshStandardMaterial({ roughness: 0.75, side: THREE.DoubleSide })), n * leavesPer);
+    const proxy = new THREE.InstancedMesh(own(new THREE.CylinderGeometry(size * 1.15, size * 1.15, 1, 8).translate(0, 0.5, 0)), own(new THREE.MeshBasicMaterial({ visible: false })), n);
+    const ringsMesh = new THREE.InstancedMesh(own(new THREE.TorusGeometry(size * 1.35, size * 0.12, 8, 24).rotateX(Math.PI / 2)), own(new THREE.MeshBasicMaterial({ color: '#ffffff' })), n);
+
+    let leafN = 0;
+    const byCrop = new Map(); // fruit model -> list of { m: matrix, color }
     plants.forEach((p, i) => {
-      const grow = 0.75 + Math.min(0.6, (p.latest?.recorded_count || 0) / Math.max(1, max) * 0.6);
-      m4.compose(new THREE.Vector3(p.x, 0.18 + size * 1.1, p.z), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
-      stem.setMatrixAt(i, m4);
-      m4.compose(new THREE.Vector3(p.x, 0.18 + size * 2.3, p.z), new THREE.Quaternion(), new THREE.Vector3(grow, grow * 0.9, grow));
-      leaf.setMatrixAt(i, m4);
+      const h = habitOf(p.crop_key);
+      const rnd = rng(i * 131 + p.row * 17 + p.plant);
+      const H = h.tall * size * 0.85;
+      dummy.position.set(p.x, 0.18, p.z);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, H, 1);
+      dummy.updateMatrix();
+      stem.setMatrixAt(i, dummy.matrix);
+      dummy.scale.set(1, Math.max(H, size * 1.4), 1);
+      dummy.updateMatrix();
+      proxy.setMatrixAt(i, dummy.matrix);
+      // leaves spiral up the stem, the lower ones longer
+      const reach = size * 1.05 * h.spread;
+      for (let l = 0; l < h.leaves; l += 1) {
+        const f = 0.12 + (l / h.leaves) * 0.85;
+        dummy.position.set(p.x, 0.18 + H * f, p.z);
+        dummy.rotation.set(-(0.15 + 0.5 * f + rnd() * 0.25), l * 2.399 + rnd() * 0.6, 0, 'YXZ');
+        const len = reach * (1.15 - 0.45 * f) * (0.85 + rnd() * 0.3);
+        dummy.scale.set(len, len, len);
+        dummy.updateMatrix();
+        leaf.setMatrixAt(leafN, dummy.matrix);
+        leaf.setColorAt(leafN, tmpColor.set(LEAF_GREENS[Math.floor(rnd() * LEAF_GREENS.length)]).multiplyScalar(0.85 + rnd() * 0.3));
+        leafN += 1;
+      }
+      // fruit: as many as were counted, up to what the scene can draw
+      if (!p.latest) return;
+      const shown = Math.min(p.latest.recorded_count, h.cluster === 1 ? Math.min(fruitCap, 8) : fruitCap, p.crop_key === 'melon' ? 3 : 99);
+      if (!shown) return;
+      const model = fruitModel(p.crop_key);
+      if (!byCrop.has(model)) byCrop.set(model, []);
+      const list = byCrop.get(model);
+      const fs = size * h.fruitSize;
+      let k = 0;
+      while (k < shown) {
+        // fruit come in trusses (tomato, strawberry, beans) or alone (pepper, cucumber...)
+        const inGroup = Math.min(h.cluster, shown - k);
+        const ang = rnd() * Math.PI * 2;
+        const rad = reach * (0.35 + rnd() * 0.5);
+        const yf = h.zone[0] + rnd() * (h.zone[1] - h.zone[0]);
+        for (let c = 0; c < inGroup; c += 1) {
+          const jitter = fs * 0.55;
+          const x = p.x + Math.cos(ang) * rad + (rnd() - 0.5) * jitter * 2;
+          const z = p.z + Math.sin(ang) * rad + (rnd() - 0.5) * jitter * 2;
+          const s = fs * (0.85 + rnd() * 0.3);
+          let y;
+          if (model.hang) {
+            y = 0.18 + H * yf - c * fs * 0.25 - s * 0.1;
+            dummy.rotation.set((rnd() - 0.5) * 0.3, rnd() * Math.PI * 2, (rnd() - 0.5) * 0.3);
+          } else {
+            // fruit that lie on the bed (zucchini, melon)
+            y = 0.18 + s * (p.crop_key === 'melon' ? 0.5 : 0.17);
+            dummy.rotation.set(p.crop_key === 'melon' ? 0 : Math.PI / 2, rnd() * Math.PI * 2, 0, 'YXZ');
+          }
+          dummy.position.set(x, y, z);
+          dummy.scale.set(s, s, s);
+          dummy.updateMatrix();
+          list.push({ m: dummy.matrix.clone(), color: model.palette[Math.floor(rnd() * model.palette.length)] });
+          k += 1;
+        }
+      }
     });
-    scene.add(stem, leaf, fruit);
+    leaf.count = leafN;
+    leaf.instanceMatrix.needsUpdate = true;
+    if (leaf.instanceColor) leaf.instanceColor.needsUpdate = true;
+    stem.instanceMatrix.needsUpdate = true;
+    proxy.instanceMatrix.needsUpdate = true;
+    const fruitMeshes = [];
+    byCrop.forEach((list, model) => {
+      const cnt = list.length;
+      const body = new THREE.InstancedMesh(model.body, own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.02 })), cnt);
+      const cap = new THREE.InstancedMesh(model.cap, own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 })), cnt);
+      list.forEach((f, j) => { body.setMatrixAt(j, f.m); cap.setMatrixAt(j, f.m); body.setColorAt(j, tmpColor.set(f.color)); });
+      body.instanceMatrix.needsUpdate = true;
+      cap.instanceMatrix.needsUpdate = true;
+      if (body.instanceColor) body.instanceColor.needsUpdate = true;
+      fruitMeshes.push(body, cap);
+    });
+    plants.forEach((p, i) => { dummy.position.set(p.x, 0.2, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); ringsMesh.setMatrixAt(i, dummy.matrix); });
+    ringsMesh.instanceMatrix.needsUpdate = true;
+    scene.add(stem, leaf, proxy, ringsMesh, ...fruitMeshes);
 
     // selection ring
     const ring = new THREE.Mesh(own(new THREE.TorusGeometry(size * 1.6, size * 0.12, 8, 28)), own(new THREE.MeshBasicMaterial({ color: '#1565C0' })));
@@ -143,7 +223,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       const r = renderer.domElement.getBoundingClientRect();
       ptr.set(((ev.clientX - r.left) / r.width) * 2 - 1, -(((ev.clientY - r.top) / r.height) * 2 - 1));
       ray.setFromCamera(ptr, camera);
-      const hit = ray.intersectObjects([fruit, leaf], false)[0];
+      const hit = ray.intersectObject(proxy, false)[0];
       return hit && hit.instanceId !== undefined ? plants[hit.instanceId] : null;
     };
     const onDown = (e) => { down = { x: e.clientX, y: e.clientY }; };
@@ -201,7 +281,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
 
     let tween = null;
     const flyTo = (pos, target) => { tween = { t: 0, fp: camera.position.clone(), ft: controls.target.clone(), tp: new THREE.Vector3(...pos), tt: new THREE.Vector3(...target) }; };
-    api.current = { plants, fruit, ring, size, max, scene, camera, renderer, controls, el };
+    api.current = { plants, ring, size, max, scene, camera, renderer, controls, el };
     api.current.setView = (name) => {
       if (name === 'top') flyTo([spanX / 2, reach * 0.8, spanZ / 2 + 0.01], [spanX / 2, 0, spanZ / 2]);
       else if (name === 'side') flyTo([spanX / 2, reach * 0.18, spanZ / 2 + reach * 0.9], [spanX / 2, 0.5, spanZ / 2]);
@@ -217,16 +297,8 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       if (tween.t >= 1) tween = null;
     };
     api.current.paint = (by, sel) => {
-      const c = new THREE.Color();
-      plants.forEach((p, i) => {
-        c.set(markerColor(p, by, max));
-        fruit.setColorAt(i, c);
-        const s = p.latest ? 0.8 + Math.min(1, Math.sqrt(p.latest.recorded_count / Math.max(1, max))) * 1.1 : 0.6;
-        m4.compose(new THREE.Vector3(p.x + size * 0.45, 0.18 + size * 3.1, p.z), new THREE.Quaternion(), new THREE.Vector3(s, s, s));
-        fruit.setMatrixAt(i, m4);
-      });
-      fruit.instanceMatrix.needsUpdate = true;
-      if (fruit.instanceColor) fruit.instanceColor.needsUpdate = true;
+      plants.forEach((p, i) => ringsMesh.setColorAt(i, tmpColor.set(markerColor(p, by, max))));
+      if (ringsMesh.instanceColor) ringsMesh.instanceColor.needsUpdate = true;
       const p = sel && plants.find((x) => x.row === sel.row && x.plant === sel.plant);
       ring.visible = !!p;
       if (p) ring.position.set(p.x, 0.22, p.z);
@@ -243,7 +315,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       renderer.domElement.removeEventListener('pointerleave', onLeave);
       tip.remove();
       controls.dispose();
-      [leaf, fruit, stem].forEach((m) => m.dispose());
+      [leaf, stem, proxy, ringsMesh, ...fruitMeshes].forEach((m) => m.dispose());
       disposables.forEach((d) => d.dispose?.());
       renderer.dispose();
       renderer.domElement.remove();
