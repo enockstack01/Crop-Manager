@@ -181,16 +181,16 @@ MODELS.custom = () => MODELS.tomato();
 
 /** The plant's habit: how tall the stem is, how wide the leaves spread, where fruit hang, how many leaves, and the fruit's size relative to the plant. */
 export const HABIT = {
-  cherry_tomato: { tall: 3.2, spread: 0.9, fruitSize: 0.34, cluster: 5, leaves: 7, zone: [0.35, 0.9] },
-  tomato: { tall: 3.2, spread: 1.0, fruitSize: 0.55, cluster: 3, leaves: 7, zone: [0.3, 0.85] },
+  cherry_tomato: { tall: 3.2, spread: 0.9, fruitSize: 0.55, cluster: 5, leaves: 7, zone: [0.35, 0.9] },
+  tomato: { tall: 3.2, spread: 1.0, fruitSize: 0.85, cluster: 3, leaves: 7, zone: [0.3, 0.85] },
   sweet_pepper: { tall: 2.3, spread: 0.95, fruitSize: 0.75, cluster: 1, leaves: 7, zone: [0.35, 0.85] },
-  hot_pepper: { tall: 2.0, spread: 0.85, fruitSize: 0.6, cluster: 2, leaves: 7, zone: [0.35, 0.85] },
+  hot_pepper: { tall: 2.0, spread: 0.85, fruitSize: 0.95, cluster: 2, leaves: 7, zone: [0.35, 0.85] },
   cucumber: { tall: 3.4, spread: 0.8, fruitSize: 1.1, cluster: 1, leaves: 8, zone: [0.25, 0.8] },
   eggplant: { tall: 2.2, spread: 1.0, fruitSize: 0.8, cluster: 1, leaves: 6, zone: [0.3, 0.8] },
-  strawberry: { tall: 0.9, spread: 1.1, fruitSize: 0.32, cluster: 3, leaves: 8, zone: [0.1, 0.45] },
+  strawberry: { tall: 0.9, spread: 1.1, fruitSize: 0.55, cluster: 3, leaves: 8, zone: [0.1, 0.45] },
   zucchini: { tall: 1.2, spread: 1.3, fruitSize: 1.2, cluster: 1, leaves: 6, zone: [0.05, 0.35] },
   melon: { tall: 0.9, spread: 1.4, fruitSize: 1.1, cluster: 1, leaves: 6, zone: [0.02, 0.2] },
-  green_beans: { tall: 2.8, spread: 0.7, fruitSize: 0.9, cluster: 3, leaves: 7, zone: [0.3, 0.8] },
+  green_beans: { tall: 2.8, spread: 0.7, fruitSize: 1.2, cluster: 3, leaves: 7, zone: [0.3, 0.8] },
   custom: { tall: 2.4, spread: 1.0, fruitSize: 0.5, cluster: 3, leaves: 7, zone: [0.3, 0.85] },
 };
 export const habitOf = (key) => HABIT[key] || HABIT.custom;
