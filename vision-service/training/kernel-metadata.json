@@ -13,7 +13,10 @@
     "jantyc/field-cucumber-object-detection-yolo-format",
     "zidanealdanifr/melon-detection",
     "nexuswho/tomatod",
-    "lemontyc/sweet-pepper"
+    "lemontyc/sweet-pepper",
+    "rezeliet/yolo-vegetable-dataset",
+    "shuvokumarbasak2030/chili-pepper-multi-source-dataset-bd",
+    "mahyeks/multi-class-strawberry-ripeness-detection-dataset"
   ],
   "competition_sources": [],
   "kernel_sources": [],

@@ -1,0 +1,20 @@
+{
+  "id": "enocknshimiyimana/greenhouse-box-explore3",
+  "title": "Greenhouse box explore3",
+  "code_file": "explore3.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [
+    "shuvokumarbasak2030/chili-pepper-multi-source-dataset-bd",
+    "rezeliet/yolo-vegetable-dataset",
+    "trainingdatapro/ripe-strawberries-detection",
+    "mahyeks/multi-class-strawberry-ripeness-detection-dataset"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

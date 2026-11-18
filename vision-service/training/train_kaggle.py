@@ -19,11 +19,11 @@ from PIL import Image
 
 IN = Path('/kaggle/input')
 OUT = Path('/kaggle/working/data')
-CLASSES = ['tomato', 'sweet_pepper', 'hot_pepper', 'cucumber', 'eggplant', 'strawberry', 'zucchini', 'melon', 'green_bean']
+CLASSES = ['tomato', 'sweet_pepper', 'hot_pepper', 'cucumber', 'eggplant', 'strawberry', 'melon']  # zucchini and green bean were dropped from the scope
 CID = {c: i for i, c in enumerate(CLASSES)}
 # LVIS class id -> our class
 LVIS = {8: 'sweet_pepper', 20: 'hot_pepper', 16: 'hot_pepper', 24: 'cucumber', 26: 'eggplant', 30: 'strawberry', 57: 'strawberry',
-        35: 'tomato', 59: 'tomato', 41: 'melon', 13: 'melon', 33: 'green_bean', 62: 'zucchini'}
+        35: 'tomato', 59: 'tomato', 41: 'melon', 13: 'melon'}
 random.seed(7)
 items = []  # (image path, [(class name, cx, cy, w, h)], source)
 
@@ -137,7 +137,25 @@ def via(root, src, cls):
     print(src, 'images with boxes:', n, flush=True)
 
 
+VEG = {2: 'eggplant', 4: 'sweet_pepper', 7: 'cucumber', 12: 'tomato'}  # rezeliet/yolo-vegetable-dataset: Brinjal, Capsicum, Cucumber, Toomato
+
+
+def capped(fn, cap, src):
+    """Runs a loader but keeps at most `cap` of its images, so one big source cannot swamp the others."""
+    before = len(items)
+    fn()
+    new = items[before:]
+    if len(new) > cap:
+        random.shuffle(new)
+        del items[before:]
+        items.extend(new[:cap])
+        print(src, 'capped to', cap, flush=True)
+
+
 JOBS = [
+    ('yolo-vegetable', lambda r: yolo_txt(r, 'vegetable', lambda c: VEG.get(c))),
+    ('chili-pepper', lambda r: capped(lambda: yolo_txt(r / 'Chili_yolov11', 'chili', lambda c: 'hot_pepper') if (r / 'Chili_yolov11').exists() else None, 1800, 'chili')),
+    ('strawberry-ripeness', lambda r: yolo_txt(r, 'strawberry', lambda c: 'strawberry')),
     ('lvis-fruits', lambda r: yolo_txt(r, 'lvis', lambda c: LVIS.get(c))),
     ('cucumber', lambda r: yolo_txt(r, 'field-cucumber', lambda c: 'cucumber')),
     ('melon-detection', lambda r: yolo_txt(r, 'melon', lambda c: 'melon')),
@@ -155,7 +173,7 @@ for name, fn in JOBS:
 # split by source image so no image is in two sets: 85 / 10 / 5
 random.shuffle(items)
 n = len(items)
-cut = {'train': items[: int(n * .85)], 'val': items[int(n * .85): int(n * .95)], 'test': items[int(n * .95):]}
+cut = {'train': items[: int(n * .85)], 'val': items[int(n * .85): int(n * .92)], 'test': items[int(n * .92):]}
 percrop = {c: 0 for c in CLASSES}
 for split, rows in cut.items():
     (OUT / 'images' / split).mkdir(parents=True, exist_ok=True)
@@ -183,7 +201,7 @@ if n < 50:
 
 from ultralytics import YOLO
 
-hours = float(os.environ.get('TRAIN_HOURS', '6'))
+hours = float(os.environ.get('TRAIN_HOURS', '5'))
 m = YOLO('yolo11x.pt')
 m.train(data=str(OUT / 'data.yaml'), imgsz=800, epochs=60, time=hours, batch=8, project='/kaggle/working/runs', name='fruit',
         patience=15, workers=4, cache=False, plots=False)
@@ -194,5 +212,9 @@ res = {'map50': float(met.box.map50), 'map50_95': float(met.box.map),
        'per_class_map50': {CLASSES[int(c)]: float(v) for c, v in zip(met.box.ap_class_index, met.box.ap50)}}
 json.dump(res, open('/kaggle/working/test_results.json', 'w'))
 print('TEST', res, flush=True)
+# keep the test split so the old weights can be scored on exactly the same photos (replace only if every crop holds or improves)
+shutil.copytree(OUT / 'images' / 'test', '/kaggle/working/test_set/images')
+shutil.copytree(OUT / 'labels' / 'test', '/kaggle/working/test_set/labels')
+(Path('/kaggle/working/test_set') / 'classes.json').write_text(json.dumps(CLASSES))
 shutil.rmtree(OUT, ignore_errors=True)
 shutil.rmtree('/kaggle/working/runs', ignore_errors=True)

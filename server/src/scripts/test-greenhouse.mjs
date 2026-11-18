@@ -257,7 +257,10 @@ try {
   const tomatoCount = await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: cherry.id, greenhouse: 'Health House', row_id: 'R1', plant_label: 'P1', recorded_count: 2, photo_url: await realJpeg(A), count_date: today }));
   const th = tomatoCount.verification.health;
   ok(th && th.plant && ['sick', 'healthy', 'unsure'].includes(th.plant.status) && th.crop === 'Tomato', 'the whole photo is checked for disease with the classifier, for the crop', JSON.stringify(th));
-  ok(th.fruits === null && /trained on leaves/.test(th.fruit_note), 'for a crop whose fruit the classifier was not trained on it says so instead of judging single fruit');
+  ok(Array.isArray(th.fruits) && th.fruits.length === 2, 'tomato fruit are now known to the classifier, so each counted fruit is checked', JSON.stringify(th));
+  const apple = await json(await req(A, 'POST', '/api/greenhouse/crops', { name: 'Apple', fruit_colors: ['red'] }));
+  const ac = await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: apple.id, greenhouse: 'Health House', row_id: 'R1', plant_label: 'P3', recorded_count: 2, photo_url: await realJpeg(A), count_date: today }));
+  ok(ac.verification.health.fruits === null && /trained on leaves/.test(ac.verification.health.fruit_note), 'for a crop whose fruit the classifier was not trained on it says so instead of judging single fruit', JSON.stringify(ac.verification.health));
   const banana = await json(await req(A, 'POST', '/api/greenhouse/crops', { name: 'Banana', fruit_colors: ['yellow'] }));
   const bc = await json(await req(A, 'POST', '/api/greenhouse/counts', { crop_id: banana.id, greenhouse: 'Health House', row_id: 'R1', plant_label: 'P2', recorded_count: 2, photo_url: await realJpeg(A), count_date: today }));
   const bh = bc.verification.health;
