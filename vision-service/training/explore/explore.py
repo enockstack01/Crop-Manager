@@ -10,5 +10,5 @@ for ds in sorted(p for p in IN.glob('*/*') if p.is_dir()) or sorted(IN.glob('*')
             counts[str(Path(root).relative_to(ds))] = n
     tot = sum(counts.values())
     print('images:', tot, 'folders with images:', len(counts), flush=True)
-    for k, v in sorted(counts.items())[:60]:
+    for k, v in sorted(counts.items())[:70]:
         print(f'  {v:6d}  {k}', flush=True)

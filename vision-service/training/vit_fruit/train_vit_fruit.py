@@ -7,7 +7,7 @@ Warm start: if the earlier fine-tuned weights (/kaggle/input/crop-vit-large-fine
 is widened (the old 229 rows are kept), then everything is trained a little with old and new photos mixed so the old classes are not
 forgotten. Otherwise it starts from the base ViT-Large like the first run did. Prints the old-class accuracy next to the earlier 90.8%.
 
-Reads /kaggle/input/** (the old pack and the fruit datasets); writes /kaggle/working/{model.pt, classes.json, new_classes.json,
+Reads /kaggle/input/** (the old pack, the earlier weights and the prepared fruit photos from kernel greenhouse-fruit-data); writes /kaggle/working/{model.pt, classes.json, new_classes.json,
 meta.json, history.json, per_class.json, data_report.json, train.log}.
 """
 import glob
@@ -15,7 +15,6 @@ import json
 import math
 import os
 import random
-import re
 import shutil
 import time
 from datetime import datetime
@@ -29,7 +28,7 @@ from torchvision import transforms
 from transformers import ViTConfig, ViTForImageClassification
 
 T0 = time.time()
-SMOKE = True  # first run: a tiny pass through every step to prove the script works; set to False for the real run
+SMOKE = False  # True: a tiny pass through every step to prove the script works
 OUT = Path(os.environ.get('OUT_DIR', '/kaggle/working'))
 OUT.mkdir(parents=True, exist_ok=True)
 IN = Path('/kaggle/input')
@@ -44,111 +43,17 @@ def log(*a):
     LOG.write(msg + '\n')
 
 
-# ------------------------------------------------------------------ the new fruit classes and where their photos come from
-# (crop, disease, healthy, [(dataset folder name fragment, regex the photo folder path must match), ...])
-FRUIT = [
-    ('Tomato', 'Healthy fruit', True, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/healthy$'), ('tomato-leaf-and-fruit', r'Raw Dataset/Healthy Fruits$'), ('fruit-and-vegetable-disease-healthy-vs-rotten', r'Tomato__Healthy$'), ('vegetable-image-dataset', r'train/Tomato$')]),
-    ('Tomato', 'Fruit anthracnose', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/anthracnose$')]),
-    ('Tomato', 'Fruit late blight', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/blight$')]),
-    ('Tomato', 'Blossom end rot', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/blossom$')]),
-    ('Tomato', 'Buckeye rot', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/buck$')]),
-    ('Tomato', 'Catfacing', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/catfaced$')]),
-    ('Tomato', 'Fruit cracking', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/crack$')]),
-    ('Tomato', 'Fruit mold', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/mold$')]),
-    ('Tomato', 'Fruit spot', False, [('tomato-disease-dataset-both-leaf-and-fruit', r'Fruit/spot$'), ('tomato-leaf-and-fruit', r'Raw Dataset/Target Spot Fruits$')]),
-    ('Tomato', 'Rotten fruit', False, [('fruit-and-vegetable-disease-healthy-vs-rotten', r'Tomato__Rotten$')]),
-    ('Bell pepper', 'Healthy fruit', True, [('fruit-and-vegetable-disease-healthy-vs-rotten', r'Bellpepper__Healthy$'), ('high-quality-crop-disease', r'Bellpepper__Healthy$'), ('vegetable-image-dataset', r'train/Capsicum$')]),
-    ('Bell pepper', 'Rotten fruit', False, [('fruit-and-vegetable-disease-healthy-vs-rotten', r'Bellpepper__Rotten$'), ('high-quality-crop-disease', r'Bellpepper__Rotten$')]),
-    ('Chilli', 'Healthy fruit', True, [('chili-pepper-cleaned', r'Healthy$'), ('fruit-and-vegetable-image-recognition', r'train/chilli pepper$')]),
-    ('Chilli', 'Fruit anthracnose', False, [('chili-pepper-cleaned', r'Anthracnose$')]),
-    ('Cucumber', 'Healthy fruit', True, [('cucumber-disease-recognition', r'Original Image/Original Image/Fresh Cucumber$'), ('fruit-and-vegetable-disease-healthy-vs-rotten', r'Cucumber__Healthy$'), ('high-quality-crop-disease', r'Cucumber__healthy$')]),
-    ('Cucumber', 'Belly rot', False, [('cucumber-disease-recognition', r'Original Image/Original Image/Belly Rot$')]),
-    ('Cucumber', 'Pythium fruit rot', False, [('cucumber-disease-recognition', r'Original Image/Original Image/Pythium Fruit Rot$')]),
-    ('Cucumber', 'Rotten fruit', False, [('fruit-and-vegetable-disease-healthy-vs-rotten', r'Cucumber__Rotten$'), ('high-quality-crop-disease', r'Cucumber__Rotten$')]),
-    ('Eggplant', 'Healthy fruit', True, [('brinjal-dataset', r'Healty Brinjal$'), ('fruit-and-vegetable-image-recognition', r'train/eggplant$')]),
-    ('Eggplant', 'Fruit cracking', False, [('brinjal-dataset', r'Brinjal Fruit Creaking$')]),
-    ('Eggplant', 'Phomopsis blight', False, [('brinjal-dataset', r'Phomopsis Bright$')]),
-    ('Eggplant', 'Shoot and fruit borer', False, [('brinjal-dataset', r'Shoot and Fruit Borer$')]),
-    ('Eggplant', 'Wet rot', False, [('brinjal-dataset', r'Wet Rot$')]),
-    ('Strawberry', 'Healthy fruit', True, [('fruit-and-vegetable-disease-healthy-vs-rotten', r'Strawberry__Healthy$')]),
-    ('Strawberry', 'Rotten fruit', False, [('fruit-and-vegetable-disease-healthy-vs-rotten', r'Strawberry__Rotten$')]),
-    ('Strawberry', 'Anthracnose fruit rot', False, [('fruit-infection-disease', r'Strawberry_Anthracnose_Fruit_Rot$')]),
-    ('Strawberry', 'Powdery mildew on fruit', False, [('fruit-infection-disease', r'Strawberry_Powdery_Mildew_Fruit$')]),
-    ('Strawberry', 'Gray mold', False, [('fruit-infection-disease', r'Strawberry_Gray_Mold$')]),
-    ('Strawberry', 'Blossom blight', False, [('fruit-infection-disease', r'Strawberry_Blossom_Blight$')]),
-    ('Melon', 'Healthy fruit', True, [('cantaloupe-classification', r'(Long cantaloupe|Round cantaloupe|yellow royal cantaloupe)$'), ('fruits-and-vegetables', r'Muskmelon$')]),
-    ('Melon', 'Defective fruit', False, [('cantaloupe-classification', r'disabilities$')]),
-    ('Bean', 'Healthy pods', True, [('vegetable-image-dataset', r'train/Bean$'), ('fruits-and-vegetables', r'/Beans$')]),
-    ('Zucchini', 'Healthy fruit', True, [('fruits', r'[Zz]ucchini'), ('fruits-and-vegetables', r'[Zz]ucchini|[Cc]ourgette')]),
-]
-TRAIN_CAP, VAL_CAP = (4, 2) if SMOKE else (150, 40)
-OLD_TRAIN_CAP = 3 if SMOKE else 70
-IMG_EXT = ('.jpg', '.jpeg', '.png', '.webp')
-
-
-def photos_in(dirpath):
-    return [p for p in Path(dirpath).iterdir() if p.suffix.lower() in IMG_EXT and p.is_file()]
-
-
-def find_dirs(fragment, pattern):
-    """Every folder under a dataset whose name contains `fragment`, whose path (from the dataset root) matches `pattern`."""
-    out = []
-    for root in IN.glob('**'):
-        if not root.is_dir() or fragment not in root.name.lower():
-            continue
-        # only the dataset's own root (the first folder carrying the fragment)
-        if any(fragment in a.name.lower() for a in root.parents if a != IN):
-            continue
-        for d, _, files in os.walk(root):
-            rel = str(Path(d).relative_to(root)).replace('\\', '/')
-            if re.search(pattern, rel) and any(f.lower().endswith(IMG_EXT) for f in files):
-                out.append(Path(d))
-    return out
-
-
-def build_new():
-    classes, report = [], {}
-    work = OUT / 'new'
-    shutil.rmtree(work, ignore_errors=True)
-    for ci, (crop, disease, healthy, rules) in enumerate(FRUIT):
-        name = f'{crop}___{disease}'
-        files = []
-        for fragment, pattern in rules:
-            for d in find_dirs(fragment, pattern):
-                files += photos_in(d)
-        files = sorted(set(files))
-        random.shuffle(files)
-        nval = min(VAL_CAP, max(1, len(files) // 5)) if len(files) >= 5 else 0
-        val, train = files[:nval], files[nval:nval + TRAIN_CAP]
-        report[name] = {'found': len(files), 'train': len(train), 'val': len(val), 'sources': [r[0] for r in rules]}
-        if len(train) < 8 and not SMOKE:
-            log('NOT ENOUGH PHOTOS, class dropped:', name, report[name])
-            report[name]['dropped'] = True
-            continue
-        idx = len(classes)
-        classes.append({'class': name, 'crop': crop, 'part': 'fruit', 'disease': disease, 'healthy': healthy})
-        for split, items in (('train', train), ('val', val)):
-            dest = work / split / f'n{idx:03d}'
-            dest.mkdir(parents=True, exist_ok=True)
-            for i, p in enumerate(items):
-                try:
-                    with Image.open(p) as im:
-                        im = im.convert('RGB')
-                        im.thumbnail((448, 448))
-                        im.save(dest / f'{i:05d}.jpg', quality=90)
-                except Exception:
-                    pass
-    (OUT / 'data_report.json').write_text(json.dumps(report, indent=1))
-    log('NEW CLASSES', len(classes), {k: (v['train'], v['val']) for k, v in report.items()})
-    return classes, work
-
-
 # ------------------------------------------------------------------ data
-old_pack = Path(glob.glob(str(IN / '**' / 'classes.json'), recursive=True)[0]).parent if glob.glob(str(IN / '**' / 'classes.json'), recursive=True) else None
+old_pack = next((Path(p).parent for p in glob.glob(str(IN / '**' / 'classes.json'), recursive=True) if (Path(p).parent / 'base').is_dir() and (Path(p).parent / 'train').is_dir()), None)
 if old_pack is None:
     raise SystemExit('The old training pack (crop-vit-pack) is not attached')
 old_classes = json.loads((old_pack / 'classes.json').read_text(encoding='utf-8'))
-new_meta, new_dir = build_new()
+nc = glob.glob(str(IN / '**' / 'new_classes.json'), recursive=True)
+if not nc:
+    raise SystemExit('The prepared fruit photos (kernel greenhouse-fruit-data) are not attached')
+new_meta = json.loads(Path(nc[0]).read_text(encoding='utf-8'))
+new_dir = Path(nc[0]).parent / 'new'
+log('fruit photos from', new_dir, '-', len(new_meta), 'classes')
 classes = old_classes + [c['class'] for c in new_meta]
 N_OLD, N = len(old_classes), len(classes)
 log(f'{N_OLD} old + {len(new_meta)} new = {N} classes')
@@ -354,5 +259,4 @@ meta = {'version': 'vit_kaggle_fruit', 'arch': 'vit', 'base': 'google/vit-large-
         'warm_start': bool(warm_path), 'history': history, 'train_minutes': round((time.time() - T0) / 60)}
 (OUT / 'meta.json').write_text(json.dumps(meta, indent=2))
 (OUT / 'per_class.json').write_text(json.dumps(per_class, indent=1))
-shutil.rmtree(new_dir, ignore_errors=True)
 log('DONE', {k: meta[k] for k in ('val_acc', 'val_top3', 'old_classes_acc', 'new_fruit_classes_acc', 'temperature', 'train_minutes')})
