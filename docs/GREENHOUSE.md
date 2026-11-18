@@ -82,3 +82,7 @@ The counter is classical computer vision (colour segmentation, then splitting of
 ## The trained fruit model (YOLO11x)
 
 `vision-service/training/train_kaggle.py` fine-tunes YOLO11x on labelled public datasets (boxes on every fruit) for nine classes: tomato, sweet pepper, hot pepper, cucumber, eggplant, strawberry, zucchini, melon, green bean. It runs on Kaggle (see `kernel-metadata.json`). When its weights are placed at `vision-service/models/fruit_yolo11x.pt` (or `FRUIT_YOLO_WEIGHTS`) and `ultralytics` is installed (`requirements-yolo.txt`), the counter uses it for those crops and falls back to colour counting for any other crop or if the model fails. The result says which method counted (`method`). The model needs a few GB of memory: it will not run on the smallest free hosting.
+
+### Deploying the trained counter
+
+Build the counter service with the model: Docker build argument `WITH_YOLO=1` (about 1 GB larger; needs 2 GB of memory or more, so not the smallest free tier). Set on that service `HF_TOKEN` (a read token for your Hugging Face account) and `FRUIT_YOLO_HF_REPO=enockstack/greenhouse-fruit-yolo11x`: the weights download on first use. `/health` then lists `trained_model_used_for`. Without these the service counts by colour only.

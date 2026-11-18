@@ -1,1 +1,5 @@
-ultralytics>=8.3  # optional: only for the trained fruit model (models/fruit_yolo11x.pt). Without it the colour method is used.
+# optional: the trained fruit model (CPU torch keeps the image small)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+ultralytics>=8.3
+huggingface_hub

@@ -30,6 +30,21 @@ def weights_path() -> Path:
     return Path(os.environ.get('FRUIT_YOLO_WEIGHTS') or Path(__file__).resolve().parent.parent / 'models' / 'fruit_yolo11x.pt')
 
 
+def _download(p: Path):
+    """Fetches the weights (and the test report) from a private Hugging Face repo when FRUIT_YOLO_HF_REPO and HF_TOKEN are set."""
+    repo, token = os.environ.get('FRUIT_YOLO_HF_REPO'), os.environ.get('HF_TOKEN')
+    if not repo or not token:
+        return None
+    try:
+        from huggingface_hub import hf_hub_download
+        p.parent.mkdir(parents=True, exist_ok=True)
+        for name in ('fruit_yolo_report.json', 'fruit_yolo11x.pt'):
+            hf_hub_download(repo, name, token=token, local_dir=str(p.parent))
+        return p.parent / 'fruit_yolo11x.pt' if p.name != 'fruit_yolo11x.pt' else p
+    except Exception:
+        return None
+
+
 def load():
     """The model, loaded once; None when there are no weights or no ultralytics."""
     global _model, _tried
@@ -38,6 +53,8 @@ def load():
     _tried = True
     p = weights_path()
     if not p.is_file():
+        p = _download(p)
+    if p is None or not p.is_file():
         return None
     try:
         from ultralytics import YOLO
