@@ -1,6 +1,6 @@
 {
  "version": "2026-11-02",
- "source_model": "vit_v0001",
+ "source_model": "vit_v0003_fruit",
  "labels": [
   {
    "id": 0,
@@ -14197,6 +14197,2176 @@
      "crop": "Zukini",
      "part": "daun",
      "disease": "Virus mosaik kuning"
+    }
+   }
+  },
+  {
+   "id": 229,
+   "class": "Tomato___Healthy fruit",
+   "key": "tomato_fruit_healthy_fruit",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 230,
+   "class": "Tomato___Fruit anthracnose",
+   "key": "tomato_fruit_fruit_anthracnose",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Fruit anthracnose",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Fruit anthracnose"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Fruit anthracnose"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Fruit anthracnose"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Fruit anthracnose"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit anthracnose"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit anthracnose"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Fruit anthracnose"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Fruit anthracnose"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Fruit anthracnose"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Fruit anthracnose"
+    }
+   }
+  },
+  {
+   "id": 231,
+   "class": "Tomato___Fruit late blight",
+   "key": "tomato_fruit_fruit_late_blight",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Fruit late blight",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Fruit late blight"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Fruit late blight"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Fruit late blight"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Fruit late blight"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit late blight"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit late blight"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Fruit late blight"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Fruit late blight"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Fruit late blight"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Fruit late blight"
+    }
+   }
+  },
+  {
+   "id": 232,
+   "class": "Tomato___Blossom end rot",
+   "key": "tomato_fruit_blossom_end_rot",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Blossom end rot",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Blossom end rot"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Blossom end rot"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Blossom end rot"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Blossom end rot"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Blossom end rot"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Blossom end rot"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Blossom end rot"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Blossom end rot"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Blossom end rot"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Blossom end rot"
+    }
+   }
+  },
+  {
+   "id": 233,
+   "class": "Tomato___Buckeye rot",
+   "key": "tomato_fruit_buckeye_rot",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Buckeye rot",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Buckeye rot"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Buckeye rot"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Buckeye rot"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Buckeye rot"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Buckeye rot"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Buckeye rot"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Buckeye rot"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Buckeye rot"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Buckeye rot"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Buckeye rot"
+    }
+   }
+  },
+  {
+   "id": 234,
+   "class": "Tomato___Catfacing",
+   "key": "tomato_fruit_catfacing",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Catfacing",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Catfacing"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Catfacing"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Catfacing"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Catfacing"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Catfacing"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Catfacing"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Catfacing"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Catfacing"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Catfacing"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Catfacing"
+    }
+   }
+  },
+  {
+   "id": 235,
+   "class": "Tomato___Fruit cracking",
+   "key": "tomato_fruit_fruit_cracking",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Fruit cracking",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Fruit cracking"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Fruit cracking"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Fruit cracking"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Fruit cracking"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit cracking"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit cracking"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Fruit cracking"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Fruit cracking"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Fruit cracking"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Fruit cracking"
+    }
+   }
+  },
+  {
+   "id": 236,
+   "class": "Tomato___Fruit mold",
+   "key": "tomato_fruit_fruit_mold",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Fruit mold",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Fruit mold"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Fruit mold"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Fruit mold"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Fruit mold"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit mold"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit mold"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Fruit mold"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Fruit mold"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Fruit mold"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Fruit mold"
+    }
+   }
+  },
+  {
+   "id": 237,
+   "class": "Tomato___Fruit spot",
+   "key": "tomato_fruit_fruit_spot",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Fruit spot",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Fruit spot"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Fruit spot"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Fruit spot"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Fruit spot"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit spot"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Fruit spot"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Fruit spot"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Fruit spot"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Fruit spot"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Fruit spot"
+    }
+   }
+  },
+  {
+   "id": 238,
+   "class": "Tomato___Defective fruit",
+   "key": "tomato_fruit_defective_fruit",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Defective fruit",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Defective fruit"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Defective fruit"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Defective fruit"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Defective fruit"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Defective fruit"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Defective fruit"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Defective fruit"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Defective fruit"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Defective fruit"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Defective fruit"
+    }
+   }
+  },
+  {
+   "id": 239,
+   "class": "Tomato___Rotten fruit",
+   "key": "tomato_fruit_rotten_fruit",
+   "crop": "Tomato",
+   "part": "fruit",
+   "disease": "Rotten fruit",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Tomato",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "rw": {
+     "crop": "Inyanya",
+     "part": "urubuto",
+     "disease": "Rotten fruit"
+    },
+    "sw": {
+     "crop": "Nyanya",
+     "part": "tunda",
+     "disease": "Rotten fruit"
+    },
+    "fr": {
+     "crop": "Tomate",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "es": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "pt": {
+     "crop": "Tomate",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "ar": {
+     "crop": "الطماطم",
+     "part": "ثمرة",
+     "disease": "Rotten fruit"
+    },
+    "hi": {
+     "crop": "टमाटर",
+     "part": "फल",
+     "disease": "Rotten fruit"
+    },
+    "zh": {
+     "crop": "番茄",
+     "part": "果实",
+     "disease": "Rotten fruit"
+    },
+    "id": {
+     "crop": "Tomat",
+     "part": "buah",
+     "disease": "Rotten fruit"
+    }
+   }
+  },
+  {
+   "id": 240,
+   "class": "Bell pepper___Healthy fruit",
+   "key": "bell_pepper_fruit_healthy_fruit",
+   "crop": "Bell pepper",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Bell pepper",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Puwavuro",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Pilipili hoho",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Poivron",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Pimiento",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Pimentão",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الفلفل الحلو",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "शिमला मिर्च",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "甜椒",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Paprika",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 241,
+   "class": "Bell pepper___Rotten fruit",
+   "key": "bell_pepper_fruit_rotten_fruit",
+   "crop": "Bell pepper",
+   "part": "fruit",
+   "disease": "Rotten fruit",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Bell pepper",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "rw": {
+     "crop": "Puwavuro",
+     "part": "urubuto",
+     "disease": "Rotten fruit"
+    },
+    "sw": {
+     "crop": "Pilipili hoho",
+     "part": "tunda",
+     "disease": "Rotten fruit"
+    },
+    "fr": {
+     "crop": "Poivron",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "es": {
+     "crop": "Pimiento",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "pt": {
+     "crop": "Pimentão",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "ar": {
+     "crop": "الفلفل الحلو",
+     "part": "ثمرة",
+     "disease": "Rotten fruit"
+    },
+    "hi": {
+     "crop": "शिमला मिर्च",
+     "part": "फल",
+     "disease": "Rotten fruit"
+    },
+    "zh": {
+     "crop": "甜椒",
+     "part": "果实",
+     "disease": "Rotten fruit"
+    },
+    "id": {
+     "crop": "Paprika",
+     "part": "buah",
+     "disease": "Rotten fruit"
+    }
+   }
+  },
+  {
+   "id": 242,
+   "class": "Chilli___Healthy fruit",
+   "key": "chilli_fruit_healthy_fruit",
+   "crop": "Chilli",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Chilli",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Urusenda",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Pilipili",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Piment",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Chile",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Pimenta",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الفلفل الحار",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "मिर्च",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "辣椒",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Cabai",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 243,
+   "class": "Chilli___Fruit anthracnose",
+   "key": "chilli_fruit_fruit_anthracnose",
+   "crop": "Chilli",
+   "part": "fruit",
+   "disease": "Fruit anthracnose",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Chilli",
+     "part": "fruit",
+     "disease": "Fruit anthracnose"
+    },
+    "rw": {
+     "crop": "Urusenda",
+     "part": "urubuto",
+     "disease": "Fruit anthracnose"
+    },
+    "sw": {
+     "crop": "Pilipili",
+     "part": "tunda",
+     "disease": "Fruit anthracnose"
+    },
+    "fr": {
+     "crop": "Piment",
+     "part": "fruit",
+     "disease": "Fruit anthracnose"
+    },
+    "es": {
+     "crop": "Chile",
+     "part": "fruto",
+     "disease": "Fruit anthracnose"
+    },
+    "pt": {
+     "crop": "Pimenta",
+     "part": "fruto",
+     "disease": "Fruit anthracnose"
+    },
+    "ar": {
+     "crop": "الفلفل الحار",
+     "part": "ثمرة",
+     "disease": "Fruit anthracnose"
+    },
+    "hi": {
+     "crop": "मिर्च",
+     "part": "फल",
+     "disease": "Fruit anthracnose"
+    },
+    "zh": {
+     "crop": "辣椒",
+     "part": "果实",
+     "disease": "Fruit anthracnose"
+    },
+    "id": {
+     "crop": "Cabai",
+     "part": "buah",
+     "disease": "Fruit anthracnose"
+    }
+   }
+  },
+  {
+   "id": 244,
+   "class": "Chilli___Unhealthy fruit",
+   "key": "chilli_fruit_unhealthy_fruit",
+   "crop": "Chilli",
+   "part": "fruit",
+   "disease": "Unhealthy fruit",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Chilli",
+     "part": "fruit",
+     "disease": "Unhealthy fruit"
+    },
+    "rw": {
+     "crop": "Urusenda",
+     "part": "urubuto",
+     "disease": "Unhealthy fruit"
+    },
+    "sw": {
+     "crop": "Pilipili",
+     "part": "tunda",
+     "disease": "Unhealthy fruit"
+    },
+    "fr": {
+     "crop": "Piment",
+     "part": "fruit",
+     "disease": "Unhealthy fruit"
+    },
+    "es": {
+     "crop": "Chile",
+     "part": "fruto",
+     "disease": "Unhealthy fruit"
+    },
+    "pt": {
+     "crop": "Pimenta",
+     "part": "fruto",
+     "disease": "Unhealthy fruit"
+    },
+    "ar": {
+     "crop": "الفلفل الحار",
+     "part": "ثمرة",
+     "disease": "Unhealthy fruit"
+    },
+    "hi": {
+     "crop": "मिर्च",
+     "part": "फल",
+     "disease": "Unhealthy fruit"
+    },
+    "zh": {
+     "crop": "辣椒",
+     "part": "果实",
+     "disease": "Unhealthy fruit"
+    },
+    "id": {
+     "crop": "Cabai",
+     "part": "buah",
+     "disease": "Unhealthy fruit"
+    }
+   }
+  },
+  {
+   "id": 245,
+   "class": "Cucumber___Healthy fruit",
+   "key": "cucumber_fruit_healthy_fruit",
+   "crop": "Cucumber",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Cucumber",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Concombre",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Tango",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Concombre",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الخيار",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "खीरा",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "黄瓜",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Mentimun",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 246,
+   "class": "Cucumber___Belly rot",
+   "key": "cucumber_fruit_belly_rot",
+   "crop": "Cucumber",
+   "part": "fruit",
+   "disease": "Belly rot",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Cucumber",
+     "part": "fruit",
+     "disease": "Belly rot"
+    },
+    "rw": {
+     "crop": "Concombre",
+     "part": "urubuto",
+     "disease": "Belly rot"
+    },
+    "sw": {
+     "crop": "Tango",
+     "part": "tunda",
+     "disease": "Belly rot"
+    },
+    "fr": {
+     "crop": "Concombre",
+     "part": "fruit",
+     "disease": "Belly rot"
+    },
+    "es": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Belly rot"
+    },
+    "pt": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Belly rot"
+    },
+    "ar": {
+     "crop": "الخيار",
+     "part": "ثمرة",
+     "disease": "Belly rot"
+    },
+    "hi": {
+     "crop": "खीरा",
+     "part": "फल",
+     "disease": "Belly rot"
+    },
+    "zh": {
+     "crop": "黄瓜",
+     "part": "果实",
+     "disease": "Belly rot"
+    },
+    "id": {
+     "crop": "Mentimun",
+     "part": "buah",
+     "disease": "Belly rot"
+    }
+   }
+  },
+  {
+   "id": 247,
+   "class": "Cucumber___Pythium fruit rot",
+   "key": "cucumber_fruit_pythium_fruit_rot",
+   "crop": "Cucumber",
+   "part": "fruit",
+   "disease": "Pythium fruit rot",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Cucumber",
+     "part": "fruit",
+     "disease": "Pythium fruit rot"
+    },
+    "rw": {
+     "crop": "Concombre",
+     "part": "urubuto",
+     "disease": "Pythium fruit rot"
+    },
+    "sw": {
+     "crop": "Tango",
+     "part": "tunda",
+     "disease": "Pythium fruit rot"
+    },
+    "fr": {
+     "crop": "Concombre",
+     "part": "fruit",
+     "disease": "Pythium fruit rot"
+    },
+    "es": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Pythium fruit rot"
+    },
+    "pt": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Pythium fruit rot"
+    },
+    "ar": {
+     "crop": "الخيار",
+     "part": "ثمرة",
+     "disease": "Pythium fruit rot"
+    },
+    "hi": {
+     "crop": "खीरा",
+     "part": "फल",
+     "disease": "Pythium fruit rot"
+    },
+    "zh": {
+     "crop": "黄瓜",
+     "part": "果实",
+     "disease": "Pythium fruit rot"
+    },
+    "id": {
+     "crop": "Mentimun",
+     "part": "buah",
+     "disease": "Pythium fruit rot"
+    }
+   }
+  },
+  {
+   "id": 248,
+   "class": "Cucumber___Rotten fruit",
+   "key": "cucumber_fruit_rotten_fruit",
+   "crop": "Cucumber",
+   "part": "fruit",
+   "disease": "Rotten fruit",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Cucumber",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "rw": {
+     "crop": "Concombre",
+     "part": "urubuto",
+     "disease": "Rotten fruit"
+    },
+    "sw": {
+     "crop": "Tango",
+     "part": "tunda",
+     "disease": "Rotten fruit"
+    },
+    "fr": {
+     "crop": "Concombre",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "es": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "pt": {
+     "crop": "Pepino",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "ar": {
+     "crop": "الخيار",
+     "part": "ثمرة",
+     "disease": "Rotten fruit"
+    },
+    "hi": {
+     "crop": "खीरा",
+     "part": "फल",
+     "disease": "Rotten fruit"
+    },
+    "zh": {
+     "crop": "黄瓜",
+     "part": "果实",
+     "disease": "Rotten fruit"
+    },
+    "id": {
+     "crop": "Mentimun",
+     "part": "buah",
+     "disease": "Rotten fruit"
+    }
+   }
+  },
+  {
+   "id": 249,
+   "class": "Eggplant___Healthy fruit",
+   "key": "eggplant_fruit_healthy_fruit",
+   "crop": "Eggplant",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Eggplant",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Intoryi",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Biringanya",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Aubergine",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Berenjena",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Berinjela",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الباذنجان",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "बैंगन",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "茄子",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Terong",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 250,
+   "class": "Eggplant___Fruit cracking",
+   "key": "eggplant_fruit_fruit_cracking",
+   "crop": "Eggplant",
+   "part": "fruit",
+   "disease": "Fruit cracking",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Eggplant",
+     "part": "fruit",
+     "disease": "Fruit cracking"
+    },
+    "rw": {
+     "crop": "Intoryi",
+     "part": "urubuto",
+     "disease": "Fruit cracking"
+    },
+    "sw": {
+     "crop": "Biringanya",
+     "part": "tunda",
+     "disease": "Fruit cracking"
+    },
+    "fr": {
+     "crop": "Aubergine",
+     "part": "fruit",
+     "disease": "Fruit cracking"
+    },
+    "es": {
+     "crop": "Berenjena",
+     "part": "fruto",
+     "disease": "Fruit cracking"
+    },
+    "pt": {
+     "crop": "Berinjela",
+     "part": "fruto",
+     "disease": "Fruit cracking"
+    },
+    "ar": {
+     "crop": "الباذنجان",
+     "part": "ثمرة",
+     "disease": "Fruit cracking"
+    },
+    "hi": {
+     "crop": "बैंगन",
+     "part": "फल",
+     "disease": "Fruit cracking"
+    },
+    "zh": {
+     "crop": "茄子",
+     "part": "果实",
+     "disease": "Fruit cracking"
+    },
+    "id": {
+     "crop": "Terong",
+     "part": "buah",
+     "disease": "Fruit cracking"
+    }
+   }
+  },
+  {
+   "id": 251,
+   "class": "Eggplant___Phomopsis blight",
+   "key": "eggplant_fruit_phomopsis_blight",
+   "crop": "Eggplant",
+   "part": "fruit",
+   "disease": "Phomopsis blight",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Eggplant",
+     "part": "fruit",
+     "disease": "Phomopsis blight"
+    },
+    "rw": {
+     "crop": "Intoryi",
+     "part": "urubuto",
+     "disease": "Phomopsis blight"
+    },
+    "sw": {
+     "crop": "Biringanya",
+     "part": "tunda",
+     "disease": "Phomopsis blight"
+    },
+    "fr": {
+     "crop": "Aubergine",
+     "part": "fruit",
+     "disease": "Phomopsis blight"
+    },
+    "es": {
+     "crop": "Berenjena",
+     "part": "fruto",
+     "disease": "Phomopsis blight"
+    },
+    "pt": {
+     "crop": "Berinjela",
+     "part": "fruto",
+     "disease": "Phomopsis blight"
+    },
+    "ar": {
+     "crop": "الباذنجان",
+     "part": "ثمرة",
+     "disease": "Phomopsis blight"
+    },
+    "hi": {
+     "crop": "बैंगन",
+     "part": "फल",
+     "disease": "Phomopsis blight"
+    },
+    "zh": {
+     "crop": "茄子",
+     "part": "果实",
+     "disease": "Phomopsis blight"
+    },
+    "id": {
+     "crop": "Terong",
+     "part": "buah",
+     "disease": "Phomopsis blight"
+    }
+   }
+  },
+  {
+   "id": 252,
+   "class": "Eggplant___Shoot and fruit borer",
+   "key": "eggplant_fruit_shoot_and_fruit_borer",
+   "crop": "Eggplant",
+   "part": "fruit",
+   "disease": "Shoot and fruit borer",
+   "healthy": false,
+   "family": "pest",
+   "names": {
+    "en": {
+     "crop": "Eggplant",
+     "part": "fruit",
+     "disease": "Shoot and fruit borer"
+    },
+    "rw": {
+     "crop": "Intoryi",
+     "part": "urubuto",
+     "disease": "Shoot and fruit borer"
+    },
+    "sw": {
+     "crop": "Biringanya",
+     "part": "tunda",
+     "disease": "Shoot and fruit borer"
+    },
+    "fr": {
+     "crop": "Aubergine",
+     "part": "fruit",
+     "disease": "Shoot and fruit borer"
+    },
+    "es": {
+     "crop": "Berenjena",
+     "part": "fruto",
+     "disease": "Shoot and fruit borer"
+    },
+    "pt": {
+     "crop": "Berinjela",
+     "part": "fruto",
+     "disease": "Shoot and fruit borer"
+    },
+    "ar": {
+     "crop": "الباذنجان",
+     "part": "ثمرة",
+     "disease": "Shoot and fruit borer"
+    },
+    "hi": {
+     "crop": "बैंगन",
+     "part": "फल",
+     "disease": "Shoot and fruit borer"
+    },
+    "zh": {
+     "crop": "茄子",
+     "part": "果实",
+     "disease": "Shoot and fruit borer"
+    },
+    "id": {
+     "crop": "Terong",
+     "part": "buah",
+     "disease": "Shoot and fruit borer"
+    }
+   }
+  },
+  {
+   "id": 253,
+   "class": "Eggplant___Wet rot",
+   "key": "eggplant_fruit_wet_rot",
+   "crop": "Eggplant",
+   "part": "fruit",
+   "disease": "Wet rot",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Eggplant",
+     "part": "fruit",
+     "disease": "Wet rot"
+    },
+    "rw": {
+     "crop": "Intoryi",
+     "part": "urubuto",
+     "disease": "Wet rot"
+    },
+    "sw": {
+     "crop": "Biringanya",
+     "part": "tunda",
+     "disease": "Wet rot"
+    },
+    "fr": {
+     "crop": "Aubergine",
+     "part": "fruit",
+     "disease": "Wet rot"
+    },
+    "es": {
+     "crop": "Berenjena",
+     "part": "fruto",
+     "disease": "Wet rot"
+    },
+    "pt": {
+     "crop": "Berinjela",
+     "part": "fruto",
+     "disease": "Wet rot"
+    },
+    "ar": {
+     "crop": "الباذنجان",
+     "part": "ثمرة",
+     "disease": "Wet rot"
+    },
+    "hi": {
+     "crop": "बैंगन",
+     "part": "फल",
+     "disease": "Wet rot"
+    },
+    "zh": {
+     "crop": "茄子",
+     "part": "果实",
+     "disease": "Wet rot"
+    },
+    "id": {
+     "crop": "Terong",
+     "part": "buah",
+     "disease": "Wet rot"
+    }
+   }
+  },
+  {
+   "id": 254,
+   "class": "Strawberry___Healthy fruit",
+   "key": "strawberry_fruit_healthy_fruit",
+   "crop": "Strawberry",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Strawberry",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Fure",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Stroberi",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Fraisier",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Fresa",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Morangueiro",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الفراولة",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "स्ट्रॉबेरी",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "草莓",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Stroberi",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 255,
+   "class": "Strawberry___Rotten fruit",
+   "key": "strawberry_fruit_rotten_fruit",
+   "crop": "Strawberry",
+   "part": "fruit",
+   "disease": "Rotten fruit",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Strawberry",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "rw": {
+     "crop": "Fure",
+     "part": "urubuto",
+     "disease": "Rotten fruit"
+    },
+    "sw": {
+     "crop": "Stroberi",
+     "part": "tunda",
+     "disease": "Rotten fruit"
+    },
+    "fr": {
+     "crop": "Fraisier",
+     "part": "fruit",
+     "disease": "Rotten fruit"
+    },
+    "es": {
+     "crop": "Fresa",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "pt": {
+     "crop": "Morangueiro",
+     "part": "fruto",
+     "disease": "Rotten fruit"
+    },
+    "ar": {
+     "crop": "الفراولة",
+     "part": "ثمرة",
+     "disease": "Rotten fruit"
+    },
+    "hi": {
+     "crop": "स्ट्रॉबेरी",
+     "part": "फल",
+     "disease": "Rotten fruit"
+    },
+    "zh": {
+     "crop": "草莓",
+     "part": "果实",
+     "disease": "Rotten fruit"
+    },
+    "id": {
+     "crop": "Stroberi",
+     "part": "buah",
+     "disease": "Rotten fruit"
+    }
+   }
+  },
+  {
+   "id": 256,
+   "class": "Strawberry___Anthracnose fruit rot",
+   "key": "strawberry_fruit_anthracnose_fruit_rot",
+   "crop": "Strawberry",
+   "part": "fruit",
+   "disease": "Anthracnose fruit rot",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Strawberry",
+     "part": "fruit",
+     "disease": "Anthracnose fruit rot"
+    },
+    "rw": {
+     "crop": "Fure",
+     "part": "urubuto",
+     "disease": "Anthracnose fruit rot"
+    },
+    "sw": {
+     "crop": "Stroberi",
+     "part": "tunda",
+     "disease": "Anthracnose fruit rot"
+    },
+    "fr": {
+     "crop": "Fraisier",
+     "part": "fruit",
+     "disease": "Anthracnose fruit rot"
+    },
+    "es": {
+     "crop": "Fresa",
+     "part": "fruto",
+     "disease": "Anthracnose fruit rot"
+    },
+    "pt": {
+     "crop": "Morangueiro",
+     "part": "fruto",
+     "disease": "Anthracnose fruit rot"
+    },
+    "ar": {
+     "crop": "الفراولة",
+     "part": "ثمرة",
+     "disease": "Anthracnose fruit rot"
+    },
+    "hi": {
+     "crop": "स्ट्रॉबेरी",
+     "part": "फल",
+     "disease": "Anthracnose fruit rot"
+    },
+    "zh": {
+     "crop": "草莓",
+     "part": "果实",
+     "disease": "Anthracnose fruit rot"
+    },
+    "id": {
+     "crop": "Stroberi",
+     "part": "buah",
+     "disease": "Anthracnose fruit rot"
+    }
+   }
+  },
+  {
+   "id": 257,
+   "class": "Strawberry___Powdery mildew on fruit",
+   "key": "strawberry_fruit_powdery_mildew_on_fruit",
+   "crop": "Strawberry",
+   "part": "fruit",
+   "disease": "Powdery mildew on fruit",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Strawberry",
+     "part": "fruit",
+     "disease": "Powdery mildew on fruit"
+    },
+    "rw": {
+     "crop": "Fure",
+     "part": "urubuto",
+     "disease": "Powdery mildew on fruit"
+    },
+    "sw": {
+     "crop": "Stroberi",
+     "part": "tunda",
+     "disease": "Powdery mildew on fruit"
+    },
+    "fr": {
+     "crop": "Fraisier",
+     "part": "fruit",
+     "disease": "Powdery mildew on fruit"
+    },
+    "es": {
+     "crop": "Fresa",
+     "part": "fruto",
+     "disease": "Powdery mildew on fruit"
+    },
+    "pt": {
+     "crop": "Morangueiro",
+     "part": "fruto",
+     "disease": "Powdery mildew on fruit"
+    },
+    "ar": {
+     "crop": "الفراولة",
+     "part": "ثمرة",
+     "disease": "Powdery mildew on fruit"
+    },
+    "hi": {
+     "crop": "स्ट्रॉबेरी",
+     "part": "फल",
+     "disease": "Powdery mildew on fruit"
+    },
+    "zh": {
+     "crop": "草莓",
+     "part": "果实",
+     "disease": "Powdery mildew on fruit"
+    },
+    "id": {
+     "crop": "Stroberi",
+     "part": "buah",
+     "disease": "Powdery mildew on fruit"
+    }
+   }
+  },
+  {
+   "id": 258,
+   "class": "Strawberry___Gray mold",
+   "key": "strawberry_fruit_gray_mold",
+   "crop": "Strawberry",
+   "part": "fruit",
+   "disease": "Gray mold",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Strawberry",
+     "part": "fruit",
+     "disease": "Gray mold"
+    },
+    "rw": {
+     "crop": "Fure",
+     "part": "urubuto",
+     "disease": "Gray mold"
+    },
+    "sw": {
+     "crop": "Stroberi",
+     "part": "tunda",
+     "disease": "Gray mold"
+    },
+    "fr": {
+     "crop": "Fraisier",
+     "part": "fruit",
+     "disease": "Gray mold"
+    },
+    "es": {
+     "crop": "Fresa",
+     "part": "fruto",
+     "disease": "Gray mold"
+    },
+    "pt": {
+     "crop": "Morangueiro",
+     "part": "fruto",
+     "disease": "Gray mold"
+    },
+    "ar": {
+     "crop": "الفراولة",
+     "part": "ثمرة",
+     "disease": "Gray mold"
+    },
+    "hi": {
+     "crop": "स्ट्रॉबेरी",
+     "part": "फल",
+     "disease": "Gray mold"
+    },
+    "zh": {
+     "crop": "草莓",
+     "part": "果实",
+     "disease": "Gray mold"
+    },
+    "id": {
+     "crop": "Stroberi",
+     "part": "buah",
+     "disease": "Gray mold"
+    }
+   }
+  },
+  {
+   "id": 259,
+   "class": "Strawberry___Blossom blight",
+   "key": "strawberry_fruit_blossom_blight",
+   "crop": "Strawberry",
+   "part": "fruit",
+   "disease": "Blossom blight",
+   "healthy": false,
+   "family": "fungal",
+   "names": {
+    "en": {
+     "crop": "Strawberry",
+     "part": "fruit",
+     "disease": "Blossom blight"
+    },
+    "rw": {
+     "crop": "Fure",
+     "part": "urubuto",
+     "disease": "Blossom blight"
+    },
+    "sw": {
+     "crop": "Stroberi",
+     "part": "tunda",
+     "disease": "Blossom blight"
+    },
+    "fr": {
+     "crop": "Fraisier",
+     "part": "fruit",
+     "disease": "Blossom blight"
+    },
+    "es": {
+     "crop": "Fresa",
+     "part": "fruto",
+     "disease": "Blossom blight"
+    },
+    "pt": {
+     "crop": "Morangueiro",
+     "part": "fruto",
+     "disease": "Blossom blight"
+    },
+    "ar": {
+     "crop": "الفراولة",
+     "part": "ثمرة",
+     "disease": "Blossom blight"
+    },
+    "hi": {
+     "crop": "स्ट्रॉबेरी",
+     "part": "फल",
+     "disease": "Blossom blight"
+    },
+    "zh": {
+     "crop": "草莓",
+     "part": "果实",
+     "disease": "Blossom blight"
+    },
+    "id": {
+     "crop": "Stroberi",
+     "part": "buah",
+     "disease": "Blossom blight"
+    }
+   }
+  },
+  {
+   "id": 260,
+   "class": "Melon___Healthy fruit",
+   "key": "melon_fruit_healthy_fruit",
+   "crop": "Melon",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Melon",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Melon",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Melon",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Melon",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Melon",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Melon",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "Melon",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "Melon",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "Melon",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Melon",
+     "part": "buah",
+     "disease": "Healthy fruit"
+    }
+   }
+  },
+  {
+   "id": 261,
+   "class": "Melon___Defective fruit",
+   "key": "melon_fruit_defective_fruit",
+   "crop": "Melon",
+   "part": "fruit",
+   "disease": "Defective fruit",
+   "healthy": false,
+   "family": "general",
+   "names": {
+    "en": {
+     "crop": "Melon",
+     "part": "fruit",
+     "disease": "Defective fruit"
+    },
+    "rw": {
+     "crop": "Melon",
+     "part": "urubuto",
+     "disease": "Defective fruit"
+    },
+    "sw": {
+     "crop": "Melon",
+     "part": "tunda",
+     "disease": "Defective fruit"
+    },
+    "fr": {
+     "crop": "Melon",
+     "part": "fruit",
+     "disease": "Defective fruit"
+    },
+    "es": {
+     "crop": "Melon",
+     "part": "fruto",
+     "disease": "Defective fruit"
+    },
+    "pt": {
+     "crop": "Melon",
+     "part": "fruto",
+     "disease": "Defective fruit"
+    },
+    "ar": {
+     "crop": "Melon",
+     "part": "ثمرة",
+     "disease": "Defective fruit"
+    },
+    "hi": {
+     "crop": "Melon",
+     "part": "फल",
+     "disease": "Defective fruit"
+    },
+    "zh": {
+     "crop": "Melon",
+     "part": "果实",
+     "disease": "Defective fruit"
+    },
+    "id": {
+     "crop": "Melon",
+     "part": "buah",
+     "disease": "Defective fruit"
+    }
+   }
+  },
+  {
+   "id": 262,
+   "class": "Bean___Healthy pods",
+   "key": "bean_fruit_healthy_pods",
+   "crop": "Bean",
+   "part": "fruit",
+   "disease": "Healthy pods",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Bean",
+     "part": "fruit",
+     "disease": "Healthy pods"
+    },
+    "rw": {
+     "crop": "Ibishyimbo",
+     "part": "urubuto",
+     "disease": "Healthy pods"
+    },
+    "sw": {
+     "crop": "Maharage",
+     "part": "tunda",
+     "disease": "Healthy pods"
+    },
+    "fr": {
+     "crop": "Haricot",
+     "part": "fruit",
+     "disease": "Healthy pods"
+    },
+    "es": {
+     "crop": "Frijol",
+     "part": "fruto",
+     "disease": "Healthy pods"
+    },
+    "pt": {
+     "crop": "Feijão",
+     "part": "fruto",
+     "disease": "Healthy pods"
+    },
+    "ar": {
+     "crop": "الفاصولياء",
+     "part": "ثمرة",
+     "disease": "Healthy pods"
+    },
+    "hi": {
+     "crop": "सेम",
+     "part": "फल",
+     "disease": "Healthy pods"
+    },
+    "zh": {
+     "crop": "菜豆",
+     "part": "果实",
+     "disease": "Healthy pods"
+    },
+    "id": {
+     "crop": "Buncis",
+     "part": "buah",
+     "disease": "Healthy pods"
+    }
+   }
+  },
+  {
+   "id": 263,
+   "class": "Zucchini___Healthy fruit",
+   "key": "zucchini_fruit_healthy_fruit",
+   "crop": "Zucchini",
+   "part": "fruit",
+   "disease": "Healthy fruit",
+   "healthy": true,
+   "family": "healthy",
+   "names": {
+    "en": {
+     "crop": "Zucchini",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "rw": {
+     "crop": "Zukini",
+     "part": "urubuto",
+     "disease": "Healthy fruit"
+    },
+    "sw": {
+     "crop": "Zukini",
+     "part": "tunda",
+     "disease": "Healthy fruit"
+    },
+    "fr": {
+     "crop": "Courgette",
+     "part": "fruit",
+     "disease": "Healthy fruit"
+    },
+    "es": {
+     "crop": "Calabacín",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "pt": {
+     "crop": "Abobrinha",
+     "part": "fruto",
+     "disease": "Healthy fruit"
+    },
+    "ar": {
+     "crop": "الكوسا",
+     "part": "ثمرة",
+     "disease": "Healthy fruit"
+    },
+    "hi": {
+     "crop": "तोरी",
+     "part": "फल",
+     "disease": "Healthy fruit"
+    },
+    "zh": {
+     "crop": "西葫芦",
+     "part": "果实",
+     "disease": "Healthy fruit"
+    },
+    "id": {
+     "crop": "Zukini",
+     "part": "buah",
+     "disease": "Healthy fruit"
     }
    }
   }

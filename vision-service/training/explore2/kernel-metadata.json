@@ -1,0 +1,31 @@
+{
+  "id": "enocknshimiyimana/greenhouse-box-explore",
+  "title": "Greenhouse box explore",
+  "code_file": "explore2.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [
+    "mdtaquiansari/chili-pepper-cleaned",
+    "shuvokumarbasak2030/chili-pepper-multi-source-dataset-bd",
+    "trainingdatapro/ripe-strawberries-detection",
+    "mahyeks/multi-class-strawberry-ripeness-detection-dataset",
+    "samatsauranbek/multi-class-strawberry-ripeness-detection-v2",
+    "jawadulkarim117/strawberry-fruit-flower",
+    "yogipermadi/tomato-ripeness-dataset-using-yolo",
+    "sumn2u/riped-and-unriped-tomato-dataset",
+    "xuanwen0725/tomatoandstem-picking-point",
+    "rezeliet/yolo-vegetable-dataset",
+    "hatrnh/fruit-and-vegetable-detection-dataset",
+    "denuwanwijesinghe/vegetable-object-detection",
+    "kvnpatel/fruits-vegetable-detection-for-yolov4",
+    "osutokaggle/maize-beans-and-tomatoes-image-dataset-for-africa",
+    "killa92/fruit-ripeness-object-detection-dataset"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}
