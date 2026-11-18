@@ -8,7 +8,7 @@ import { markerColor, webglAvailable } from '../lib/greenhouseColors.js';
  * result of the last photo check (or by how much fruit it has) and is a little bigger the more fruit was counted. Click a plant to pick it.
  * Drag to turn, scroll to zoom, right-drag to move. One InstancedMesh per part keeps big houses (thousands of plants) smooth.
  */
-export default function GreenhouseScene({ layout, colorBy = 'status', selected, onPick, view = 'default', focusKey = '', height = 460 }) {
+export default function GreenhouseScene({ layout, colorBy = 'status', selected, onPick, view = 'default', focusKey = '', resetKey = 0, height = 460 }) {
   const mount = useRef(null);
   const api = useRef({});
   const [failed, setFailed] = useState(false);
@@ -103,9 +103,9 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       cx.fillText(`R${r + 1}`, 64, 33);
       const tex = own(new THREE.CanvasTexture(cv));
       const label = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: tex, depthTest: false })));
-      const ls = Math.max(0.5, Math.min(rowSpacing * 0.9, 1.6));
+      const ls = Math.max(0.4, Math.min(rowSpacing * 0.55, 0.9));
       label.scale.set(ls * 2, ls, 1);
-      label.position.set(-ls * 1.1, 0.4, (r + 0.5) * rowSpacing);
+      label.position.set(-ls * 0.8, 0.4, (r + 0.5) * rowSpacing);
       label.renderOrder = 5;
       scene.add(label);
     }
@@ -203,7 +203,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     const flyTo = (pos, target) => { tween = { t: 0, fp: camera.position.clone(), ft: controls.target.clone(), tp: new THREE.Vector3(...pos), tt: new THREE.Vector3(...target) }; };
     api.current = { plants, fruit, ring, size, max, scene, camera, renderer, controls, el };
     api.current.setView = (name) => {
-      if (name === 'top') flyTo([spanX / 2, reach * 1.25, spanZ / 2 + 0.01], [spanX / 2, 0, spanZ / 2]);
+      if (name === 'top') flyTo([spanX / 2, reach * 0.8, spanZ / 2 + 0.01], [spanX / 2, 0, spanZ / 2]);
       else if (name === 'side') flyTo([spanX / 2, reach * 0.18, spanZ / 2 + reach * 0.9], [spanX / 2, 0.5, spanZ / 2]);
       else flyTo([spanX / 2, reach * 0.42, spanZ / 2 + reach * 0.6], [spanX / 2, 0, spanZ / 2]);
     };
@@ -255,7 +255,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
   // recolour and move the selection ring without rebuilding
   useEffect(() => { api.current.paint?.(colorBy, selected); }, [colorBy, selected, layout]);
 
-  useEffect(() => { api.current.setView?.(view); }, [view, layout]);
+  useEffect(() => { api.current.setView?.(view); }, [view, layout, resetKey]);
   useEffect(() => {
     const p = selected && layout?.plants.find((x) => x.row === selected.row && x.plant === selected.plant);
     if (p && focusKey) api.current.focus?.(p);

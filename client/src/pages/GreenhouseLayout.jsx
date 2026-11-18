@@ -182,6 +182,7 @@ export default function LayoutTab() {
   const [selected, setSelected] = useState(null);
   const [camera, setCamera] = useState('default'); // default | top | side
   const [focusKey, setFocusKey] = useState('');
+  const [resetKey, setResetKey] = useState(0);
   const [form, setForm] = useState(null); // 'new' | house
   const [recording, setRecording] = useState(null);
   const house = useMemo(() => houses.find((h) => h.id === houseId) || houses[0], [houses, houseId]);
@@ -229,7 +230,7 @@ export default function LayoutTab() {
         </div>
         {view === '3d' && (
           <div className="gh-seg" role="group" aria-label={t('Camera')}>
-            <button type="button" className={camera === 'default' ? 'on' : ''} onClick={() => { setCamera('default'); setFocusKey(''); }}>{t('Reset')}</button>
+            <button type="button" className={camera === 'default' ? 'on' : ''} onClick={() => { setCamera('default'); setFocusKey(''); setResetKey((k) => k + 1); }}>{t('Reset')}</button>
             <button type="button" className={camera === 'top' ? 'on' : ''} onClick={() => setCamera('top')}>{t('From above')}</button>
             <button type="button" className={camera === 'side' ? 'on' : ''} onClick={() => setCamera('side')}>{t('Along a row')}</button>
             <button type="button" disabled={!selected} onClick={() => { setCamera('default'); setFocusKey(`${selected.row}-${selected.plant}-${Date.now()}`); }}>{t('Zoom to plant')}</button>
@@ -255,7 +256,7 @@ export default function LayoutTab() {
       <div className="gh-stage">
         <div className="gh-stage-main">
           {loadingLayout || !layout ? <Loading /> : view === '3d' && webglAvailable() ? (
-            <Suspense fallback={<Loading />}><Scene layout={layout} colorBy={colorBy} selected={selected} onPick={pick} view={camera} focusKey={focusKey} /></Suspense>
+            <Suspense fallback={<Loading />}><Scene layout={layout} colorBy={colorBy} selected={selected} onPick={pick} view={camera} focusKey={focusKey} resetKey={resetKey} /></Suspense>
           ) : (
             <Plan layout={layout} colorBy={colorBy} selected={selected} onPick={pick} />
           )}
