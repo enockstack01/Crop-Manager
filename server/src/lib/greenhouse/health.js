@@ -14,11 +14,11 @@ import { labelCropFor } from '../vision/cropMap.js';
  */
 const LABELS = JSON.parse(fs.readFileSync(new URL('../vision/labels.json', import.meta.url), 'utf8')).labels;
 const FRUIT_CROPS = new Set(LABELS.filter((l) => l.part === 'fruit').map((l) => l.crop));
-const MAX_FRUIT = 12;
+const MAX_FRUIT = 20; // a collage of several photos can hold many fruit
 const SICK_AT = 0.6;
 const CATALOG_CROP = {
   cherry_tomato: 'Tomato', tomato: 'Tomato', sweet_pepper: 'Bell pepper', hot_pepper: 'Chilli', cucumber: 'Cucumber', eggplant: 'Eggplant',
-  strawberry: 'Strawberry', zucchini: 'Zucchini', green_beans: 'Bean',
+  strawberry: 'Strawberry', zucchini: 'Zucchini', green_beans: 'Bean', melon: 'Melon',
 };
 
 /** The classifier's name for a crop of the farmer's: the built-in ones by key, their own by the name they gave it. */

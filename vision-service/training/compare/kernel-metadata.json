@@ -1,0 +1,15 @@
+{
+  "id": "enocknshimiyimana/greenhouse-yolo-compare",
+  "title": "Greenhouse yolo compare",
+  "code_file": "compare_kaggle.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["enocknshimiyimana/greenhouse-fruit-yolo-v1"],
+  "competition_sources": [],
+  "kernel_sources": ["enocknshimiyimana/greenhouse-fruit-yolo11x"],
+  "model_sources": []
+}

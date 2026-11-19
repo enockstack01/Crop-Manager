@@ -25,6 +25,12 @@ const FruitCountSchema = ownedSchema({
   annotated_url: { type: String, default: null },
   verification: { type: mongoose.Schema.Types.Mixed, default: null },
   notes: { type: String, trim: true },
+  label: { type: String, trim: true, default: '' }, // a short name the person gives this count, for example "first flush"
+  fruit_size: { type: String, enum: ['all', 'small', 'medium', 'large'], default: 'all' }, // which fruit this count is about ('all' = every size, no categories)
+  photo_urls: { type: [String], default: [] }, // every photo taken of the plant; photo_url is then the collage of them
+  collage: { type: mongoose.Schema.Types.Mixed, default: null }, // { photos, columns, overlap_warnings } when several photos were joined
+  entered_by: { type: String, default: '' }, // the account that recorded it (the farm owner or a data collector)
+  entered_by_name: { type: String, default: '' },
 });
 FruitCountSchema.index({ user_id: 1, count_date: -1 });
 
@@ -41,7 +47,27 @@ const GreenhouseHouseSchema = ownedSchema({
   crop_id: { ...ref('GreenhouseCrop'), default: null },
   row_crops: { type: [String], default: [] }, // optional: a different crop for a row, by row number - 1 ('' = the greenhouse crop)
   notes: { type: String, trim: true },
+  // the shape of the house: each row can have its own number of positions, start later, and hold two side-by-side sub rows (A and B)
+  row_defs: { type: [new mongoose.Schema({ plants: Number, start: { type: Number, default: 0 }, sub_rows: { type: Number, default: 1 } }, { _id: false })], default: [] },
+  orientation_deg: { type: Number, default: 0, min: 0, max: 359 }, // the compass direction the top wall of the plan faces (0 = north)
+  door: { type: new mongoose.Schema({ wall: { type: String, enum: ['top', 'bottom', 'left', 'right'], default: 'bottom' }, position: { type: Number, default: 0.5, min: 0, max: 1 }, width_m: { type: Number, default: 1.2, min: 0.5, max: 10 } }, { _id: false }), default: null },
+  pattern: { type: String, enum: ['grid', 'zigzag', 'staggered'], default: 'grid' }, // how the plants sit in a row
+  plant_spacing_m: { type: Number, default: null, min: 0.05, max: 20 }, // null = spread the plants along the house
+  row_spacing_m: { type: Number, default: null, min: 0.1, max: 20 },
+  positions: { type: mongoose.Schema.Types.Mixed, default: {} }, // "R2A|P3" -> { state: 'frozen' | 'inactive', reason, by, by_name, at, label }
+  position_log: { type: [mongoose.Schema.Types.Mixed], default: [] }, // newest last, kept to the last 300 changes
 });
 GreenhouseHouseSchema.index({ user_id: 1, name: 1 }, { unique: true });
 
 export const GreenhouseHouse = mongoose.model('GreenhouseHouse', GreenhouseHouseSchema);
+
+/** A person the farm owner lets into the greenhouse tab: a farm manager (records and disease details, no 3D map) or a data collector (plan view and recording). */
+const GreenhouseMemberSchema = ownedSchema({ // user_id is the farm owner
+  member_id: { type: String, default: null, index: true }, // the member's own account, set when they sign in with the invited address
+  invited_email: { type: String, trim: true, lowercase: true, required: true },
+  name: { type: String, trim: true, default: '' },
+  role: { type: String, enum: ['manager', 'collector'], required: true },
+  status: { type: String, enum: ['invited', 'active', 'removed'], default: 'invited' },
+});
+GreenhouseMemberSchema.index({ user_id: 1, invited_email: 1 }, { unique: true });
+export const GreenhouseMember = mongoose.model('GreenhouseMember', GreenhouseMemberSchema);

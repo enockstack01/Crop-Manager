@@ -25,10 +25,10 @@ export const counterConfigured = () => !!counterUrl();
 
 const MEDIA = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
 
-/** Reads one of the caller's own uploaded photos; anything else is refused. */
+/** Reads one of the uploaded photos of this farm (taken by the owner or by someone the owner invited); anything else is refused. */
 export async function readUserPhoto(userId, url) {
   const file = path.basename(String(url || ''));
-  if (!file.startsWith(`${userId}-`)) throw createHttpError(400, 'That photo does not belong to your account.');
+  if (![].concat(userId).some((id) => file.startsWith(`${id}-`))) throw createHttpError(400, 'That photo does not belong to your account.');
   if (!MEDIA[path.extname(file).toLowerCase()]) throw createHttpError(400, 'Use a JPG, PNG or WebP photo.');
   const bytes = await storage.get(file);
   if (!bytes) throw createHttpError(404, 'The photo could not be found. Upload it again.');
@@ -38,17 +38,18 @@ export async function readUserPhoto(userId, url) {
 /** The class the trained fruit model uses for each built-in crop. Own crops have none: they are counted by colour. */
 export const YOLO_CLASS = {
   cherry_tomato: 'tomato', tomato: 'tomato', sweet_pepper: 'sweet_pepper', hot_pepper: 'hot_pepper', cucumber: 'cucumber', eggplant: 'eggplant',
-  strawberry: 'strawberry', zucchini: 'zucchini', melon: 'melon', green_beans: 'green_bean',
+  strawberry: 'strawberry', melon: 'melon', // zucchini and green beans have no trained counter: they are counted by colour
 };
 
 /** Asks the counter. Resolves its answer, or throws an Error with a `kind` of 'down' or 'unreadable'. */
-export async function askCounter(bytes, crop) {
+export async function askCounter(bytes, crop, imgsz = 0) {
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: 'image/jpeg' }), 'photo.jpg');
   form.append('colors', (crop.fruit_colors?.length ? crop.fruit_colors : ['red']).join(','));
   form.append('shape', crop.shape === 'elongated' ? 'elongated' : 'round');
   form.append('contrast', crop.contrast === 'low' ? 'low' : 'high');
   if (YOLO_CLASS[crop.catalog_key]) form.append('crop_class', YOLO_CLASS[crop.catalog_key]);
+  if (imgsz) form.append('imgsz', String(Math.min(1600, imgsz))); // a collage of several photos is large
   let res;
   try {
     res = await fetch(`${counterUrl()}/count`, {
@@ -87,6 +88,19 @@ const REASONS = {
   background_matches_fruit: 'the background has the same colour as the fruit',
 };
 
+/**
+ * Small, medium or large fruit: the fruit the counter found, ordered by size and cut into thirds. Needs at least 3 fruit to tell sizes apart.
+ * Returns { count } for the chosen third, or null when there are too few fruit to say.
+ */
+export function sizeBand(detections, size) {
+  if (size === 'all') return { count: detections?.length ?? 0 };
+  const r = (detections || []).map((d) => d.r).sort((a, b) => a - b);
+  if (r.length < 3) return null;
+  const lo = Math.floor(r.length / 3);
+  const hi = Math.ceil((2 * r.length) / 3);
+  return { count: size === 'small' ? lo : size === 'large' ? r.length - hi : hi - lo };
+}
+
 /** The tolerance for "close": one fruit up to ten, then ten per cent. */
 export const toleranceFor = (recorded) => (recorded <= 10 ? 1 : Math.ceil(recorded * 0.1));
 
@@ -116,16 +130,16 @@ export function decide({ detected, recorded, confidence, warnings = [], contrast
  * Runs a full check for one photo. Never throws for problems with the counter: the record is still saved, with a verdict that says what happened.
  * Returns { verification, annotated_url }.
  */
-export async function verifyPhoto({ userId, photoUrl, crop, recorded }) {
+export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded, fruitSize = 'all', imgsz = 0, collage = null }) {
   const base = { recorded, detected: null, difference: null, tolerance: toleranceFor(recorded), confidence: null, warnings: [], method: null, checked_at: new Date().toISOString() };
-  const bytes = await readUserPhoto(userId, photoUrl);
+  const bytes = await readUserPhoto(uploaders || userId, photoUrl);
   if (!counterConfigured()) {
     const health = await checkHealth(bytes, null, crop);
     return { verification: { ...base, status: 'not_checked', health, message: 'The photo was saved but not checked: the fruit counter is not connected yet. Ask your administrator to connect it.' }, annotated_url: null };
   }
   let seen;
   try {
-    seen = await askCounter(bytes, crop);
+    seen = await askCounter(bytes, crop, imgsz);
   } catch (e) {
     const unreadable = e.kind === 'unreadable';
     const health = unreadable ? null : await checkHealth(bytes, null, crop);
@@ -144,11 +158,19 @@ export async function verifyPhoto({ userId, photoUrl, crop, recorded }) {
     await storage.put(name, jpeg);
     annotated = `/uploads/${name}`;
   }
-  const verdict = decide({ detected: seen.count, recorded, confidence: seen.confidence, warnings: seen.warnings || [], contrast: String(seen.method || '').startsWith('yolo') ? 'high' : crop.contrast }); // the trained model sees green fruit: the colour-only caution does not apply to it
+  let detected = seen.count;
+  let confidence = seen.confidence;
+  let sizeNote = '';
+  if (fruitSize !== 'all') {
+    const band = sizeBand(seen.detections, fruitSize);
+    if (band) { detected = band.count; sizeNote = ` Sizes are judged by comparing the fruit in the photo, so the ${fruitSize} count is approximate.`; } else { confidence = 'low'; sizeNote = ` There are too few fruit in the photo to tell the ${fruitSize} ones apart.`; }
+  }
+  const verdict = decide({ detected, recorded, confidence, warnings: seen.warnings || [], contrast: String(seen.method || '').startsWith('yolo') ? 'high' : crop.contrast }); // the trained model sees green fruit: the colour-only caution does not apply to it
   return {
     verification: {
-      ...base, status: verdict.status, detected: seen.count, difference: verdict.difference, tolerance: verdict.tolerance, confidence: seen.confidence,
-      warnings: seen.warnings || [], method: seen.method || 'opencv', message: verdict.message, health,
+      ...base, status: verdict.status, detected, difference: verdict.difference, tolerance: verdict.tolerance, confidence,
+      fruit_size: fruitSize, detected_all_sizes: seen.count, photos: collage?.photos || 1,
+      warnings: seen.warnings || [], method: seen.method || 'opencv', message: verdict.message + sizeNote, health,
     },
     annotated_url: annotated,
   };

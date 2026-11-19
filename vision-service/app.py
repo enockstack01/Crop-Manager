@@ -14,6 +14,8 @@ from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 
 from fruitcount import COLORS, SHAPES, VERSION, count_fruits
 from fruitcount import yolo
+from fruitcount.counter import decode
+from fruitcount.overlap import overlapping_pairs
 
 TOKEN = os.environ.get('FRUIT_COUNTER_TOKEN', '')
 MAX_BYTES = 25 * 1024 * 1024
@@ -33,6 +35,7 @@ def count(
     shape: str = Form('round'),
     contrast: str = Form('high'),
     crop_class: str = Form(''),
+    imgsz: int = Form(0),  # a joined collage of several photos is large: the server asks for a bigger working size so small fruit are not lost
     x_token: str | None = Header(default=None),
 ):
     if TOKEN and x_token != TOKEN:
@@ -49,7 +52,7 @@ def count(
         # the trained model first, when it knows this crop: it can find green fruit among green leaves. Otherwise the colour method.
         if yolo.available_for(crop_class.strip().lower()):
             try:
-                return yolo.count_with_yolo(data, crop_class.strip().lower())
+                return yolo.count_with_yolo(data, crop_class.strip().lower(), imgsz=imgsz)
             except ValueError:
                 raise
             except Exception:  # a model failure must never lose the check: fall back
@@ -57,3 +60,17 @@ def count(
         return count_fruits(data, names, shape, 'low' if contrast == 'low' else 'high')
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post('/overlap')
+def overlap(files: list[UploadFile] = File(...), x_token: str | None = Header(default=None)):
+    """Which of the photos of one plant show the same part of it (a fruit could then be counted twice)."""
+    if TOKEN and x_token != TOKEN:
+        raise HTTPException(status_code=401, detail='Not allowed')
+    if not 2 <= len(files) <= 12:
+        raise HTTPException(status_code=400, detail='Send between 2 and 12 photos.')
+    try:
+        images = [decode(f.file.read(MAX_BYTES + 1)) for f in files]
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return {'pairs': overlapping_pairs(images)}

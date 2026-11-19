@@ -1,0 +1,47 @@
+{
+ "note": "Each crop is counted by the better of the two models on the same 795 held-out photos (the older model is used only where it is better by more than 0.02). The older model had seen many of these photos in training, so its scores are, if anything, optimistic.",
+ "routing": {
+  "tomato": {
+   "weights": "fruit_yolo11x.pt",
+   "map50": 0.603,
+   "old_map50": 0.603,
+   "new_map50": 0.552
+  },
+  "sweet_pepper": {
+   "weights": "fruit_yolo11x_v2.pt",
+   "map50": 0.629,
+   "old_map50": 0.617,
+   "new_map50": 0.629
+  },
+  "hot_pepper": {
+   "weights": "fruit_yolo11x_v2.pt",
+   "map50": 0.899,
+   "old_map50": 0.066,
+   "new_map50": 0.899
+  },
+  "cucumber": {
+   "weights": "fruit_yolo11x_v2.pt",
+   "map50": 0.241,
+   "old_map50": 0.165,
+   "new_map50": 0.241
+  },
+  "eggplant": {
+   "weights": "fruit_yolo11x_v2.pt",
+   "map50": 0.342,
+   "old_map50": 0.015,
+   "new_map50": 0.342
+  },
+  "strawberry": {
+   "weights": "fruit_yolo11x_v2.pt",
+   "map50": 0.475,
+   "old_map50": 0.483,
+   "new_map50": 0.475
+  },
+  "melon": {
+   "weights": "fruit_yolo11x.pt",
+   "map50": 0.542,
+   "old_map50": 0.542,
+   "new_map50": 0.293
+  }
+ }
+}

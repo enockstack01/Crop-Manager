@@ -17,7 +17,7 @@ import numpy as np
 
 from .counter import decode, quality
 
-YOLO_VERSION = 'yolo11x-fruit-1'
+YOLO_VERSION = 'yolo11x-fruit-2'
 CONF = float(os.environ.get('FRUIT_YOLO_CONF', '0.30'))
 IOU = float(os.environ.get('FRUIT_YOLO_IOU', '0.50'))
 IMGSZ = int(os.environ.get('FRUIT_YOLO_IMGSZ', '800'))
@@ -30,7 +30,11 @@ def weights_path() -> Path:
     return Path(os.environ.get('FRUIT_YOLO_WEIGHTS') or Path(__file__).resolve().parent.parent / 'models' / 'fruit_yolo11x.pt')
 
 
-def _download(p: Path):
+def routing_path() -> Path:
+    return Path(os.environ.get('FRUIT_YOLO_ROUTING') or weights_path().parent / 'fruit_yolo_routing.json')
+
+
+def _download(p: Path, names: tuple[str, ...] | None = None):
     """Fetches the weights (and the test report) from a private Hugging Face repo when FRUIT_YOLO_HF_REPO and HF_TOKEN are set."""
     repo, token = os.environ.get('FRUIT_YOLO_HF_REPO'), os.environ.get('HF_TOKEN')
     if not repo or not token:
@@ -38,11 +42,53 @@ def _download(p: Path):
     try:
         from huggingface_hub import hf_hub_download
         p.parent.mkdir(parents=True, exist_ok=True)
-        for name in ('fruit_yolo_report.json', 'fruit_yolo11x.pt'):
-            hf_hub_download(repo, name, token=token, local_dir=str(p.parent))
+        for name in names or ('fruit_yolo_report.json', 'fruit_yolo11x.pt'):
+            if not (p.parent / name).is_file():
+                hf_hub_download(repo, name, token=token, local_dir=str(p.parent))
         return p.parent / 'fruit_yolo11x.pt' if p.name != 'fruit_yolo11x.pt' else p
     except Exception:
         return None
+
+
+_routes = None
+
+
+def routing() -> dict | None:
+    """Which weights count which crop, from models/fruit_yolo_routing.json: {crop_class: {weights, map50}}. None = one model counts every crop it knows."""
+    global _routes
+    if _routes is not None:
+        return _routes or None
+    path = routing_path()
+    if not path.is_file():
+        _download(weights_path(), ('fruit_yolo_routing.json',))
+    try:
+        _routes = json.loads(path.read_text())['routing']
+    except Exception:
+        _routes = {}
+    if _routes:  # make sure every weights file it names is here (fetched from the private repo when needed)
+        names = tuple({r['weights'] for r in _routes.values()})
+        if any(not (path.parent / n).is_file() for n in names):
+            _download(weights_path(), names)
+    return _routes or None
+
+
+def _model_file(name: str):
+    """One YOLO model by file name (in the models folder), loaded once; None when it is missing or cannot be loaded."""
+    if name in _loaded:
+        return _loaded[name]
+    p = weights_path().parent / name
+    m = None
+    if p.is_file():
+        try:
+            from ultralytics import YOLO
+            m = YOLO(str(p))
+        except Exception:  # not installed, or the file is not a model: use the colour method instead
+            m = None
+    _loaded[name] = m
+    return m
+
+
+_loaded: dict = {}
 
 
 def load():
@@ -56,21 +102,23 @@ def load():
         p = _download(p)
     if p is None or not p.is_file():
         return None
-    try:
-        from ultralytics import YOLO
-        _model = YOLO(str(p))
-    except Exception:  # not installed, or the file is not a model: use the colour method instead
-        _model = None
+    _model = _model_file(p.name) if p.parent == weights_path().parent else None
     return _model
 
 
 def classes() -> list[str]:
+    r = routing()
+    if r:
+        return sorted(r)
     m = load()
     return [str(v) for v in m.names.values()] if m is not None else []
 
 
 def reliable_classes() -> list[str]:
-    """Classes the trained model may count: those that scored well enough in its own test (models/fruit_yolo_report.json)."""
+    """Classes the trained models may count: those that scored well enough in their own test (fruit_yolo_routing.json, else fruit_yolo_report.json)."""
+    r = routing()
+    if r:
+        return sorted(c for c, v in r.items() if v.get('map50', 0) >= MIN_MAP and (weights_path().parent / v['weights']).is_file())
     report = weights_path().parent / 'fruit_yolo_report.json'
     try:
         scores = json.loads(report.read_text())['per_class_map50']
@@ -83,14 +131,21 @@ def available_for(crop_class: str | None) -> bool:
     return bool(crop_class) and crop_class in reliable_classes()
 
 
-def count_with_yolo(data: bytes, crop_class: str) -> dict:
-    m = load()
-    if m is None or crop_class not in reliable_classes():
+def _model_for(crop_class: str):
+    r = routing()
+    return _model_file(r[crop_class]['weights']) if r and crop_class in r else load()
+
+
+def count_with_yolo(data: bytes, crop_class: str, imgsz: int = 0) -> dict:
+    if crop_class not in reliable_classes():
+        raise ValueError('The trained fruit model is not available for this crop.')
+    m = _model_for(crop_class)
+    if m is None:
         raise ValueError('The trained fruit model is not available for this crop.')
     img = decode(data)
     warnings, numbers = quality(img)
     cid = [k for k, v in m.names.items() if v == crop_class][0]
-    res = m.predict(img, conf=CONF, iou=IOU, imgsz=IMGSZ, classes=[cid], verbose=False)[0]
+    res = m.predict(img, conf=CONF, iou=IOU, imgsz=max(IMGSZ, min(int(imgsz or 0), 1600)), classes=[cid], verbose=False)[0]
     boxes = res.boxes
     xyxy = boxes.xyxy.cpu().numpy() if len(boxes) else np.zeros((0, 4))
     conf = boxes.conf.cpu().numpy() if len(boxes) else np.zeros(0)

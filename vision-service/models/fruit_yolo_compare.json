@@ -1,0 +1,176 @@
+{
+ "ALL": {
+  "old": {
+   "n": 795,
+   "map50": 0.356,
+   "per_class": {
+    "tomato": 0.603,
+    "sweet_pepper": 0.617,
+    "hot_pepper": 0.066,
+    "cucumber": 0.165,
+    "eggplant": 0.015,
+    "strawberry": 0.483,
+    "melon": 0.542
+   }
+  },
+  "new": {
+   "n": 795,
+   "map50": 0.49,
+   "per_class": {
+    "tomato": 0.552,
+    "sweet_pepper": 0.629,
+    "hot_pepper": 0.899,
+    "cucumber": 0.241,
+    "eggplant": 0.342,
+    "strawberry": 0.475,
+    "melon": 0.293
+   }
+  }
+ },
+ "chili": {
+  "old": {
+   "n": 132,
+   "map50": 0.012,
+   "per_class": {
+    "hot_pepper": 0.012
+   }
+  },
+  "new": {
+   "n": 132,
+   "map50": 0.991,
+   "per_class": {
+    "hot_pepper": 0.991
+   }
+  }
+ },
+ "field-cucumber": {
+  "old": {
+   "n": 46,
+   "map50": 0.48,
+   "per_class": {
+    "cucumber": 0.48
+   }
+  },
+  "new": {
+   "n": 46,
+   "map50": 0.277,
+   "per_class": {
+    "cucumber": 0.277
+   }
+  }
+ },
+ "lvis": {
+  "old": {
+   "n": 158,
+   "map50": 0.661,
+   "per_class": {
+    "tomato": 0.792,
+    "sweet_pepper": 0.595,
+    "hot_pepper": 0.633,
+    "cucumber": 0.711,
+    "eggplant": 0.506,
+    "strawberry": 0.706,
+    "melon": 0.685
+   }
+  },
+  "new": {
+   "n": 158,
+   "map50": 0.205,
+   "per_class": {
+    "tomato": 0.52,
+    "sweet_pepper": 0.089,
+    "hot_pepper": 0.022,
+    "cucumber": 0.328,
+    "eggplant": 0.027,
+    "strawberry": 0.441,
+    "melon": 0.008
+   }
+  }
+ },
+ "melon": {
+  "old": {
+   "n": 24,
+   "map50": 0.651,
+   "per_class": {
+    "melon": 0.651
+   }
+  },
+  "new": {
+   "n": 24,
+   "map50": 0.496,
+   "per_class": {
+    "melon": 0.496
+   }
+  }
+ },
+ "strawberry": {
+  "old": {
+   "n": 46,
+   "map50": 0.0,
+   "per_class": {
+    "strawberry": 0.0
+   }
+  },
+  "new": {
+   "n": 46,
+   "map50": 0.582,
+   "per_class": {
+    "strawberry": 0.582
+   }
+  }
+ },
+ "sweet-pepper": {
+  "old": {
+   "n": 103,
+   "map50": 0.966,
+   "per_class": {
+    "sweet_pepper": 0.966
+   }
+  },
+  "new": {
+   "n": 103,
+   "map50": 0.873,
+   "per_class": {
+    "sweet_pepper": 0.873
+   }
+  }
+ },
+ "tomatod": {
+  "old": {
+   "n": 17,
+   "map50": 0.992,
+   "per_class": {
+    "tomato": 0.992
+   }
+  },
+  "new": {
+   "n": 17,
+   "map50": 0.989,
+   "per_class": {
+    "tomato": 0.989
+   }
+  }
+ },
+ "vegetable": {
+  "old": {
+   "n": 269,
+   "map50": 0.0,
+   "per_class": {
+    "tomato": 0.0,
+    "sweet_pepper": 0.0,
+    "cucumber": 0.0,
+    "eggplant": 0.0
+   }
+  },
+  "new": {
+   "n": 269,
+   "map50": 0.293,
+   "per_class": {
+    "tomato": 0.304,
+    "sweet_pepper": 0.305,
+    "cucumber": 0.21,
+    "eggplant": 0.354
+   }
+  }
+ }
+}
