@@ -14,7 +14,13 @@ export function setTokenGetter(fn: TokenGetter | null) {
   tokenGetter = fn;
 }
 
+let farmOwner: string | null = null; // set when the signed-in person works on a farm they were invited to (greenhouse tab)
+export function setFarmOwner(id: string | null) {
+  farmOwner = id || null;
+}
+
 api.interceptors.request.use(async (config) => {
+  if (farmOwner && /^\/?greenhouse\//.test(String(config.url || '')) && !/^\/?greenhouse\/access/.test(String(config.url || ''))) config.headers['X-Farm-Owner'] = farmOwner;
   if (tokenGetter) {
     try {
       const token = await tokenGetter();

@@ -4,7 +4,9 @@
  *
  *   node mobile/scripts/test-greenhouse.mjs
  */
-import { countProblem, VERDICTS, COLOR_HEX, houseProblem, heatColor, markerColor, STATUS_COLOR } from '../src/lib/greenhouseRules.ts';
+import { countProblem, VERDICTS, COLOR_HEX, houseProblem, heatColor, markerColor, STATUS_COLOR, FRUIT_SIZES, TABS_BY_ROLE } from '../src/lib/greenhouseRules.ts';
+import { positionsOf, totalPositions, rowDefsOf, northOnPlan } from '../src/lib/greenhouseLayout.ts';
+import { positionsOf as serverPositions } from '../../server/src/lib/greenhouse/layout.js';
 
 let passed = 0;
 let failures = 0;
@@ -32,6 +34,28 @@ ok(heatColor(0, 10) === '#fff3e0' && heatColor(10, 10) === '#c62828' && heatColo
 ok(markerColor({ latest: null }, 'status', 10) === STATUS_COLOR.none, 'a plant never counted is grey');
 ok(markerColor({ latest: { recorded_count: 4, status: 'mismatch' } }, 'status', 10) === STATUS_COLOR.mismatch, 'a plant is coloured by its photo check');
 ok(markerColor({ latest: { recorded_count: 10, status: 'match' } }, 'fruit', 10) === '#c62828', 'or by how much fruit it has');
+
+/* ---- the second round: several photos, sizes, frozen and deactivated plants, roles, the shape of the house */
+ok(countProblem({ ...good, photo_url: undefined, photo_urls: ['/uploads/a.jpg', '/uploads/b.jpg'] }) === '' && /photo/i.test(countProblem({ ...good, photo_url: undefined, photo_urls: [] })), 'a count can have several photos, and needs at least one');
+ok(/12/.test(countProblem({ ...good, photo_urls: Array.from({ length: 13 }, (_x, i) => `/uploads/p${i}.jpg`) })), 'more than 12 photos for one plant are refused');
+ok(JSON.stringify(FRUIT_SIZES.map((x) => x.value)) === '["all","small","medium","large"]', 'a count is for all sizes, or small, medium or large fruit');
+ok(markerColor({ state: 'frozen', latest: { recorded_count: 5, status: 'match' } }, 'status', 10) === STATUS_COLOR.frozen && markerColor({ state: 'inactive', latest: null }, 'fruit', 10) === STATUS_COLOR.inactive, 'a frozen plant is light blue and a deactivated position dark grey, whatever the colouring');
+ok(houseProblem({ ...house, plants_per_row: '0' }) === '' && houseProblem({ ...house, plants_per_row: '301' }) !== '', 'a row may have no plants yet (positions are added later), but not more than 300');
+const ids = (role) => TABS_BY_ROLE[role].map((x) => x.id).join(',');
+ok(ids('owner') === 'dashboard,layout,counts,disease,crops,team', 'the farm owner has every tab');
+ok(ids('manager') === 'dashboard,disease,counts' && !TABS_BY_ROLE.manager.some((x) => x.id === 'layout'), 'the farm manager has records and the disease report, and no plan or 3D');
+ok(ids('collector') === 'layout,counts' && !TABS_BY_ROLE.collector.some((x) => ['dashboard', 'disease', 'team', 'crops'].includes(x.id)), 'the data collector has the plan and recording, and nothing else');
+const shaped = { length_m: 20, width_m: 9, rows: 3, plants_per_row: 6, pattern: 'zigzag', row_defs: [{ plants: 4 }, { plants: 6 }, { plants: 3, sub_rows: 2 }] };
+const mine = positionsOf(shaped);
+ok(mine.length === 16 && totalPositions(shaped) === 16 && rowDefsOf(shaped)[2].sub_rows === 2 && mine.some((p) => p.row_id === 'R3B' && p.plant_label === 'P3'), 'rows of different lengths and a double row give R1 P4, R2 P6 and R3A P1 to R3B P3');
+const same = [shaped, { length_m: 10, width_m: 4, rows: 2, plants_per_row: 4, pattern: 'staggered', plant_spacing_m: 1.5, row_spacing_m: 1.2 }, { length_m: 30, width_m: 8, rows: 4, plants_per_row: 9, pattern: 'grid', row_defs: [{ plants: 9 }, { plants: 4, start: 3 }, { plants: 5, sub_rows: 2 }, { plants: 9 }] }].every((h) => {
+  const a = positionsOf(h);
+  const b = serverPositions(h);
+  return a.length === b.length && a.every((q, i) => q.row_id === b[i].row_id && q.plant_label === b[i].plant_label && q.x === b[i].x && q.z === b[i].z);
+});
+ok(same, 'the phone places every plant exactly where the server does');
+const [nx, nz] = northOnPlan(90);
+ok(Math.abs(nx + 1) < 1e-9 && Math.abs(nz) < 1e-9 && northOnPlan(0)[1] === -1, 'north is up when the top wall faces north, and to the left when it faces east');
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

@@ -30,12 +30,14 @@ export function PhotoSetField({
   onChange,
   max = 3,
   autoCamera = false,
+  hint,
 }: {
   label?: string;
   urls: string[];
   onChange: (urls: string[]) => void;
   max?: number;
   autoCamera?: boolean;
+  hint?: string;
 }) {
   const { colors } = useTheme();
   const toast = useToast();
@@ -116,7 +118,7 @@ export function PhotoSetField({
         </View>
       ) : null}
       {busy ? <AppText variant="caption" style={{ color: colors.textLight }}>{t('Preparing and sending the photo… this can take a moment on mobile data.')}</AppText> : null}
-      <AppText variant="caption" style={{ color: colors.textLight }}>{t('Up to {{n}} photos: the sick leaf, the stem, the whole plant.', { n: max })}</AppText>
+      <AppText variant="caption" style={{ color: colors.textLight }}>{hint ? t(hint, { n: max }) : t('Up to {{n}} photos: the sick leaf, the stem, the whole plant.', { n: max })}</AppText>
     </View>
   );
 }

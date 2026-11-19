@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/theme';
@@ -8,23 +9,19 @@ import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { Bars, HBars } from '../components/charts';
 import { DateField, NumberField, SelectField, TextAreaField, TextField, useForm } from '../components/fields';
-import { PhotoField } from '../components/PhotoField';
+import { PhotoSetField } from '../components/PhotoSetField';
+import { api, setFarmOwner } from '../lib/api';
 import { useConfirm } from '../components/Confirm';
 import { useToast } from '../components/Toast';
 import { mediaUrl } from '../env';
 import { formatDate, formatNumber } from '../lib/format';
-import { COLOR_HEX, VERDICTS, countProblem, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhMutations } from '../lib/greenhouse';
+import { COLOR_HEX, FRUIT_SIZES, TABS_BY_ROLE, VERDICTS, countProblem, useGhAccess, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhHealth, useGhHouses, useGhMutations, useGhTeam } from '../lib/greenhouse';
+import type { GhRole } from '../lib/greenhouse';
 import { t } from '../i18n';
 import { LayoutTab } from './GreenhouseLayout';
 import { HealthCard } from '../components/HealthCard';
 
-const TABS = [
-  { id: 'dashboard', icon: 'chart-column', label: 'Dashboard' },
-  { id: 'layout', icon: 'cube', label: 'Layout' },
-  { id: 'counts', icon: 'camera', label: 'Fruit counts' },
-  { id: 'crops', icon: 'seedling', label: 'My crops' },
-] as const;
-type TabId = (typeof TABS)[number]['id'];
+type TabId = string;
 const today = () => new Date().toISOString().slice(0, 10);
 
 function Verdict({ v }: { v?: any }) {
@@ -53,7 +50,14 @@ function CheckResult({ verification: v, annotatedUrl, photoUrl }: { verification
           <StatTile label="The photo shows" value={formatNumber(v.detected)} sub={v.confidence ? `${t('Confidence')}: ${t(v.confidence)}` : undefined} />
         </Grid>
       ) : null}
-      <HealthCard health={v.health} />
+      {v.collage?.overlap_warnings?.length > 0 ? (
+        <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.orange, backgroundColor: colors.card }}>
+          <Icon name="clone" size={16} color={colors.orange} />
+          <AppText style={{ flex: 1, fontSize: 13, lineHeight: 19 }}>{t('Some photos seem to show the same part of the plant:')} {v.collage.overlap_warnings.map((w: any) => `${w.a} ${t('and')} ${w.b}`).join(', ')}. {t('A fruit that is in two photos is counted twice. Retake one of each pair so every fruit is in one photo only.')}</AppText>
+        </View>
+      ) : null}
+      {v.fruit_size && v.fruit_size !== 'all' ? <AppText variant="caption">{t('Counting')} {t(FRUIT_SIZES.find((x) => x.value === v.fruit_size)?.label || v.fruit_size).toLowerCase()} {t('fruit only')}{v.detected_all_sizes != null ? ` (${v.detected_all_sizes} ${t('fruit of all sizes in the photo')})` : ''}.</AppText> : null}
+      {v.health !== undefined ? <HealthCard health={v.health} /> : null}
       {photoUrl ? <Image source={{ uri: mediaUrl(photoUrl) }} resizeMode="contain" style={{ width: '100%', height: 220, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }} accessibilityLabel={t('Your photo')} /> : null}
       {annotatedUrl ? (
         <View style={{ gap: 4 }}>
@@ -154,8 +158,8 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
   const { createCount, updateCount, check } = useGhMutations();
   const form = useForm(editing ? {
     crop_id: editing.crop_id, greenhouse: editing.greenhouse || '', row_id: editing.row_id, plant_label: editing.plant_label || '', count_date: editing.count_date,
-    recorded_count: String(editing.recorded_count), photo_url: editing.photo_url as string | null, notes: editing.notes || '',
-  } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_url: null as string | null, notes: '' });
+    recorded_count: String(editing.recorded_count), photo_urls: (editing.photo_urls?.length ? editing.photo_urls : [editing.photo_url]) as string[], notes: editing.notes || '', label: editing.label || '', fruit_size: editing.fruit_size || 'all',
+  } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_urls: [] as string[], notes: '', label: '', fruit_size: 'all' });
   const [err, setErr] = useState('');
   const [result, setResult] = useState<any>(null);
   const v = form.values;
@@ -166,8 +170,8 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
     if (p) { setErr(t(p)); return; }
     setErr('');
     try {
-      const out = await check.mutateAsync({ crop_id: v.crop_id, photo_url: v.photo_url, recorded_count: Number(v.recorded_count) });
-      setResult({ ...out, photo_url: v.photo_url, preview: true });
+      const out = await check.mutateAsync({ crop_id: v.crop_id, photo_urls: v.photo_urls, recorded_count: Number(v.recorded_count), fruit_size: v.fruit_size });
+      setResult({ ...out, preview: true });
     } catch (e: any) { setErr(e?.message || t('The photo could not be checked.')); }
   };
   const save = async () => {
@@ -207,8 +211,10 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
       <TextField label="Row ID" required {...form.bind('row_id')} placeholder="e.g. R3" autoCapitalize="characters" />
       <TextField label="Plant" {...form.bind('plant_label')} placeholder="e.g. P7 or tree number" hint="Fill this in to follow the same plant over time" />
       <NumberField label="Number of fruit on the plant" required {...form.bind('recorded_count')} placeholder="e.g. 24" />
-      <PhotoField label="Photo of the fruit on the plant" value={v.photo_url} onChange={(url) => { form.set('photo_url', url); setResult(null); }} />
-      <AppText variant="caption" style={{ marginBottom: 12 }}>{t('Take the photo in daylight with the fruit facing the camera and the whole plant in view. The photo is counted by the fruit counter and compared with your number.')}</AppText>
+      <SelectField label="Size of the fruit you are counting" {...form.bind('fruit_size')} placeholder="" options={FRUIT_SIZES.map((x) => ({ value: x.value, label: t(x.label) }))} hint="Choose small, medium or large to record one size, or all sizes for every fruit" />
+      <TextField label="Label (optional)" {...form.bind('label')} placeholder="e.g. first flush" />
+      <PhotoSetField label="Photos of the fruit on the plant" urls={v.photo_urls} max={12} hint="Take as many photos as you need (up to {{n}}) to show every fruit on the plant. Make sure no fruit is in two photos, or it is counted twice. They are joined into one picture that is counted and checked for disease." onChange={(urls) => { form.set('photo_urls', urls); setResult(null); }} />
+      <AppText variant="caption" style={{ marginBottom: 12 }}>{t('Take the photos in daylight with the fruit facing the camera. The photos are counted by the fruit counter and compared with your number.')}</AppText>
       <TextAreaField label="Notes" {...form.bind('notes')} />
       {result?.preview ? (
         <View style={{ marginTop: 8, gap: 8 }}>
@@ -220,7 +226,7 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
   );
 }
 
-function CountDetail({ row, onClose, onEdit }: { row: any; onClose: () => void; onEdit: (r: any) => void }) {
+function CountDetail({ row, onClose, onEdit, role = 'owner' }: { row: any; onClose: () => void; onEdit: (r: any) => void; role?: GhRole }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { reverify, removeCount } = useGhMutations();
@@ -237,20 +243,20 @@ function CountDetail({ row, onClose, onEdit }: { row: any; onClose: () => void; 
       visible onClose={onClose} title={`${shown.crop_name} · ${shown.row_id}${shown.plant_label ? ` · ${shown.plant_label}` : ''}`}
       footer={(
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Button title="Delete" icon="trash" kind="secondary" onPress={remove} />
-          <Button title="Check the photo again" icon="rotate" kind="secondary" loading={reverify.isPending} onPress={again} />
-          <Button title="Edit" icon="pen" onPress={() => onEdit(shown)} />
+          {role === 'owner' ? <Button title="Delete" icon="trash" kind="secondary" onPress={remove} /> : null}
+          {role === 'owner' ? <Button title="Check the photo again" icon="rotate" kind="secondary" loading={reverify.isPending} onPress={again} /> : null}
+          {role !== 'manager' ? <Button title="Edit" icon="pen" onPress={() => onEdit(shown)} /> : null}
         </View>
       )}
     >
-      <AppText variant="caption" style={{ marginBottom: 10 }}>{formatDate(shown.count_date)}{shown.greenhouse ? ` · ${shown.greenhouse}` : ''}</AppText>
+      <AppText variant="caption" style={{ marginBottom: 10 }}>{formatDate(shown.count_date)}{shown.greenhouse ? ` · ${shown.greenhouse}` : ''}{shown.label ? ` · ${shown.label}` : ''}{shown.entered_by_name ? ` · ${t('recorded by')} ${shown.entered_by_name}` : ''}</AppText>
       <CheckResult verification={shown.verification} annotatedUrl={shown.annotated_url} photoUrl={shown.photo_url} />
       {shown.notes ? <AppText style={{ marginTop: 12, fontSize: 13 }}><AppText weight="700" style={{ fontSize: 13 }}>{t('Notes')}: </AppText>{shown.notes}</AppText> : null}
     </Sheet>
   );
 }
 
-function CountsTab({ start }: { start: any }) {
+function CountsTab({ start, role = 'owner' }: { start: any; role?: GhRole }) {
   const { colors } = useTheme();
   const { data: crops = [] } = useGhCrops();
   const [filters, setFilters] = useState({ crop_id: '', status: start?.status || '' });
@@ -263,7 +269,7 @@ function CountsTab({ start }: { start: any }) {
   if (!crops.length && !isLoading) return <EmptyState icon="seedling" title="Choose the crops you grow first" description="Then you can record the fruit on your plants with a photo." />;
   return (
     <View style={{ gap: 12 }}>
-      <View style={{ alignSelf: 'flex-start' }}><Button title="Add a fruit count" icon="plus" onPress={() => setForm({ editing: null })} /></View>
+      {role !== 'manager' ? <View style={{ alignSelf: 'flex-start' }}><Button title="Add a fruit count" icon="plus" onPress={() => setForm({ editing: null })} /></View> : null}
       <SelectField value={filters.crop_id} onChangeValue={(x) => { setFilters((f) => ({ ...f, crop_id: x })); setPage(1); }} placeholder="All crops" options={[{ value: '', label: t('All crops') }, ...crops.map((c: any) => ({ value: c.id, label: c.name }))]} />
       <SelectField value={filters.status} onChangeValue={(x) => { setFilters((f) => ({ ...f, status: x })); setPage(1); }} placeholder="All results" options={[{ value: '', label: t('All results') }, ...Object.entries(VERDICTS).map(([value, m]) => ({ value, label: t(m.label) }))]} />
       {isLoading ? <Loading /> : isError ? (
@@ -277,7 +283,7 @@ function CountsTab({ start }: { start: any }) {
               <Image source={{ uri: mediaUrl(r.photo_url) }} style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: colors.border }} />
               <View style={{ flex: 1, gap: 3 }}>
                 <AppText weight="700" style={{ fontSize: 15 }}>{r.crop_name}</AppText>
-                <AppText style={{ fontSize: 12, color: colors.textLight }}>{[r.greenhouse, r.row_id, r.plant_label].filter(Boolean).join(' · ')} · {formatDate(r.count_date)}</AppText>
+                <AppText style={{ fontSize: 12, color: colors.textLight }}>{[r.greenhouse, r.row_id, r.plant_label].filter(Boolean).join(' · ')}{r.label ? ` (${r.label})` : ''} · {formatDate(r.count_date)}</AppText>
                 <AppText style={{ fontSize: 13 }}>{t('Recorded')}: <AppText weight="700" style={{ fontSize: 13 }}>{r.recorded_count}</AppText>{'   '}{t('Photo shows')}: <AppText weight="700" style={{ fontSize: 13 }}>{r.verification?.detected ?? '—'}</AppText></AppText>
                 <View style={{ alignSelf: 'flex-start' }}><Verdict v={r.verification} /></View>
               </View>
@@ -293,7 +299,7 @@ function CountsTab({ start }: { start: any }) {
         </>
       )}
       {form ? <CountSheet crops={crops} editing={form.editing} onClose={() => setForm(null)} /> : null}
-      {view && !form ? <CountDetail key={view.id} row={view} onClose={() => setView(null)} onEdit={(r) => { setView(null); setForm({ editing: r }); }} /> : null}
+      {view && !form ? <CountDetail key={view.id} row={view} role={role} onClose={() => setView(null)} onEdit={(r) => { setView(null); setForm({ editing: r }); }} /> : null}
     </View>
   );
 }
@@ -393,27 +399,145 @@ function CropsTab() {
   );
 }
 
+/* ------------------------------------------------------- disease report */
+/** For the farm manager and the owner: how many plants are diseased, and every detail of each. */
+function DiseaseTab() {
+  const { colors } = useTheme();
+  const { data: houses = [], isLoading } = useGhHouses();
+  const [houseId, setHouseId] = useState('');
+  const house = houses.find((h: any) => h.id === houseId) || houses[0];
+  const { data: rep, isLoading: loading } = useGhHealth(house?.id);
+  if (isLoading) return <Loading />;
+  if (!houses.length) return <EmptyState icon="virus" title="No greenhouse yet" description="The disease report appears once a greenhouse is set up and plants are counted." />;
+  return (
+    <View style={{ gap: 12 }}>
+      <SelectField label="Greenhouse" value={house.id} onChangeValue={(v: string) => setHouseId(v)} placeholder="" options={houses.map((h: any) => ({ value: h.id, label: h.name }))} />
+      {loading || !rep ? <Loading /> : (
+        <>
+          <Grid columns={2} gap={10}>
+            <StatTile label="Diseased plants" value={formatNumber(rep.summary.sick_plants)} sub={`${t('of')} ${formatNumber(rep.summary.counted)} ${t('plants counted')}`} />
+            <StatTile label="Share of counted plants" value={`${rep.summary.share_of_counted}%`} />
+            <StatTile label="Diseased fruit found" value={formatNumber(rep.summary.sick_fruit)} />
+            <StatTile label="Plant positions" value={formatNumber(rep.summary.plants)} />
+          </Grid>
+          {rep.plants.length === 0 ? <EmptyState icon="leaf" title="No diseased plants found" description="None of the counted plants shows signs of disease in its latest photo." /> : rep.plants.map((r: any) => (
+            <View key={r.count_id} style={{ flexDirection: 'row', gap: 12, padding: 12, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+              <Image source={{ uri: mediaUrl(r.annotated_url || r.photo_url) }} style={{ width: 72, height: 72, borderRadius: 8, backgroundColor: colors.border }} />
+              <View style={{ flex: 1, gap: 3 }}>
+                <AppText weight="700" style={{ fontSize: 15 }}>{r.row_id} {r.plant_label}{r.label ? ` (${r.label})` : ''} · {r.crop_name}</AppText>
+                <View style={{ alignSelf: 'flex-start' }}><Badge label={r.disease || t('Possible disease')} tone="danger" /></View>
+                <AppText style={{ fontSize: 12, color: colors.textLight }}>{formatDate(r.count_date)}{r.disease_confidence != null ? ` · ${Math.round(r.disease_confidence * 100)}%` : ''}{r.state === 'frozen' ? ` · ${t('Frozen')}` : ''}</AppText>
+                {r.checked_fruit ? <AppText style={{ fontSize: 13 }}>{t('Sick fruit')}: {r.sick_fruit} / {r.checked_fruit}{r.sick_fruit_numbers.length ? ` (${t('numbers')} ${r.sick_fruit_numbers.join(', ')})` : ''}</AppText> : null}
+                {r.message ? <AppText style={{ fontSize: 12, lineHeight: 17 }}>{r.message}</AppText> : null}
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ team */
+const ROLE_TEXT: Record<string, string> = {
+  manager: 'Farm manager: reads all the records, the dashboard and the disease report with the number of diseased plants. No 3D map, no recording, no changes.',
+  collector: 'Data collector: sees the plan view and records fruit counts with photos, and can freeze a plant with a reason. No disease details, dashboard or settings.',
+};
+function TeamTab() {
+  const { colors } = useTheme();
+  const toast = useToast();
+  const confirm = useConfirm();
+  const { data: team = [], isLoading } = useGhTeam();
+  const { invite, changeMember, removeMember } = useGhMutations();
+  const form = useForm({ email: '', name: '', role: 'collector' });
+  const [err, setErr] = useState('');
+  const add = async () => {
+    setErr('');
+    try {
+      await invite.mutateAsync(form.values);
+      form.setValues({ email: '', name: '', role: form.values.role });
+      toast(t('Invitation saved. They get access when they sign in with that email address.'));
+    } catch (e: any) { setErr(e?.message || ''); }
+  };
+  const remove = async (m: any) => {
+    if (!(await confirm(t('Remove {{name}} from your team? They lose access at once.', { name: m.name || m.email }), { confirmLabel: 'Remove' }))) return;
+    try { await removeMember.mutateAsync(m.id); } catch (e: any) { toast(e?.message || '', 'error'); }
+  };
+  return (
+    <View style={{ gap: 16 }}>
+      <ChartCard title="Invite someone to your greenhouse" icon="user-plus">
+        <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight, marginBottom: 8 }}>{t('Give a farm manager or a data collector their own account. They sign in with the email address you enter here, and then choose your farm.')}</AppText>
+        {err ? <AppText style={{ fontSize: 13, color: colors.red, marginBottom: 8 }}>{err}</AppText> : null}
+        <TextField label="Email address" required {...form.bind('email')} placeholder="name@example.com" autoCapitalize="none" keyboardType="email-address" />
+        <TextField label="Name (optional)" {...form.bind('name')} />
+        <SelectField label="Role" {...form.bind('role')} placeholder="" options={[{ value: 'collector', label: t('Data collector') }, { value: 'manager', label: t('Farm manager') }]} />
+        <AppText variant="caption" style={{ marginBottom: 10 }}>{t(ROLE_TEXT[form.values.role])}</AppText>
+        <View style={{ alignSelf: 'flex-start' }}><Button title="Invite" icon="plus" loading={invite.isPending} onPress={add} /></View>
+      </ChartCard>
+      <ChartCard title="Your team" icon="user-group">
+        {isLoading ? <Loading /> : team.length === 0 ? <AppText style={{ color: colors.textLight }}>{t('Nobody yet.')}</AppText> : team.map((m: any, i: number) => (
+          <View key={m.id} style={{ gap: 8, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
+            <AppText weight="700" style={{ fontSize: 14 }}>{m.name || m.email}</AppText>
+            {m.name ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{m.email}</AppText> : null}
+            <View style={{ alignSelf: 'flex-start' }}><Badge label={t(m.status === 'active' ? 'Signed in' : 'Waiting for them to sign in')} tone={m.status === 'active' ? 'success' : 'warning'} /></View>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Button title={m.role === 'manager' ? 'Farm manager' : 'Data collector'} kind="secondary" size="sm" onPress={() => changeMember.mutate({ id: m.id, role: m.role === 'manager' ? 'collector' : 'manager' })} />
+              <Button title="Remove" icon="trash" kind="secondary" size="sm" onPress={() => remove(m)} />
+            </View>
+          </View>
+        ))}
+      </ChartCard>
+    </View>
+  );
+}
+
 /* ------------------------------------------------------------------ page */
 export function GreenhouseScreen() {
   const { colors } = useTheme();
-  const [tab, setTab] = useState<TabId>('dashboard');
+  const qc = useQueryClient();
+  const { data: access } = useGhAccess();
+  const [farm, setFarm] = useState(''); // '' = my own farm
+  const farms = access?.farms || [];
+  const current = farms.find((f) => f.owner_id === farm) || null;
+  const role: GhRole = current ? current.role : 'owner';
+  setFarmOwner(current ? current.owner_id : null); // before any request of this render goes out
+  const switchFarm = (id: string) => {
+    setFarmOwner(id || null);
+    qc.removeQueries({ queryKey: ['greenhouse'] });
+    setFarm(id);
+    setTab('');
+  };
+  // someone with no crops of their own who was invited to a farm starts on that farm
+  useEffect(() => {
+    if (!access || !access.farms.length) return;
+    api.get('/greenhouse/crops', { headers: { 'X-Farm-Owner': '' } }).then((r) => { if (!r.data.data.length) switchFarm(access.farms[0].owner_id); }).catch(() => {});
+  }, [access]); // eslint-disable-line react-hooks/exhaustive-deps
+  const tabs = TABS_BY_ROLE[role];
+  const [tab, setTab] = useState<TabId>('');
   const [start, setStart] = useState<any>(null);
+  const active = tabs.some((x) => x.id === tab) ? tab : tabs[0].id;
   const go = (id: TabId, opts: any = null) => { setStart(opts); setTab(id); };
+  const subtitle = role === 'collector' ? 'Pick a plant on the plan and record its fruit with photos.' : role === 'manager' ? 'Read the records and see which plants are diseased.' : 'Count the fruit on your plants with a photo, and check each photo with the fruit counter.';
   return (
     <Screen>
-      <PageHeader title="Greenhouse" subtitle="Count the fruit on your plants with a photo, and check each photo with the fruit counter." />
+      <PageHeader title="Greenhouse" subtitle={subtitle} />
+      {farms.length > 0 ? (
+        <SelectField label="Farm" value={current ? current.owner_id : ''} onChangeValue={switchFarm} placeholder="" options={[{ value: '', label: t('My own farm') }, ...farms.map((f) => ({ value: f.owner_id, label: `${f.farm_name} (${t(f.role === 'manager' ? 'Farm manager' : 'Data collector')})` }))]} />
+      ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingBottom: 14 }}>
-        {TABS.map((x) => (
-          <Pressable key={x.id} onPress={() => go(x.id)} accessibilityRole="tab" accessibilityState={{ selected: tab === x.id }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: tab === x.id ? colors.primaryDark : colors.border, backgroundColor: tab === x.id ? colors.primaryDark : colors.card }}>
-            <Icon name={x.icon} size={13} color={tab === x.id ? '#FFFFFF' : colors.textLight} />
-            <AppText weight="600" style={{ fontSize: 13, color: tab === x.id ? '#FFFFFF' : colors.text }}>{t(x.label)}</AppText>
+        {tabs.map((x) => (
+          <Pressable key={x.id} onPress={() => go(x.id)} accessibilityRole="tab" accessibilityState={{ selected: active === x.id }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, borderRadius: 22, backgroundColor: active === x.id ? colors.primaryDark : colors.card, borderWidth: 1, borderColor: active === x.id ? colors.primaryDark : colors.border }}>
+            <Icon name={x.icon} size={13} color={active === x.id ? '#FFFFFF' : colors.textLight} />
+            <AppText weight="600" style={{ fontSize: 13, color: active === x.id ? '#FFFFFF' : colors.text }}>{t(x.label)}</AppText>
           </Pressable>
         ))}
       </ScrollView>
-      {tab === 'dashboard' ? <DashboardTab go={go} /> : null}
-      {tab === 'layout' ? <LayoutTab /> : null}
-      {tab === 'counts' ? <CountsTab key={JSON.stringify(start)} start={start} /> : null}
-      {tab === 'crops' ? <CropsTab /> : null}
+      {active === 'dashboard' ? <DashboardTab go={go} /> : null}
+      {active === 'layout' ? <LayoutTab role={role} /> : null}
+      {active === 'counts' ? <CountsTab key={`${farm}${JSON.stringify(start)}`} start={start} role={role} /> : null}
+      {active === 'disease' ? <DiseaseTab key={farm} /> : null}
+      {active === 'crops' ? <CropsTab /> : null}
+      {active === 'team' ? <TeamTab /> : null}
     </Screen>
   );
 }
