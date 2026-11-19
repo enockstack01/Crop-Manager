@@ -1,24 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Bar } from 'react-chartjs-2';
 import { DataTable, EmptyState, FilterSelect, Loading, PageHeader, Pagination } from '../components/ui.jsx';
 import { Modal } from '../components/Modal.jsx';
 import { FormRow, NumberField, SelectField, TextArea, TextField, DateField, useForm } from '../components/form.jsx';
-import { PhotoUpload } from '../components/PhotoUpload.jsx';
+import { MultiPhotoUpload } from '../components/MultiPhotoUpload.jsx';
+import { api, setFarmOwner } from '../lib/api.js';
 import { useConfirm } from '../components/Confirm.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { baseOptions, breakdownOptions, LEAF, useIsDark } from '../features/dashboard/charts.jsx';
 import { formatDate, formatNumber } from '../lib/format.js';
-import { useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhMutations, VERDICTS } from '../lib/greenhouse.js';
+import { FRUIT_SIZES, useGhAccess, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhHealth, useGhHouses, useGhMutations, useGhTeam, VERDICTS } from '../lib/greenhouse.js';
 import { t } from '../i18n/index.js';
 import LayoutTab from './GreenhouseLayout.jsx';
 import { HealthCard } from '../components/HealthCard.jsx';
 
-const TABS = [
-  { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
-  { id: 'layout', icon: 'fa-cube', label: 'Layout and 3D' },
-  { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
-  { id: 'crops', icon: 'fa-seedling', label: 'My crops' },
-];
+/** What each role sees: the owner everything; the farm manager records and disease details, no plan or 3D; the data collector the plan view and recording. */
+const TABS_BY_ROLE = {
+  owner: [
+    { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
+    { id: 'layout', icon: 'fa-cube', label: 'Layout and 3D' },
+    { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
+    { id: 'disease', icon: 'fa-virus', label: 'Disease report' },
+    { id: 'crops', icon: 'fa-seedling', label: 'My crops' },
+    { id: 'team', icon: 'fa-user-group', label: 'Team' },
+  ],
+  manager: [
+    { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
+    { id: 'disease', icon: 'fa-virus', label: 'Disease report' },
+    { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
+  ],
+  collector: [
+    { id: 'layout', icon: 'fa-table-cells', label: 'Plan and recording' },
+    { id: 'counts', icon: 'fa-camera', label: 'My records' },
+  ],
+};
 const COLOR_HEX = { red: '#C62828', orange: '#EF6C00', yellow: '#F9A825', purple: '#5E35B1', green: '#7CB342' };
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -68,10 +84,17 @@ function CheckResult({ verification: v, annotatedUrl, photoUrl }) {
           <Tile label="The photo shows" value={formatNumber(v.detected)} sub={v.confidence ? `${t('Confidence')}: ${t(v.confidence)}` : ''} />
         </div>
       )}
-      <HealthCard health={v.health} />
+      {v.collage?.overlap_warnings?.length > 0 && (
+        <div className="alert-item alert-warning" style={{ marginBottom: 12 }}>
+          <i className="fas fa-clone" />
+          <div className="alert-content">{t('Some photos seem to show the same part of the plant:')} {v.collage.overlap_warnings.map((w) => `${w.a} ${t('and')} ${w.b}`).join(', ')}. {t('A fruit that is in two photos is counted twice. Retake one of each pair so every fruit is in one photo only.')}</div>
+        </div>
+      )}
+      {v.fruit_size && v.fruit_size !== 'all' && <p className="org-muted" style={{ marginTop: 0 }}>{t('Counting')} {t(FRUIT_SIZES.find((x) => x.value === v.fruit_size)?.label || v.fruit_size).toLowerCase()} {t('fruit only')}{v.detected_all_sizes != null ? ` (${v.detected_all_sizes} ${t('fruit of all sizes in the photo')})` : ''}.</p>}
+      {v.health !== undefined && <HealthCard health={v.health} />}
       {(photoUrl || annotatedUrl) && (
         <div className="gh-photos">
-          {photoUrl && <figure><img src={photoUrl} alt={t('Your photo')} /><figcaption>{t('Your photo')}</figcaption></figure>}
+          {photoUrl && <figure><img src={photoUrl} alt={t('Your photo')} /><figcaption>{v.collage ? t('Your {{n}} photos joined into one picture', { n: v.collage.photos }) : t('Your photo')}</figcaption></figure>}
           {annotatedUrl && <figure><img src={annotatedUrl} alt={t('Fruit counted')} /><figcaption>{t('Every counted fruit is marked with a ring and a number')}</figcaption></figure>}
         </div>
       )}
@@ -197,8 +220,8 @@ export function CountForm({ crops, editing, preset, onClose, onSaved }) {
   const { createCount, updateCount, check } = useGhMutations();
   const form = useForm(editing ? {
     crop_id: editing.crop_id, greenhouse: editing.greenhouse || '', row_id: editing.row_id, plant_label: editing.plant_label || '', count_date: editing.count_date,
-    recorded_count: String(editing.recorded_count), photo_url: editing.photo_url, notes: editing.notes || '',
-  } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_url: '', notes: '' });
+    recorded_count: String(editing.recorded_count), photo_urls: editing.photo_urls?.length ? editing.photo_urls : [editing.photo_url], notes: editing.notes || '', label: editing.label || '', fruit_size: editing.fruit_size || 'all',
+  } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_urls: [], notes: '', label: '', fruit_size: 'all' });
   const [err, setErr] = useState('');
   const [result, setResult] = useState(null); // { verification, annotated_url, photo_url }
   const v = form.values;
@@ -208,18 +231,18 @@ export function CountForm({ crops, editing, preset, onClose, onSaved }) {
     if (!v.crop_id) return t('Choose the crop.');
     if (!v.row_id.trim()) return t('Enter the row ID (for example R3 or Row 12).');
     if (v.recorded_count === '' || !Number.isInteger(Number(v.recorded_count)) || Number(v.recorded_count) < 0) return t('Enter the number of fruit as a whole number, 0 or more.');
-    if (!v.photo_url) return t('Add a photo that shows the fruit on the plant.');
+    if (!v.photo_urls.length) return t('Add a photo that shows the fruit on the plant.');
     return '';
   };
-  const body = () => ({ ...v, recorded_count: Number(v.recorded_count), photo_url: v.photo_url });
+  const body = () => ({ ...v, recorded_count: Number(v.recorded_count) });
 
   const runCheck = async () => {
     const p = problem();
     if (p) { setErr(p); return; }
     setErr('');
     try {
-      const out = await check.mutateAsync({ crop_id: v.crop_id, photo_url: v.photo_url, recorded_count: Number(v.recorded_count) });
-      setResult({ ...out, photo_url: v.photo_url, preview: true });
+      const out = await check.mutateAsync({ crop_id: v.crop_id, photo_urls: v.photo_urls, recorded_count: Number(v.recorded_count), fruit_size: v.fruit_size });
+      setResult({ ...out, preview: true });
     } catch (e) { setErr(e.message || t('The photo could not be checked.')); }
   };
   const submit = async (e) => {
@@ -267,8 +290,12 @@ export function CountForm({ crops, editing, preset, onClose, onSaved }) {
           <TextField label="Plant" {...form.bind('plant_label')} placeholder="e.g. P7 or tree number" hint="Fill this in to follow the same plant over time" />
           <NumberField label="Number of fruit on the plant" required {...form.bind('recorded_count')} step="1" min="0" placeholder="e.g. 24" />
         </FormRow>
-        <PhotoUpload label="Photo of the fruit on the plant" value={v.photo_url} onChange={(url) => { form.set('photo_url', url || ''); setResult(null); }} />
-        <p className="form-hint" style={{ marginTop: -4 }}>{t('Take the photo in daylight with the fruit facing the camera and the whole plant in view. The photo is counted by the fruit counter and compared with your number.')}</p>
+        <FormRow>
+          <SelectField label="Size of the fruit you are counting" {...form.bind('fruit_size')} options={FRUIT_SIZES.map((x) => ({ value: x.value, label: x.label }))} hint="Choose small, medium or large to record one size, or all sizes for every fruit" />
+          <TextField label="Label (optional)" {...form.bind('label')} placeholder="e.g. first flush" maxLength={60} />
+        </FormRow>
+        <MultiPhotoUpload label="Photos of the fruit on the plant" value={v.photo_urls} onChange={(urls) => { form.set('photo_urls', urls); setResult(null); }} />
+        <p className="form-hint" style={{ marginTop: -4 }}>{t('Take the photos in daylight with the fruit facing the camera. The photos are joined into one picture, counted by the fruit counter and compared with your number.')}</p>
         <TextArea label="Notes" {...form.bind('notes')} rows={2} />
         {result?.preview && (
           <div style={{ marginTop: 12 }}>
@@ -281,7 +308,7 @@ export function CountForm({ crops, editing, preset, onClose, onSaved }) {
   );
 }
 
-function CountDetail({ row, onClose, onEdit }) {
+function CountDetail({ row, onClose, onEdit, role = 'owner' }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { reverify, removeCount } = useGhMutations();
@@ -298,20 +325,20 @@ function CountDetail({ row, onClose, onEdit }) {
       open onClose={onClose} title={`${shown.crop_name} · ${shown.row_id}${shown.plant_label ? ` · ${shown.plant_label}` : ''}`} size="modal-lg"
       footer={(
         <>
-          <button type="button" className="btn btn-danger" onClick={remove}><i className="fas fa-trash" /> {t('Delete')}</button>
-          <button type="button" className="btn btn-secondary" onClick={again} disabled={reverify.isPending}><i className={`fas ${reverify.isPending ? 'fa-spinner fa-spin' : 'fa-rotate'}`} /> {t('Check the photo again')}</button>
-          <button type="button" className="btn btn-primary" onClick={() => onEdit(shown)}><i className="fas fa-pen" /> {t('Edit')}</button>
+          {role === 'owner' && <button type="button" className="btn btn-danger" onClick={remove}><i className="fas fa-trash" /> {t('Delete')}</button>}
+          {role === 'owner' && <button type="button" className="btn btn-secondary" onClick={again} disabled={reverify.isPending}><i className={`fas ${reverify.isPending ? 'fa-spinner fa-spin' : 'fa-rotate'}`} /> {t('Check the photo again')}</button>}
+          {role !== 'manager' && <button type="button" className="btn btn-primary" onClick={() => onEdit(shown)}><i className="fas fa-pen" /> {t('Edit')}</button>}
         </>
       )}
     >
-      <p className="org-muted" style={{ marginTop: 0 }}>{formatDate(shown.count_date)}{shown.greenhouse ? ` · ${shown.greenhouse}` : ''}</p>
+      <p className="org-muted" style={{ marginTop: 0 }}>{formatDate(shown.count_date)}{shown.greenhouse ? ` · ${shown.greenhouse}` : ''}{shown.label ? ` · ${shown.label}` : ''}{shown.entered_by_name ? ` · ${t('recorded by')} ${shown.entered_by_name}` : ''}</p>
       <CheckResult verification={shown.verification} annotatedUrl={shown.annotated_url} photoUrl={shown.photo_url} />
       {shown.notes ? <p style={{ marginTop: 12 }}><strong>{t('Notes')}:</strong> {shown.notes}</p> : null}
     </Modal>
   );
 }
 
-function CountsTab({ start }) {
+function CountsTab({ start, role = 'owner' }) {
   const { data: crops = [] } = useGhCrops();
   const [filters, setFilters] = useState({ crop_id: '', status: start?.status || '' });
   const [page, setPage] = useState(1);
@@ -329,7 +356,7 @@ function CountsTab({ start }) {
         <FilterSelect value={filters.crop_id} onChange={(x) => { setFilters((f) => ({ ...f, crop_id: x })); setPage(1); }} placeholder="All crops" options={crops.map((c) => ({ value: c.id, label: c.name }))} />
         <FilterSelect value={filters.status} onChange={(x) => { setFilters((f) => ({ ...f, status: x })); setPage(1); }} placeholder="All results" options={Object.entries(VERDICTS).map(([value, m]) => ({ value, label: m.label }))} />
         <span style={{ flex: 1 }} />
-        <button type="button" className="btn btn-primary" onClick={() => setForm({ editing: null })}><i className="fas fa-plus" /> {t('Add a fruit count')}</button>
+        {role !== 'manager' && <button type="button" className="btn btn-primary" onClick={() => setForm({ editing: null })}><i className="fas fa-plus" /> {t('Add a fruit count')}</button>}
       </div>
       {isError ? (
         <EmptyState icon="fa-exclamation-triangle" title="Could not load the fruit counts" actionLabel="Retry" onAction={refetch} />
@@ -341,7 +368,8 @@ function CountsTab({ start }) {
             { key: 'photo', label: 'Photo', render: (r) => <img className="gh-thumb" src={r.photo_url} alt="" /> },
             { key: 'count_date', label: 'Date', render: (r) => formatDate(r.count_date) },
             { key: 'crop_name', label: 'Crop', render: (r) => <strong>{r.crop_name}</strong> },
-            { key: 'place', label: 'Row', render: (r) => [r.greenhouse, r.row_id, r.plant_label].filter(Boolean).join(' · ') },
+            { key: 'place', label: 'Row', render: (r) => [r.greenhouse, r.row_id, r.plant_label].filter(Boolean).join(' · ') + (r.label ? ` (${r.label})` : '') },
+            { key: 'size', label: 'Size', render: (r) => t(FRUIT_SIZES.find((x) => x.value === (r.fruit_size || 'all'))?.label || 'All sizes') },
             { key: 'recorded_count', label: 'Recorded' },
             { key: 'detected', label: 'Photo shows', render: (r) => (r.verification?.detected ?? '—') },
             { key: 'verdict', label: 'Result', render: (r) => <Verdict v={r.verification} /> },
@@ -352,7 +380,7 @@ function CountsTab({ start }) {
       )}
       {data && data.totalPages > 1 && <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />}
       {form && <CountForm crops={crops} editing={form.editing} onClose={() => setForm(null)} />}
-      {view && !form && <CountDetail key={view.id} row={view} onClose={() => setView(null)} onEdit={(r) => { setView(null); setForm({ editing: r }); }} />}
+      {view && !form && <CountDetail key={view.id} row={view} role={role} onClose={() => setView(null)} onEdit={(r) => { setView(null); setForm({ editing: r }); }} />}
     </>
   );
 }
@@ -450,25 +478,180 @@ function CropsTab() {
   );
 }
 
-/* ------------------------------------------------------------------ page */
-export default function Greenhouse() {
-  const [tab, setTab] = useState('dashboard');
-  const [start, setStart] = useState(null);
-  const go = (id, opts = null) => { setStart(opts); setTab(id); };
+/* ------------------------------------------------------- disease report */
+/** For the farm manager and the owner: how many plants are diseased, and every detail of each. */
+function DiseaseTab() {
+  const { data: houses = [], isLoading } = useGhHouses();
+  const [houseId, setHouseId] = useState('');
+  const house = houses.find((h) => h.id === houseId) || houses[0];
+  const { data: rep, isLoading: loading } = useGhHealth(house?.id);
+  if (isLoading) return <Loading />;
+  if (!houses.length) return <EmptyState icon="fa-virus" title="No greenhouse yet" description="The disease report appears once a greenhouse is set up and plants are counted." />;
   return (
     <>
-      <PageHeader title="Greenhouse" subtitle="Count the fruit on your plants with a photo, and check each photo with the fruit counter." />
+      <div className="gh-toolbar">
+        <select className="form-control" value={house.id} onChange={(e) => setHouseId(e.target.value)} aria-label={t('Greenhouse')}>
+          {houses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
+      </div>
+      {loading || !rep ? <Loading /> : (
+        <>
+          <div className="org-tiles">
+            <Tile label="Diseased plants" value={formatNumber(rep.summary.sick_plants)} sub={`${t('of')} ${formatNumber(rep.summary.counted)} ${t('plants counted')}`} />
+            <Tile label="Share of counted plants" value={`${rep.summary.share_of_counted}%`} />
+            <Tile label="Diseased fruit found" value={formatNumber(rep.summary.sick_fruit)} />
+            <Tile label="Plant positions" value={formatNumber(rep.summary.plants)} />
+          </div>
+          {rep.plants.length === 0 ? (
+            <EmptyState icon="fa-leaf" title="No diseased plants found" description="None of the counted plants shows signs of disease in its latest photo." />
+          ) : (
+            <Card title="Diseased plants" icon="fa-virus">
+              <DataTable
+                rows={rep.plants}
+                rowKey={(r) => r.count_id}
+                columns={[
+                  { key: 'place', label: 'Plant', render: (r) => <strong>{r.row_id} {r.plant_label}{r.label ? ` (${r.label})` : ''}</strong> },
+                  { key: 'crop_name', label: 'Crop' },
+                  { key: 'disease', label: 'Possible disease', render: (r) => <span className="badge badge-danger"><i className="fas fa-virus" /> {r.disease || t('Possible disease')}</span> },
+                  { key: 'conf', label: 'Confidence', render: (r) => (r.disease_confidence != null ? `${Math.round(r.disease_confidence * 100)}%` : '—') },
+                  { key: 'fruit', label: 'Sick fruit', render: (r) => (r.checked_fruit ? `${r.sick_fruit} / ${r.checked_fruit}${r.sick_fruit_numbers.length ? ` (${t('numbers')} ${r.sick_fruit_numbers.join(', ')})` : ''}` : '—') },
+                  { key: 'count_date', label: 'Date', render: (r) => formatDate(r.count_date) },
+                  { key: 'state', label: 'Position', render: (r) => (r.state === 'frozen' ? <span className="badge badge-info" title={r.state_reason}>{t('Frozen')}</span> : t('Active')) },
+                  { key: 'photo', label: 'Photo', render: (r) => <a href={r.annotated_url || r.photo_url} target="_blank" rel="noreferrer"><img className="gh-thumb" src={r.annotated_url || r.photo_url} alt="" /></a> },
+                ]}
+              />
+              <ul className="gh-health-hist" style={{ marginTop: 14 }}>
+                {rep.plants.filter((r) => r.message).map((r) => <li key={`m${r.count_id}`}><strong>{r.row_id} {r.plant_label}</strong><span>{r.message}</span></li>)}
+              </ul>
+            </Card>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ team */
+const ROLE_TEXT = {
+  manager: 'Farm manager: reads all the records, the dashboard and the disease report with the number of diseased plants. No 3D map, no recording, no changes.',
+  collector: 'Data collector: sees the plan view and records fruit counts with photos, and can freeze a plant with a reason. No disease details, dashboard or settings.',
+};
+function TeamTab() {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const { data: team = [], isLoading } = useGhTeam();
+  const { invite, changeMember, removeMember } = useGhMutations();
+  const form = useForm({ email: '', name: '', role: 'collector' });
+  const [err, setErr] = useState('');
+  const add = async (e) => {
+    e.preventDefault();
+    setErr('');
+    try {
+      await invite.mutateAsync(form.values);
+      form.setValues({ email: '', name: '', role: form.values.role });
+      toast(t('Invitation saved. They get access when they sign in with that email address.'));
+    } catch (e2) { setErr(e2.message); }
+  };
+  const remove = async (m) => {
+    if (!(await confirm(t('Remove {{name}} from your team? They lose access at once.', { name: m.name || m.email }), { confirmLabel: 'Remove' }))) return;
+    try { await removeMember.mutateAsync(m.id); } catch (e) { toast(e.message, 'error'); }
+  };
+  return (
+    <>
+      <Card title="Invite someone to your greenhouse" icon="fa-user-plus">
+        <p className="ai-lead" style={{ marginTop: 0 }}>{t('Give a farm manager or a data collector their own account. They sign in with the email address you enter here, and then choose your farm.')}</p>
+        <form onSubmit={add}>
+          {err && <div className="alert-item alert-danger" style={{ marginBottom: 12 }}><i className="fas fa-exclamation-circle" /><div className="alert-content">{err}</div></div>}
+          <FormRow>
+            <TextField label="Email address" required type="email" {...form.bind('email')} placeholder="name@example.com" />
+            <TextField label="Name (optional)" {...form.bind('name')} />
+          </FormRow>
+          <SelectField label="Role" {...form.bind('role')} options={[{ value: 'collector', label: 'Data collector' }, { value: 'manager', label: 'Farm manager' }]} />
+          <p className="form-hint">{t(ROLE_TEXT[form.values.role])}</p>
+          <button type="submit" className="btn btn-primary" disabled={invite.isPending}><i className="fas fa-plus" /> {t('Invite')}</button>
+        </form>
+      </Card>
+      <Card title="Your team" icon="fa-user-group">
+        {isLoading ? <Loading /> : team.length === 0 ? <p className="org-muted">{t('Nobody yet.')}</p> : (
+          <DataTable
+            rows={team}
+            rowKey={(m) => m.id}
+            columns={[
+              { key: 'who', label: 'Person', render: (m) => <><strong>{m.name || m.email}</strong>{m.name ? <div className="org-muted">{m.email}</div> : null}</> },
+              { key: 'role', label: 'Role', render: (m) => (
+                <select className="form-control" value={m.role} onChange={(e) => changeMember.mutate({ id: m.id, role: e.target.value })} aria-label={t('Role')}>
+                  <option value="collector">{t('Data collector')}</option>
+                  <option value="manager">{t('Farm manager')}</option>
+                </select>
+              ) },
+              { key: 'status', label: 'Status', render: (m) => <span className={`badge badge-${m.status === 'active' ? 'success' : 'warning'}`}>{m.status === 'active' ? t('Signed in') : t('Waiting for them to sign in')}</span> },
+            ]}
+            actions={(m) => <button type="button" className="btn btn-secondary btn-sm" onClick={() => remove(m)}>{t('Remove')}</button>}
+          />
+        )}
+      </Card>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ page */
+export default function Greenhouse() {
+  const qc = useQueryClient();
+  const { data: access } = useGhAccess();
+  const [farm, setFarm] = useState(() => { try { return localStorage.getItem('gh-farm') || ''; } catch { return ''; } }); // '' = my own farm
+  const farms = access?.farms || [];
+  const current = farms.find((f) => f.owner_id === farm) || null;
+  const role = current ? current.role : 'owner';
+  // a person who only works on someone else's farm lands there; the farm they stored may also have been taken away
+  useEffect(() => {
+    if (!access) return;
+    if (farm && !farms.some((f) => f.owner_id === farm)) { setFarmOwner(null); setFarm(''); return; }
+    let chosen = true;
+    try { chosen = localStorage.getItem('gh-farm') !== null; } catch { /* private window */ }
+    if (!chosen && farms.length) {
+      // never picked a farm: someone with no crops of their own who was invited to a farm starts on that farm
+      api.get('/greenhouse/crops', { headers: { 'X-Farm-Owner': '' } }).then((r) => { if (!r.data.data.length) switchFarm(farms[0].owner_id); }).catch(() => {});
+    }
+  }, [access]); // eslint-disable-line react-hooks/exhaustive-deps
+  setFarmOwner(current ? current.owner_id : null); // before any request of this render goes out
+  const switchFarm = (id) => {
+    setFarmOwner(id || null);
+    try { localStorage.setItem('gh-farm', id || ''); } catch { /* private window */ }
+    qc.removeQueries({ queryKey: ['greenhouse'] });
+    setFarm(id);
+    setTab(null);
+  };
+  const tabs = TABS_BY_ROLE[role];
+  const [tab, setTab] = useState(null);
+  const [start, setStart] = useState(null);
+  const active = tab && tabs.some((x) => x.id === tab) ? tab : tabs[0].id;
+  const go = (id, opts = null) => { setStart(opts); setTab(id); };
+  const subtitle = role === 'collector' ? 'Pick a plant on the plan and record its fruit with photos.' : role === 'manager' ? 'Read the records and see which plants are diseased.' : 'Count the fruit on your plants with a photo, and check each photo with the fruit counter.';
+  return (
+    <>
+      <PageHeader title="Greenhouse" subtitle={subtitle} />
+      {farms.length > 0 && (
+        <div className="gh-toolbar" style={{ marginBottom: 10 }}>
+          <label className="org-muted" htmlFor="gh-farm">{t('Farm')}</label>
+          <select id="gh-farm" className="form-control" value={current ? current.owner_id : ''} onChange={(e) => switchFarm(e.target.value)}>
+            <option value="">{t('My own farm')}</option>
+            {farms.map((f) => <option key={f.owner_id} value={f.owner_id}>{f.farm_name} ({t(f.role === 'manager' ? 'Farm manager' : 'Data collector')})</option>)}
+          </select>
+        </div>
+      )}
       <div className="gh-tabs" role="tablist">
-        {TABS.map((x) => (
-          <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className={`gh-tab ${tab === x.id ? 'active' : ''}`} onClick={() => go(x.id)}>
+        {tabs.map((x) => (
+          <button key={x.id} type="button" role="tab" aria-selected={active === x.id} className={`gh-tab ${active === x.id ? 'active' : ''}`} onClick={() => go(x.id)}>
             <i className={`fas ${x.icon}`} /> {t(x.label)}
           </button>
         ))}
       </div>
-      {tab === 'dashboard' && <DashboardTab go={go} />}
-      {tab === 'layout' && <LayoutTab />}
-      {tab === 'counts' && <CountsTab key={JSON.stringify(start)} start={start} />}
-      {tab === 'crops' && <CropsTab />}
+      {active === 'dashboard' && <DashboardTab go={go} />}
+      {active === 'layout' && <LayoutTab role={role} />}
+      {active === 'counts' && <CountsTab key={`${farm}${JSON.stringify(start)}`} start={start} role={role} />}
+      {active === 'disease' && <DiseaseTab key={farm} />}
+      {active === 'crops' && <CropsTab />}
+      {active === 'team' && <TeamTab />}
     </>
   );
 }

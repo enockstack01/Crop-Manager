@@ -92,3 +92,24 @@
 .gh-ctl-btn:hover { background: #f3f8f3; } .gh-ctl-btn:active, .gh-ctl-btn.on { background: #2e7d32; color: #fff; }
 .gh-ctl-btn:focus-visible { outline: 3px solid #1565c0; }
 @media (max-width: 600px) { .gh-ctl { transform: scale(.85); transform-origin: bottom right; right: 6px; bottom: 6px; } }
+
+/* plan map (drawn to scale from the plant positions) */
+.gh-planmap { border: 1px solid var(--border, #d7ddd6); border-radius: 14px; background: var(--surface, #fff); padding: 10px; overflow: hidden; }
+.gh-planmap svg { display: block; }
+.gh-planmap g[role="button"] { outline: none; }
+.gh-planmap g[role="button"]:focus-visible circle { stroke: #1565c0; }
+
+/* the rows of a greenhouse in the layout form */
+.gh-rowdefs { display: grid; gap: 6px; max-height: 260px; overflow: auto; padding-right: 4px; }
+.gh-rowdef { display: grid; grid-template-columns: 56px minmax(80px, 1fr) minmax(80px, 1fr) 90px minmax(120px, 1fr); gap: 8px; align-items: center; }
+.gh-rowdef.head { font-size: 12px; opacity: .7; font-weight: 600; position: sticky; top: 0; background: var(--surface, #fff); }
+.gh-rowdef input[type="number"] { width: 100%; }
+.gh-rowdef input[type="checkbox"] { justify-self: center; width: 18px; height: 18px; }
+@media (max-width: 640px) { .gh-rowdef { grid-template-columns: 44px 1fr 1fr 60px; } .gh-rowdef select { grid-column: 1 / -1; } }
+
+/* several photos of one plant */
+.gh-multiphoto { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.gh-multiphoto figure { position: relative; margin: 0; width: 84px; }
+.gh-multiphoto img { width: 84px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border, #d7ddd6); display: block; }
+.gh-multiphoto figcaption { position: absolute; left: 4px; bottom: 4px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 8px; }
+.gh-multiphoto-x { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: none; background: #c62828; color: #fff; font-size: 11px; cursor: pointer; line-height: 1; }

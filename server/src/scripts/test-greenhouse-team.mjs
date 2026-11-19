@@ -20,6 +20,7 @@ import { storage } from '../lib/storage.js';
 import { sizeBand } from '../lib/greenhouse/verify.js';
 import { positionsOf, parseRowId, hasPosition, totalPositions } from '../lib/greenhouse/layout.js';
 import { columnsFor } from '../lib/greenhouse/collage.js';
+import { positionsOf as clientPositions, totalPositions as clientTotal } from '../../../client/src/lib/greenhouseLayout.js';
 
 const PREFIX = 'ghteam_';
 const OWNER = `${PREFIX}owner`;
@@ -104,6 +105,14 @@ try {
   const p = positionsOf({ rows: 1, plants_per_row: 4, length_m: 8, width_m: 2, row_defs: [{ plants: 2, start: 2, sub_rows: 1 }] });
   ok(p.length === 2 && p[0].x > 4, 'a row that starts later is placed further along the house');
   ok(parseRowId({ rows: 1, plants_per_row: 1, row_defs: [{ plants: 1, sub_rows: 2 }] }, 'R1') === null && hasPosition({ rows: 1, plants_per_row: 3, row_defs: [] }, 'R1', 'P3') && !hasPosition({ rows: 1, plants_per_row: 3, row_defs: [] }, 'R1', 'P4') && totalPositions({ rows: 2, plants_per_row: 3, row_defs: [] }) === 6, 'the position helpers agree on what exists');
+
+  const sameAsClient = [shape, { length_m: 10, width_m: 4, rows: 2, plants_per_row: 4, pattern: 'staggered', plant_spacing_m: 1.5, row_spacing_m: 1.2 }, { length_m: 30, width_m: 8, rows: 5, plants_per_row: 9, pattern: 'zigzag', row_defs: [{ plants: 9 }, { plants: 4, start: 3 }, { plants: 5, sub_rows: 2 }, { plants: 9 }, { plants: 0 }] }].every((h0) => {
+    const h = { rows: h0.row_defs ? h0.row_defs.length : h0.rows, plants_per_row: h0.plants_per_row || 6, ...h0 };
+    const a = positionsOf(h);
+    const b = clientPositions(h);
+    return a.length === b.length && clientTotal(h) === totalPositions(h) && a.every((q, i) => q.row_id === b[i].row_id && q.plant_label === b[i].plant_label && q.x === b[i].x && q.z === b[i].z);
+  });
+  ok(sameAsClient, 'the layout form in the browser places every plant exactly where the server does');
 
   console.log('2. adding positions, freezing and deactivating (always with a reason)');
   const add = await req(OWNER, 'POST', `/api/greenhouse/houses/${house.id}/positions`, { row_id: 'R1', count: 2 });

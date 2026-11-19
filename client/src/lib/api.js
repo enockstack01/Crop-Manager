@@ -7,6 +7,10 @@ export const api = axios.create({
 });
 
 let tokenGetter = null;
+let farmOwner = null; // set when the signed-in person works on a farm they were invited to (greenhouse tab)
+export function setFarmOwner(id) {
+  farmOwner = id || null;
+}
 export function setTokenGetter(fn) {
   tokenGetter = fn;
 }
@@ -20,6 +24,7 @@ api.interceptors.request.use(async (config) => {
       /* not signed in yet */
     }
   }
+  if (farmOwner && /^\/?greenhouse\//.test(String(config.url || '')) && !/^\/?greenhouse\/access/.test(String(config.url || ''))) config.headers['X-Farm-Owner'] = farmOwner;
   return config;
 });
 

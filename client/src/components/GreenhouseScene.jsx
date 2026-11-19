@@ -26,7 +26,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     const W = house.width_m;
     const spanX = Math.max(L, 1);
     const spanZ = Math.max(W, 1);
-    const unit = Math.min(spanX / house.plants_per_row, spanZ / house.rows); // room one plant has
+    const unit = Math.min(house.plant_spacing_m || spanX / house.plants_per_row, house.row_spacing_m || spanZ / house.rows); // room one plant has
 
     let renderer;
     try {
@@ -83,18 +83,27 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       scene.add(new THREE.Mesh(g, roofMat));
     }
 
-    // a bed for each row
-    const rowSpacing = spanZ / house.rows;
+    // a bed for each row (rows can differ in length, sit apart as set, and have two sub rows side by side)
+    const rowSpacing = house.row_spacing_m || spanZ / house.rows;
     const bedMat = own(new THREE.MeshStandardMaterial({ color: '#5D4037', roughness: 1 }));
-    const dripGeo = own(new THREE.CylinderGeometry(0.012, 0.012, spanX * 0.98, 6).rotateZ(Math.PI / 2));
     const dripMat = own(new THREE.MeshStandardMaterial({ color: '#212121', roughness: 0.6 }));
-    const bedGeo = own(new THREE.BoxGeometry(spanX * 0.98, 0.18, Math.min(rowSpacing * 0.45, 0.9)));
-    for (let r = 0; r < house.rows; r += 1) {
-      const bed = new THREE.Mesh(bedGeo, bedMat);
-      bed.position.set(spanX / 2, 0.09, (r + 0.5) * rowSpacing);
+    const unitBox = own(new THREE.BoxGeometry(1, 0.18, 1));
+    const unitDrip = own(new THREE.CylinderGeometry(0.012, 0.012, 1, 6).rotateZ(Math.PI / 2));
+    const byRow = new Map();
+    plants.forEach((p) => { const e = byRow.get(p.row) || { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity }; e.x0 = Math.min(e.x0, p.x); e.x1 = Math.max(e.x1, p.x); e.z0 = Math.min(e.z0, p.z); e.z1 = Math.max(e.z1, p.z); byRow.set(p.row, e); });
+    byRow.forEach((e, r) => {
+      const pad = Math.max(0.3, unit * 0.5);
+      const bedW = e.x1 - e.x0 + pad * 2;
+      const bedD = Math.max(Math.min(rowSpacing * 0.45, 0.9), e.z1 - e.z0 + 0.5);
+      const zc = (e.z0 + e.z1) / 2;
+      const xc = (e.x0 + e.x1) / 2;
+      const bed = new THREE.Mesh(unitBox, bedMat);
+      bed.scale.set(bedW, 1, bedD);
+      bed.position.set(xc, 0.09, zc);
       scene.add(bed);
-      const drip = new THREE.Mesh(dripGeo, dripMat);
-      drip.position.set(spanX / 2, 0.2, (r + 0.5) * rowSpacing + Math.min(rowSpacing * 0.2, 0.35));
+      const drip = new THREE.Mesh(unitDrip, dripMat);
+      drip.scale.set(bedW * 0.98, 1, 1);
+      drip.position.set(xc, 0.2, zc + Math.min(bedD * 0.35, 0.35));
       scene.add(drip);
       const cv = document.createElement('canvas');
       cv.width = 128;
@@ -108,14 +117,64 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       cx.font = 'bold 34px sans-serif';
       cx.textAlign = 'center';
       cx.textBaseline = 'middle';
-      cx.fillText(`R${r + 1}`, 64, 33);
+      cx.fillText(`R${r}`, 64, 33);
       const tex = own(new THREE.CanvasTexture(cv));
       const label = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: tex, depthTest: false })));
       const ls = Math.max(0.4, Math.min(rowSpacing * 0.55, 0.9));
       label.scale.set(ls * 2, ls, 1);
-      label.position.set(-ls * 0.8, 0.4, (r + 0.5) * rowSpacing);
+      label.position.set(e.x0 - pad - ls * 0.8, 0.4, zc);
       label.renderOrder = 5;
       scene.add(label);
+    });
+
+    // the door, in the wall the owner chose, and a compass arrow pointing north
+    if (house.door) {
+      const { wall, position, width_m: dw } = house.door;
+      const along = wall === 'top' || wall === 'bottom' ? spanX : spanZ;
+      const c = Math.min(Math.max(position, 0), 1) * along;
+      const dh = Math.min(wallH * 0.85, 2.1);
+      const frame = new THREE.Mesh(own(new THREE.BoxGeometry(wall === 'top' || wall === 'bottom' ? dw : 0.12, dh, wall === 'top' || wall === 'bottom' ? 0.12 : dw)), own(new THREE.MeshStandardMaterial({ color: '#8D6E63', roughness: 0.8, transparent: true, opacity: 0.85 })));
+      frame.position.set(wall === 'left' ? 0 : wall === 'right' ? spanX : c, dh / 2, wall === 'top' ? 0 : wall === 'bottom' ? spanZ : c);
+      scene.add(frame);
+      const dc = document.createElement('canvas');
+      dc.width = 160;
+      dc.height = 64;
+      const dx = dc.getContext('2d');
+      dx.fillStyle = '#6D4C41';
+      dx.beginPath();
+      dx.roundRect(4, 8, 152, 48, 14);
+      dx.fill();
+      dx.fillStyle = '#fff';
+      dx.font = 'bold 30px sans-serif';
+      dx.textAlign = 'center';
+      dx.textBaseline = 'middle';
+      dx.fillText('DOOR', 80, 33);
+      const dsp = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: own(new THREE.CanvasTexture(dc)), depthTest: false })));
+      dsp.scale.set(1.5, 0.6, 1);
+      dsp.position.set(wall === 'left' ? -1.1 : wall === 'right' ? spanX + 1.1 : c, dh + 0.5, wall === 'top' ? -1.1 : wall === 'bottom' ? spanZ + 1.1 : c);
+      dsp.renderOrder = 6;
+      scene.add(dsp);
+    }
+    {
+      const a = ((house.orientation_deg || 0) * Math.PI) / 180;
+      const nx = -Math.sin(a);
+      const nz = -Math.cos(a);
+      const R = Math.max(spanX, spanZ) * 0.5 + 2;
+      const arrow = new THREE.ArrowHelper(new THREE.Vector3(nx, 0, nz), new THREE.Vector3(spanX / 2 + nx * R * 0.55, 0.3, spanZ / 2 + nz * R * 0.55), Math.max(1.4, R * 0.3), 0xc62828, 0.5, 0.3);
+      scene.add(arrow);
+      const nc = document.createElement('canvas');
+      nc.width = 64;
+      nc.height = 64;
+      const nxt = nc.getContext('2d');
+      nxt.fillStyle = '#C62828';
+      nxt.font = 'bold 52px sans-serif';
+      nxt.textAlign = 'center';
+      nxt.textBaseline = 'middle';
+      nxt.fillText('N', 32, 34);
+      const nsp = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: own(new THREE.CanvasTexture(nc)), depthTest: false })));
+      nsp.scale.set(1, 1, 1);
+      nsp.position.set(spanX / 2 + nx * (R * 0.55 + Math.max(1.4, R * 0.3) + 0.6), 0.6, spanZ / 2 + nz * (R * 0.55 + Math.max(1.4, R * 0.3) + 0.6));
+      scene.add(nsp);
     }
 
     // the plants: a stem, leaves, the fruit that were counted (shaped and coloured like the real crop) and a status ring on the bed
@@ -145,6 +204,15 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
       const h = habitOf(p.crop_key);
       const rnd = rng(i * 131 + p.row * 17 + p.plant);
       const H = h.tall * size * 0.85;
+      if (p.state === 'inactive') { // uprooted: only a short stake is left, and the position can still be picked
+        dummy.position.set(p.x, 0.18, p.z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(1, size * 0.5, 1);
+        dummy.updateMatrix();
+        stem.setMatrixAt(i, dummy.matrix);
+        proxy.setMatrixAt(i, dummy.matrix);
+        return;
+      }
       dummy.position.set(p.x, 0.18, p.z);
       dummy.rotation.set(0, 0, 0);
       dummy.scale.set(1, H, 1);
@@ -377,7 +445,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     api.current.paint = (by, sel) => {
       plants.forEach((p, i) => ringsMesh.setColorAt(i, tmpColor.set(markerColor(p, by, max))));
       if (ringsMesh.instanceColor) ringsMesh.instanceColor.needsUpdate = true;
-      const p = sel && plants.find((x) => x.row === sel.row && x.plant === sel.plant);
+      const p = sel && plants.find((x) => x.row_id === sel.row_id && x.plant_label === sel.plant_label);
       ring.visible = !!p;
       if (p) ring.position.set(p.x, 0.22, p.z);
     };
@@ -407,7 +475,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
 
   useEffect(() => { api.current.setView?.(view); }, [view, layout, resetKey]);
   useEffect(() => {
-    const p = selected && layout?.plants.find((x) => x.row === selected.row && x.plant === selected.plant);
+    const p = selected && layout?.plants.find((x) => x.row_id === selected.row_id && x.plant_label === selected.plant_label);
     if (p && focusKey) api.current.focus?.(p);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusKey]);

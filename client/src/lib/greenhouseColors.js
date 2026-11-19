@@ -1,6 +1,6 @@
 /* Colours for the greenhouse plan and 3D view. Kept apart from the 3D code so the plan loads without it. */
 export const STATUS_COLOR = {
-  match: '#2E7D32', close: '#7CB342', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#546E7A', failed: '#EF6C00', none: '#B0BEC5',
+  match: '#2E7D32', close: '#7CB342', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#546E7A', failed: '#EF6C00', none: '#B0BEC5', frozen: '#4FC3F7', inactive: '#616161',
 };
 
 export const HEALTH_COLOR = { healthy: '#2E7D32', sick: '#C62828', unsure: '#F9A825', not_checked: '#546E7A', none: '#B0BEC5' };
@@ -16,6 +16,8 @@ export function heatColor(n, max) {
 }
 
 export function markerColor(p, colorBy, max) {
+  if (p.state === 'inactive') return STATUS_COLOR.inactive; // uprooted
+  if (p.state === 'frozen') return STATUS_COLOR.frozen; // left alone on purpose
   if (!p.latest) return STATUS_COLOR.none;
   if (colorBy === 'health') return HEALTH_COLOR[p.latest.health?.status || 'not_checked'] || HEALTH_COLOR.not_checked;
   return colorBy === 'fruit' ? heatColor(p.latest.recorded_count, max) : (STATUS_COLOR[p.latest.status] || STATUS_COLOR.not_checked);
