@@ -135,12 +135,12 @@ function photoList(body) {
 
 /** Joins several photos into one collage (a single photo stays as it is). Returns { photo_url, collage, imgsz }. */
 async function joinPhotos(req, urls) {
-  if (urls.length === 1) return { photo_url: urls[0], collage: null, imgsz: 0 };
+  if (urls.length === 1) return { photo_url: urls[0], collage: null };
   const allowed = await uploadersOf(req.gh.owner);
   const bytes = await Promise.all(urls.map((u) => readUserPhoto(allowed, u)));
   const [overlaps, joined] = await Promise.all([overlapWarnings(bytes), buildCollage(bytes)]);
   const photo_url = await saveCollage(req.gh.owner, joined.jpeg);
-  return { photo_url, collage: { photos: urls.length, columns: joined.columns, rows: joined.rows, overlap_warnings: overlaps }, imgsz: joined.columns * 640 };
+  return { photo_url, collage: { photos: urls.length, columns: joined.columns, rows: joined.rows, cell: joined.cell, overlap_warnings: overlaps } };
 }
 
 /** A position that was deactivated (the plant was uprooted) takes no new counts. */
@@ -228,7 +228,7 @@ export const getCount = asyncHandler(async (req, res) => {
 async function checkCount(req, { urls, crop, recorded, fruitSize }) {
   const joined = await joinPhotos(req, urls);
   const uploaders = await uploadersOf(req.gh.owner);
-  const out = await verifyPhoto({ userId: req.gh.owner, uploaders, photoUrl: joined.photo_url, crop, recorded, fruitSize, imgsz: joined.imgsz, collage: joined.collage });
+  const out = await verifyPhoto({ userId: req.gh.owner, uploaders, photoUrl: joined.photo_url, crop, recorded, fruitSize, collage: joined.collage });
   if (joined.collage) out.verification = { ...out.verification, collage: joined.collage };
   return { ...out, photo_url: joined.photo_url, collage: joined.collage };
 }
@@ -282,7 +282,7 @@ export const reverify = asyncHandler(async (req, res) => {
   const crop = await GreenhouseCrop.findOne({ _id: doc.crop_id, user_id: req.gh.owner }).lean();
   if (!crop) throw createHttpError(400, 'The crop of this count was removed.');
   const uploaders = await uploadersOf(req.gh.owner);
-  const out = await verifyPhoto({ userId: req.gh.owner, uploaders, photoUrl: doc.photo_url, crop, recorded: doc.recorded_count, fruitSize: doc.fruit_size || 'all', imgsz: doc.collage ? doc.collage.columns * 640 : 0, collage: doc.collage });
+  const out = await verifyPhoto({ userId: req.gh.owner, uploaders, photoUrl: doc.photo_url, crop, recorded: doc.recorded_count, fruitSize: doc.fruit_size || 'all', collage: doc.collage });
   doc.verification = doc.collage ? { ...out.verification, collage: doc.collage } : out.verification;
   doc.annotated_url = out.annotated_url;
   await doc.save();

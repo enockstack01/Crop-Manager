@@ -53,8 +53,10 @@ const fake = http.createServer((req, res) => {
     if (req.url.startsWith('/overlap')) { seen.overlap += 1; res.end(JSON.stringify({ pairs: mode.overlap })); return; }
     seen.count += 1;
     const body = Buffer.concat(chunks).toString('latin1');
-    seen.lastImgsz = (body.match(/name="imgsz"\r\n\r\n([^\r]*)/) || [])[1] || null;
-    res.end(JSON.stringify({ count: mode.count, confidence: 'high', warnings: [], detections: mode.dets, image_size: mode.size, method: 'stand-in', annotated_jpeg_b64: Buffer.from('marked-photo').toString('base64') }));
+    const field = (n) => (body.match(new RegExp(`name="${n}"\\r\\n\\r\\n([^\\r]*)`)) || [])[1] || null;
+    seen.grid = { cells: field('cells'), cols: field('cols'), rows: field('rows'), cell_w: field('cell_w'), cell_h: field('cell_h') };
+    const cells = seen.grid.cells && !mode.oldCounter ? Array.from({ length: Number(seen.grid.cells) }, (_x, i) => ({ cell: i + 1, count: 0 })) : undefined; // a counter that knows collages says so
+    res.end(JSON.stringify({ count: mode.count, confidence: 'high', warnings: [], detections: mode.dets, image_size: mode.size, method: 'stand-in', cells, annotated_jpeg_b64: Buffer.from('marked-photo').toString('base64') }));
   });
 });
 await new Promise((r) => fake.listen(0, r));
@@ -158,10 +160,10 @@ try {
   const multi = await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R1', plant_label: 'P2', recorded_count: 9, photo_urls: urls });
   const mc = await json(multi);
   ok(multi.status === 201 && mc.photo_urls.length === 3 && /-collage\.jpg$/.test(mc.photo_url) && mc.collage.photos === 3 && mc.collage.columns === 2, 'three photos are joined into a 2-column collage that becomes the photo of the count', JSON.stringify(mc).slice(0, 220));
-  ok(seen.count === before.count + 1 && seen.lastImgsz === '1280', 'the counter is asked once, for the collage, with a larger working size');
+  ok(seen.count === before.count + 1 && JSON.stringify(seen.grid) === JSON.stringify({ cells: '3', cols: '2', rows: '2', cell_w: '960', cell_h: '720' }), 'the counter is asked once, for the collage, and told its grid so it counts cell by cell at full size', JSON.stringify(seen.grid));
   const stored = await storage.get(mc.photo_url.split('/').pop());
   const meta = await sharp(stored).metadata();
-  ok(meta.width === 1280 && meta.height === 960, 'the collage is 2 by 2 cells of 640 by 480', `${meta.width}x${meta.height}`);
+  ok(meta.width === 1920 && meta.height === 1440, 'the collage is 2 by 2 cells of 960 by 720', `${meta.width}x${meta.height}`);
   ok(mc.verification.status === 'match' && mc.verification.photos === 3, 'the verdict is about the whole collage');
   ok(columnsFor(1) === 1 && columnsFor(4) === 2 && columnsFor(5) === 3 && columnsFor(10) === 4, 'the collage grid grows with the number of photos');
   mode.overlap = [{ a: 1, b: 3 }];
@@ -173,6 +175,24 @@ try {
   ok(single.collage === null && single.photo_urls.length === 1, 'one photo stays one photo, as before');
   const edit2 = await json(await req(OWNER, 'PUT', `/api/greenhouse/counts/${mc.id}`, { photo_urls: [urls[0], urls[1]] }));
   ok(edit2.collage.photos === 2 && edit2.photo_urls.length === 2 && edit2.photo_url !== mc.photo_url, 'photos can be changed when a count is edited: the collage is rebuilt');
+
+  const junk = `${OWNER}-${Date.now()}-junk.jpg`;
+  await storage.put(junk, Buffer.from('this is not a picture'));
+  const bad = await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R1', plant_label: 'P5', recorded_count: 3, photo_urls: [await jpeg(OWNER), `/uploads/${junk}`] });
+  ok(bad.status === 400 && /Photo 2 could not be read/.test((await json(bad)).message || ''), 'a photo that is not a picture is refused by name, not with a server error');
+  const stranger = await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R1', plant_label: 'P5', recorded_count: 3, photo_urls: [await jpeg(OWNER), '/uploads/someone_else-1-abc.jpg'] });
+  ok(stranger.status === 400, 'a photo that belongs to someone else cannot be joined into the collage');
+  const twelve = await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R1', plant_label: 'P5', recorded_count: 9, photo_urls: await Promise.all(Array.from({ length: 12 }, () => jpeg(OWNER))) });
+  const t12 = await json(twelve);
+  ok(twelve.status === 201 && t12.collage.photos === 12 && t12.collage.columns === 4 && t12.collage.rows === 3 && t12.collage.cell.w === 960 && JSON.stringify(seen.grid) === JSON.stringify({ cells: '12', cols: '4', rows: '3', cell_w: '960', cell_h: '720' }), 'twelve photos make a 4 by 3 collage, and the counter is told so', JSON.stringify(seen.grid));
+  await M.FruitCount.updateOne({ _id: t12.id }, { $unset: { 'collage.cell': 1 } }); // a collage built before the cell size was recorded: 640 x 480 cells
+  await req(OWNER, 'POST', `/api/greenhouse/counts/${t12.id}/verify`);
+  ok(seen.grid.cell_w === '640' && seen.grid.cell_h === '480' && seen.grid.cells === '12', 'checking an older collage again uses the cell size it was built with');
+
+  mode.oldCounter = true; // a counter that was not redeployed ignores the grid
+  const oldC = await json(await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R2', plant_label: 'P6', recorded_count: 9, photo_urls: [await jpeg(OWNER), await jpeg(OWNER)] }));
+  ok(oldC.verification.confidence === 'low' && oldC.verification.status !== 'match' && /not been updated/.test(oldC.verification.message), 'an older counter that cannot count a collage cell by cell is never trusted: low confidence and a message to update it', JSON.stringify(oldC.verification).slice(0, 200));
+  mode.oldCounter = false;
 
   console.log('5. small, medium, large or all sizes');
   const dets = [10, 12, 14, 20, 22, 24, 40, 44, 48].map((r, i) => ({ x: 20 + i * 30, y: 100, r }));

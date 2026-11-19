@@ -55,7 +55,7 @@ export async function checkHealth(bytes, seen, crop) {
       out.fruit_note = 'The disease model was trained on leaves for this crop, so it cannot judge single fruit. The result above is for the plant in the photo.';
     } else {
       const [w, h] = seen.image_size || [0, 0];
-      const base = await sharp(bytes, { failOn: 'none' }).rotate().resize({ width: 1280, height: 1280, fit: 'inside', withoutEnlargement: true }).toBuffer();
+      const base = await sharp(bytes, { failOn: 'none' }).rotate().resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true }).toBuffer();
       const meta = await sharp(base).metadata();
       const sx = w ? meta.width / w : 1;
       const sy = h ? meta.height / h : 1;

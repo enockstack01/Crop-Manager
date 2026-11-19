@@ -42,14 +42,22 @@ export const YOLO_CLASS = {
 };
 
 /** Asks the counter. Resolves its answer, or throws an Error with a `kind` of 'down' or 'unreadable'. */
-export async function askCounter(bytes, crop, imgsz = 0) {
+export async function askCounter(bytes, crop, collage = null) {
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: 'image/jpeg' }), 'photo.jpg');
   form.append('colors', (crop.fruit_colors?.length ? crop.fruit_colors : ['red']).join(','));
   form.append('shape', crop.shape === 'elongated' ? 'elongated' : 'round');
   form.append('contrast', crop.contrast === 'low' ? 'low' : 'high');
   if (YOLO_CLASS[crop.catalog_key]) form.append('crop_class', YOLO_CLASS[crop.catalog_key]);
-  if (imgsz) form.append('imgsz', String(Math.min(1600, imgsz))); // a collage of several photos is large
+  if (collage && collage.photos > 1) {
+    // a collage of several photos: the counter counts it cell by cell at full size, so no fruit is lost to shrinking. Collages made
+    // before the cell size was recorded used 640 x 480 cells.
+    form.append('cells', String(collage.photos));
+    form.append('cols', String(collage.columns));
+    form.append('rows', String(collage.rows));
+    form.append('cell_w', String(collage.cell?.w || 640));
+    form.append('cell_h', String(collage.cell?.h || 480));
+  }
   let res;
   try {
     res = await fetch(`${counterUrl()}/count`, {
@@ -130,7 +138,7 @@ export function decide({ detected, recorded, confidence, warnings = [], contrast
  * Runs a full check for one photo. Never throws for problems with the counter: the record is still saved, with a verdict that says what happened.
  * Returns { verification, annotated_url }.
  */
-export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded, fruitSize = 'all', imgsz = 0, collage = null }) {
+export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded, fruitSize = 'all', collage = null }) {
   const base = { recorded, detected: null, difference: null, tolerance: toleranceFor(recorded), confidence: null, warnings: [], method: null, checked_at: new Date().toISOString() };
   const bytes = await readUserPhoto(uploaders || userId, photoUrl);
   if (!counterConfigured()) {
@@ -139,7 +147,7 @@ export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded,
   }
   let seen;
   try {
-    seen = await askCounter(bytes, crop, imgsz);
+    seen = await askCounter(bytes, crop, collage);
   } catch (e) {
     const unreadable = e.kind === 'unreadable';
     const health = unreadable ? null : await checkHealth(bytes, null, crop);
@@ -161,6 +169,11 @@ export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded,
   let detected = seen.count;
   let confidence = seen.confidence;
   let sizeNote = '';
+  if (collage?.photos > 1 && !seen.cells) {
+    // an older counter ignores the grid and counts the collage as one shrunken picture, which loses most of the fruit: never trust that number
+    confidence = 'low';
+    sizeNote += ' The fruit counter has not been updated to count several photos at full size, so this count may be far too low. Ask your administrator to deploy the latest counter.';
+  }
   if (fruitSize !== 'all') {
     const band = sizeBand(seen.detections, fruitSize);
     if (band) { detected = band.count; sizeNote = ` Sizes are judged by comparing the fruit in the photo, so the ${fruitSize} count is approximate.`; } else { confidence = 'low'; sizeNote = ` There are too few fruit in the photo to tell the ${fruitSize} ones apart.`; }
@@ -169,7 +182,7 @@ export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded,
   return {
     verification: {
       ...base, status: verdict.status, detected, difference: verdict.difference, tolerance: verdict.tolerance, confidence,
-      fruit_size: fruitSize, detected_all_sizes: seen.count, photos: collage?.photos || 1,
+      fruit_size: fruitSize, detected_all_sizes: seen.count, photos: collage?.photos || 1, ...(seen.cells ? { photo_counts: seen.cells } : {}),
       warnings: seen.warnings || [], method: seen.method || 'opencv', message: verdict.message + sizeNote, health,
     },
     annotated_url: annotated,

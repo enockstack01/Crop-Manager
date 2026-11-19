@@ -16,6 +16,7 @@ from fruitcount import COLORS, SHAPES, VERSION, count_fruits
 from fruitcount import yolo
 from fruitcount.counter import decode
 from fruitcount.overlap import overlapping_pairs
+from fruitcount.tiles import count_cells
 
 TOKEN = os.environ.get('FRUIT_COUNTER_TOKEN', '')
 MAX_BYTES = 25 * 1024 * 1024
@@ -35,7 +36,12 @@ def count(
     shape: str = Form('round'),
     contrast: str = Form('high'),
     crop_class: str = Form(''),
-    imgsz: int = Form(0),  # a joined collage of several photos is large: the server asks for a bigger working size so small fruit are not lost
+    imgsz: int = Form(0),  # a larger working size for the trained model, when asked
+    cells: int = Form(0),  # a collage of this many photos, in a grid of `cols` x `rows` cells of cell_w x cell_h: counted cell by cell
+    cols: int = Form(0),
+    rows: int = Form(0),
+    cell_w: int = Form(0),
+    cell_h: int = Form(0),
     x_token: str | None = Header(default=None),
 ):
     if TOKEN and x_token != TOKEN:
@@ -48,16 +54,21 @@ def count(
         raise HTTPException(status_code=400, detail=f'colors must be from: {", ".join(sorted(COLORS))}')
     if shape not in SHAPES:
         raise HTTPException(status_code=400, detail=f'shape must be one of: {", ".join(SHAPES)}')
-    try:
+    def one(photo: bytes) -> dict:
         # the trained model first, when it knows this crop: it can find green fruit among green leaves. Otherwise the colour method.
         if yolo.available_for(crop_class.strip().lower()):
             try:
-                return yolo.count_with_yolo(data, crop_class.strip().lower(), imgsz=imgsz)
+                return yolo.count_with_yolo(photo, crop_class.strip().lower(), imgsz=imgsz)
             except ValueError:
                 raise
             except Exception:  # a model failure must never lose the check: fall back
                 pass
-        return count_fruits(data, names, shape, 'low' if contrast == 'low' else 'high')
+        return count_fruits(photo, names, shape, 'low' if contrast == 'low' else 'high')
+
+    try:
+        if cells > 1:
+            return count_cells(data, one, cols, rows, cell_w, cell_h, cells)
+        return one(data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
