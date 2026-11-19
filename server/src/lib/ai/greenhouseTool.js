@@ -8,7 +8,7 @@ import { buildLayout } from '../../controllers/greenhouseHouses.controller.js';
 const LABEL = { match: 'matches the photo', close: 'close to the photo', mismatch: 'does not match the photo', inconclusive: 'photo check not sure', not_checked: 'photo not checked', failed: 'photo check failed' };
 
 const short = (p) => ({
-  row: p.row_id, plant: p.plant_label, crop: p.crop_name,
+  row: p.row_id, plant: p.plant_label, crop: p.crop_name, ...(p.label ? { name: p.label } : {}), ...(p.state && p.state !== 'active' ? { position: p.state === 'frozen' ? 'frozen (left alone on purpose)' : 'deactivated (uprooted)', reason: p.state_reason } : {}),
   latest: p.latest ? { date: p.latest.count_date, recorded: p.latest.recorded_count, photo_counted: p.latest.detected, result: LABEL[p.latest.status] || p.latest.status, counts_on_this_plant: p.latest.records, health: p.latest.health ? { status: p.latest.health.status, disease: p.latest.health.disease, sick_fruit: p.latest.health.sick_fruit, note: p.latest.health.message } : 'disease check not done' } : 'never counted',
 });
 
@@ -67,7 +67,7 @@ export function greenhouseTool(userId) {
       }
       if (view === 'not_counted') {
         const cut = new Date(Date.now() - Number(days) * 86400000).toISOString().slice(0, 10);
-        const old = l.plants.filter((x) => !x.latest || x.latest.count_date < cut);
+        const old = l.plants.filter((x) => x.state !== 'inactive' && (!x.latest || x.latest.count_date < cut)); // a deactivated position is not expected to be counted
         return { greenhouse: h.name, days: Number(days), plants_not_counted_in_that_time: old.length, never_counted: old.filter((x) => !x.latest).length, examples: old.slice(0, n).map(short) };
       }
       if (view === 'diseased') {

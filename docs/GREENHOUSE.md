@@ -19,9 +19,31 @@ The manager sets up each greenhouse once under **Greenhouse > Layout**: its name
 
 - **Website:** a 3D greenhouse (three.js): the house, a bed for each row, and every plant. A marker on each plant is coloured by the result of its last photo check, or by how much fruit it has, and is bigger when there is more fruit. Drag to turn, scroll to zoom, click a plant to see its counts, photos and checks. Plants are drawn like the real crops: tomato compound leaves, lobed cucumber, zucchini and melon leaves, trifoliate bean and strawberry leaves, flowers, support poles for climbing crops and a drip line on every bed. On-screen controls: move (arrows), turn, tilt, zoom, slow spin and full screen; keyboard: arrows or W A S D move, Q and E turn, R and F tilt, plus and minus zoom (click the view first); mouse drag turns, wheel zooms, right-drag moves, and touch drag and pinch work. A flat **Plan** view of the same layout is also there (and is used automatically when the browser has no 3D).
 - **Recording:** switch from *Look* to *Record* and click the plant you are standing at: the fruit count form opens already filled with the greenhouse, row and plant. The agronomist uses the same view as the manager.
-- **Phone:** the same layout as a plan (rows and plants as coloured squares) with the same look and record modes. The phone does not draw the 3D view.
+- **Phone:** the same plan, drawn to scale (door, compass, sub rows, patterns) with zoom buttons, and the same look and record modes. The phone does not draw the 3D view.
 - **Not automatic:** plant positions come from the layout the manager enters. They are not found from photos, because a photo does not say where in the house it was taken.
 - A count belongs to a plant when it has the same greenhouse name, row ID and plant. Counts recorded before a layout existed keep working and appear on the matching plant. Removing a layout never deletes counts.
+
+## Shape of the house, plant positions, photos and sizes
+
+**The shape of a greenhouse** (Greenhouse > Layout, owner only). Besides the size, each row can have its own number of positions, can start further along the house, and can be a **double row**: two sub rows, A and B, side by side on the same line (named `R3A P1`, `R3B P1`). The owner sets which way the top wall of the plan faces (compass degrees, with a red N on the plan and in 3D), where the **door** is (wall, place along the wall, width) and how the plants stand: **grid**, **zig-zag** (alternate either side of the line) or **staggered** (every second row shifted half a step). Distances between plants and between rows are spread evenly unless the owner types them. The form previews the plan before saving. A greenhouse holds at most 6000 positions. The website, the phone and the server place every plant with the same maths (checked by tests).
+
+**Add, freeze, deactivate.** Positions can be added at the end of a row (both sub rows grow in a double row). A plant can be **frozen** (a diseased plant to leave alone: it stays on the plan and can still be recorded) or its position **deactivated** (uprooted: it takes no new counts and is no longer expected to be counted). Both need a **reason**; every change (and every added position) is kept in a history with who did it and when. A position can also be given a name, and a count can carry a **label** (for example "first flush"), editable later. Frozen plants are light blue with a dashed ring on the plan, deactivated positions dark grey with a cross; in 3D a deactivated position shows only a stake.
+
+**Several photos of one plant.** Take as many photos as needed (up to 12) so every fruit is in exactly one photo. The server joins them into one collage (a grid, one cell per photo) and that collage is counted by the fruit counter and checked for disease once, so the count and the health card are about the whole plant. The counter service also compares the photos two by two (ORB feature matching) and the result warns "photos 1 and 3 seem to show the same part of the plant" so a fruit is not counted twice. It is a warning, not a measurement. A collage is large, so the counter works at a bigger image size for it (slower on a small server).
+
+**Fruit size.** A count is for all sizes (no categories) or for small, medium or large fruit. For one size, the fruit the counter found are ordered by size and cut into thirds, and the recorded number is compared with that third. This is approximate and needs at least 3 fruit in the photo; with fewer the check says it cannot tell sizes apart.
+
+## Who can do what (roles)
+
+The farm owner invites people by email under **Greenhouse > Team**. A person signs in with the invited address (it must be verified), then chooses the farm from the **Farm** list. Their own account must be approved like any other. The server checks the role on every request.
+
+| | Owner | Farm manager | Data collector |
+|---|---|---|---|
+| Plan and 3D map, layout, crops, team | yes | no | plan only, no layout, crops or team |
+| Dashboard | yes | yes | no |
+| Records (fruit counts) | all, edit, delete | read all, with disease details | record and edit their own; sees only their own; no delete |
+| Disease report (number of diseased plants, disease, confidence, sick fruit numbers, photos) | yes | yes | no (the verdict of the photo check only) |
+| Freeze, deactivate, add positions | yes | no | yes (with a reason) |
 
 ## Disease check, health card and health history
 
@@ -81,7 +103,9 @@ The counter is classical computer vision (colour segmentation, then splitting of
 
 ## The trained fruit model (YOLO11x)
 
-`vision-service/training/train_kaggle.py` fine-tunes YOLO11x on labelled public datasets (boxes on every fruit) for nine classes: tomato, sweet pepper, hot pepper, cucumber, eggplant, strawberry, zucchini, melon, green bean. It runs on Kaggle (see `kernel-metadata.json`). When its weights are placed at `vision-service/models/fruit_yolo11x.pt` (or `FRUIT_YOLO_WEIGHTS`) and `ultralytics` is installed (`requirements-yolo.txt`), the counter uses it for those crops and falls back to colour counting for any other crop or if the model fails. The result says which method counted (`method`). The model needs a few GB of memory: it will not run on the smallest free hosting.
+`vision-service/training/train_kaggle.py` fine-tunes YOLO11x on labelled public datasets (boxes on every fruit) for seven classes: tomato, sweet pepper, hot pepper, cucumber, eggplant, strawberry, melon. Zucchini and green beans were dropped (no box-labelled public photos exist for them); they are counted by colour. It runs on Kaggle (see `kernel-metadata.json`).
+
+**Two trained models, one per crop.** The second training added the vegetable, chili and strawberry sets. Both models were scored on the same 795 held-out photos (`training/compare/`, results in `models/fruit_yolo_compare.json`). The newer one is much better for hot pepper (0.07 to 0.90 mAP50), eggplant (0.02 to 0.34), cucumber (0.17 to 0.24) and equal for sweet pepper and strawberry, but worse for tomato (0.60 to 0.55) and melon (0.54 to 0.29). So `models/fruit_yolo_routing.json` sends each crop to the better model, and a crop below 0.35 is left to the colour method (cucumber, eggplant). The older model had seen many of the comparison photos in its training, so its scores are, if anything, flattering. Real greenhouse photos are still unmeasured.
 
 ### Deploying the trained counter
 
