@@ -2,11 +2,12 @@ import mongoose from 'mongoose';
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { GreenhouseCrop, FruitCount, GreenhouseHouse, GreenhouseMember, Profile } from '../models/index.js';
-import { CATALOG, COLOR_NAMES, catalogEntry } from '../lib/greenhouse/catalog.js';
+import { CATALOG, COLOR_NAMES, DEFAULT_FRUIT_WEIGHT_G, catalogEntry } from '../lib/greenhouse/catalog.js';
 import { counterConfigured, verifyPhoto, readUserPhoto } from '../lib/greenhouse/verify.js';
 import { MAX_PHOTOS, buildCollage, saveCollage, overlapWarnings } from '../lib/greenhouse/collage.js';
 import { accessList, uploadersOf } from '../lib/greenhouse/access.js';
 import { hasPosition, keyOf } from '../lib/greenhouse/layout.js';
+import { estimate, DEFAULT_RISK } from '../lib/greenhouse/revenue.js';
 
 /*
  * The greenhouse tab: which crops the farmer grows, the fruit counts (a photo, a row and the number of fruit on a plant) and the dashboard.
@@ -53,7 +54,7 @@ export const addCrop = asyncHandler(async (req, res) => {
     if (!entry) throw createHttpError(400, 'That crop is not in the list.');
     const have = await GreenhouseCrop.findOne({ user_id: req.gh.owner, catalog_key: entry.key });
     if (have) return res.status(200).json(have.toJSON());
-    const doc = await GreenhouseCrop.create({ user_id: req.gh.owner, catalog_key: entry.key, name: entry.name, fruit_colors: entry.fruit_colors, shape: entry.shape, contrast: entry.contrast });
+    const doc = await GreenhouseCrop.create({ user_id: req.gh.owner, catalog_key: entry.key, name: entry.name, fruit_colors: entry.fruit_colors, shape: entry.shape, contrast: entry.contrast, fruit_weight_g: entry.fruit_weight_g || DEFAULT_FRUIT_WEIGHT_G });
     return res.status(201).json(doc.toJSON());
   }
   const name = text(b.name, 60);
@@ -66,8 +67,53 @@ export const addCrop = asyncHandler(async (req, res) => {
     shape: b.shape === 'elongated' ? 'elongated' : 'round',
     contrast: colors.length === 1 && colors[0] === 'green' ? 'low' : 'high', // green fruit on green leaves cannot be trusted
     notes: text(b.notes, 300),
+    ...priceFields(b),
   });
   return res.status(201).json(doc.toJSON());
+});
+
+/** The price and the weight of a fruit from a request body; only what was sent. */
+function priceFields(b) {
+  const out = {};
+  if (b.price_per_kg !== undefined) {
+    if (b.price_per_kg === null || b.price_per_kg === '') out.price_per_kg = null;
+    else {
+      const n = Number(b.price_per_kg);
+      if (!Number.isFinite(n) || n < 0 || n > 1e9) throw createHttpError(400, 'The price per kilogram must be a number, 0 or more.');
+      out.price_per_kg = n;
+    }
+  }
+  if (b.fruit_weight_g !== undefined) {
+    const n = Number(b.fruit_weight_g);
+    if (!Number.isFinite(n) || n < 0.1 || n > 20000) throw createHttpError(400, 'The weight of one fruit must be between 0.1 and 20000 grams.');
+    out.fruit_weight_g = n;
+  }
+  if (b.currency !== undefined) {
+    const c = text(b.currency, 8).toUpperCase();
+    if (!c) throw createHttpError(400, 'Give the currency, for example RWF or USD.');
+    out.currency = c;
+  }
+  return out;
+}
+
+/** Sets the price per kilogram, the weight of one fruit and the currency of a crop (owner only). */
+export const updateCrop = asyncHandler(async (req, res) => {
+  const crop = await ownCrop(req.gh.owner, req.params.id);
+  const set = priceFields(req.body || {});
+  if (!Object.keys(set).length) throw createHttpError(400, 'Send price_per_kg, fruit_weight_g or currency.');
+  const doc = await GreenhouseCrop.findOneAndUpdate({ _id: crop._id, user_id: req.gh.owner }, { $set: set }, { new: true });
+  res.json(doc.toJSON());
+});
+
+/** What the harvest could be worth: counted fruit, the healthy share, the disease loss expected, and the rest of the house projected. */
+export const revenue = asyncHandler(async (req, res) => {
+  const [houses, crops, counts] = await Promise.all([
+    GreenhouseHouse.find({ user_id: req.gh.owner }).lean(),
+    GreenhouseCrop.find({ user_id: req.gh.owner }).lean(),
+    FruitCount.find({ user_id: req.gh.owner }).sort({ count_date: -1, created_at: -1 }).limit(20000).select('crop_id greenhouse row_id plant_label recorded_count fruit_size verification.health count_date').lean(),
+  ]);
+  const risk = req.query.risk === undefined ? DEFAULT_RISK : Number(req.query.risk) / 100;
+  res.json(estimate({ houses, counts, crops, risk, greenhouse: text(req.query.greenhouse, 80) || null }));
 });
 
 export const removeCrop = asyncHandler(async (req, res) => {

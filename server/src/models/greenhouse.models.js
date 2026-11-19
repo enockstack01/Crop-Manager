@@ -9,6 +9,9 @@ const GreenhouseCropSchema = ownedSchema({
   shape: { type: String, enum: ['round', 'elongated'], default: 'round' },
   contrast: { type: String, enum: ['high', 'low'], default: 'high' },
   notes: { type: String, trim: true },
+  fruit_weight_g: { type: Number, min: 0.1, max: 20000, default: 100 }, // one ripe fruit, in grams
+  price_per_kg: { type: Number, min: 0, max: 1e9, default: null }, // what the farmer sells it for; null = not set
+  currency: { type: String, trim: true, maxlength: 8, default: 'USD' },
 });
 GreenhouseCropSchema.index({ user_id: 1, catalog_key: 1 });
 

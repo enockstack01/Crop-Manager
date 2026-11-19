@@ -9,8 +9,8 @@ import { api, setFarmOwner } from '../lib/api.js';
 import { useConfirm } from '../components/Confirm.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { baseOptions, breakdownOptions, LEAF, useIsDark } from '../features/dashboard/charts.jsx';
-import { formatDate, formatNumber } from '../lib/format.js';
-import { FRUIT_SIZES, useGhAccess, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhHealth, useGhHouses, useGhMutations, useGhTeam, VERDICTS } from '../lib/greenhouse.js';
+import { formatCurrency, formatDate, formatNumber, getCurrency } from '../lib/format.js';
+import { FRUIT_SIZES, useGhAccess, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhHealth, useGhHouses, useGhMutations, useGhRevenue, useGhTeam, VERDICTS } from '../lib/greenhouse.js';
 import { t } from '../i18n/index.js';
 import LayoutTab from './GreenhouseLayout.jsx';
 import { HealthCard } from '../components/HealthCard.jsx';
@@ -22,12 +22,14 @@ const TABS_BY_ROLE = {
     { id: 'layout', icon: 'fa-cube', label: 'Layout and 3D' },
     { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
     { id: 'disease', icon: 'fa-virus', label: 'Disease report' },
+    { id: 'harvest', icon: 'fa-coins', label: 'Harvest value' },
     { id: 'crops', icon: 'fa-seedling', label: 'My crops' },
     { id: 'team', icon: 'fa-user-group', label: 'Team' },
   ],
   manager: [
     { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
     { id: 'disease', icon: 'fa-virus', label: 'Disease report' },
+    { id: 'harvest', icon: 'fa-coins', label: 'Harvest value' },
     { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
   ],
   collector: [
@@ -441,6 +443,8 @@ function CropsTab() {
         </div>
       </Card>
 
+      <PricesCard />
+
       <Card title="Add a crop that is not in the list" icon="fa-circle-plus">
         <form onSubmit={addOwn}>
           {err && <div className="alert-item alert-danger" style={{ marginBottom: 12 }}><i className="fas fa-exclamation-circle" /><div className="alert-content">{err}</div></div>}
@@ -475,6 +479,131 @@ function CropsTab() {
         )}
       </Card>
     </>
+  );
+}
+
+/* ---------------------------------------------------------- harvest value */
+/** What the harvest could be worth: the fruit counted, the healthy share, the loss to disease, and the money, with the rest of the house projected. */
+function HarvestTab({ role }) {
+  const dark = useIsDark();
+  const { data: houses = [] } = useGhHouses();
+  const [house, setHouse] = useState('');
+  const [risk, setRisk] = useState(20);
+  const { data: v, isLoading, isError, refetch } = useGhRevenue({ greenhouse: house, risk });
+  if (isLoading) return <Loading />;
+  if (isError || !v) return <EmptyState icon="fa-exclamation-triangle" title="Could not load the harvest value" actionLabel="Retry" onAction={refetch} />;
+  const T = v.totals;
+  const cur = v.money[0];
+  const priced = v.money.some((m) => m.gross > 0);
+  const money = (n, c) => formatCurrency(n, c);
+  return (
+    <>
+      <div className="gh-toolbar">
+        <select className="form-control" value={house} onChange={(e) => setHouse(e.target.value)} aria-label={t('Greenhouse')}>
+          <option value="">{t('All greenhouses')}</option>
+          {houses.map((h) => <option key={h.id} value={h.name}>{h.name}</option>)}
+        </select>
+        <label className="org-muted" htmlFor="gh-risk">{t('Fruit at risk on a diseased plant')}</label>
+        <input id="gh-risk" className="form-control" type="number" min="0" max="100" step="5" value={risk} onChange={(e) => setRisk(Math.min(100, Math.max(0, Number(e.target.value) || 0)))} style={{ width: 84 }} />
+        <span className="org-muted">%</span>
+      </div>
+      {T.counted_plants === 0 ? (
+        <EmptyState icon="fa-coins" title="Nothing to value yet" description="Count the fruit on some plants first. The value follows from the counts, the health checks and the price of each crop." />
+      ) : (
+        <>
+          {!priced && <div className="alert-item alert-warning" style={{ marginBottom: 12 }}><i className="fas fa-coins" /><div className="alert-content">{role === 'owner' ? t('Set the price per kilogram of each crop under My crops to see the money.') : t('The farm owner has not set the price of the crops yet, so only fruit and weight are shown.')}</div></div>}
+          <div className="org-tiles">
+            <Tile label="Fruit counted" value={formatNumber(T.fruit)} sub={`${formatNumber(T.counted_plants)} ${t('plants')} · ${T.kg} kg`} />
+            <Tile label="Healthy fruit" value={formatNumber(T.healthy_fruit)} sub={`${T.kg_net} kg`} />
+            <Tile label="Lost to disease" value={`${T.loss_share_pct}%`} sub={`${formatNumber(T.sick_fruit)} ${t('sick')} + ${formatNumber(T.at_risk_fruit)} ${t('at risk')}`} />
+            {priced && v.money.map((m) => <Tile key={m.currency} label="Expected value" value={money(m.net, m.currency)} sub={`${t('instead of')} ${money(m.gross, m.currency)}`} />)}
+          </div>
+          {T.projected_fruit > 0 && (
+            <Card title="The whole greenhouse" icon="fa-seedling">
+              <p className="ai-lead" style={{ marginTop: 0 }}>{t('{{n}} active plants are not counted yet. Giving each the average of the counted plants, with the same disease loss, the whole greenhouse could give about {{f}} fruit ({{k}} kg).', { n: formatNumber(T.active_plants - T.counted_plants), f: formatNumber(T.whole_fruit_net), k: T.whole_kg_net })}</p>
+              <div className="org-tiles">
+                <Tile label="Fruit expected" value={formatNumber(T.whole_fruit_net)} sub={`${t('of')} ${formatNumber(T.whole_fruit)} ${t('before disease')}`} />
+                {priced && v.money.map((m) => <Tile key={m.currency} label="Whole greenhouse value" value={money(m.whole_net, m.currency)} sub={`${t('before disease')} ${money(m.whole_gross, m.currency)}`} />)}
+              </div>
+            </Card>
+          )}
+          {cur && priced && (
+            <Card title="Best, expected and worst case" icon="fa-scale-balanced">
+              <div style={{ height: 240 }}>
+                <Bar key={`scen-${dark}`} data={{ labels: [t('Worst case'), t('Expected'), t('Best case'), t('Sold as it is')], datasets: [{ data: [cur.net_worst, cur.net, cur.net_best, cur.gross], backgroundColor: ['#C62828', LEAF, '#7CB342', '#B0BEC5'], borderRadius: 4 }] }} options={breakdownOptions((x) => formatNumber(x))} />
+              </div>
+              <p className="org-muted" style={{ marginBottom: 0 }}>{t('Worst case: every fruit of every diseased plant is lost. Best case: only the fruit found sick. Expected: the sick fruit and the share at risk. In {{c}}, for the plants counted so far.', { c: cur.currency })}</p>
+            </Card>
+          )}
+          <Card title="By crop" icon="fa-seedling">
+            <DataTable
+              rows={v.by_crop}
+              rowKey={(r) => r.crop_id}
+              columns={[
+                { key: 'name', label: 'Crop', render: (r) => <strong>{r.name}</strong> },
+                { key: 'plants', label: 'Plants' },
+                { key: 'fruit', label: 'Fruit', render: (r) => formatNumber(r.fruit) },
+                { key: 'healthy', label: 'Healthy', render: (r) => formatNumber(r.fruit - r.sick_fruit - r.at_risk_fruit) },
+                { key: 'loss', label: 'Lost to disease', render: (r) => `${r.loss_share_pct}%` },
+                { key: 'kg', label: 'kg (healthy)', render: (r) => r.kg_net },
+                { key: 'price', label: 'Price per kg', render: (r) => (r.price_per_kg != null ? money(r.price_per_kg, r.currency) : '—') },
+                { key: 'net', label: 'Expected value', render: (r) => (r.price_per_kg != null ? money(r.net, r.currency) : '—') },
+              ]}
+            />
+          </Card>
+          <Card title="By greenhouse" icon="fa-warehouse">
+            <DataTable
+              rows={v.by_house}
+              rowKey={(r) => r.id}
+              columns={[
+                { key: 'name', label: 'Greenhouse', render: (r) => <strong>{r.name}</strong> },
+                { key: 'counted', label: 'Plants counted', render: (r) => `${r.counted_plants} / ${r.active_positions}` },
+                { key: 'sick', label: 'Diseased plants', render: (r) => r.sick_plants },
+                { key: 'fruit', label: 'Fruit', render: (r) => formatNumber(r.fruit) },
+                { key: 'loss', label: 'Lost to disease', render: (r) => `${r.loss_share_pct}%` },
+                { key: 'proj', label: 'Rest of the house', render: (r) => (r.projected ? `${formatNumber(r.projected.fruit_net)} ${t('fruit')} (${r.projected.plants} ${t('plants')})` : '—') },
+              ]}
+            />
+          </Card>
+          {v.notes.length > 0 && <ul className="gh-health-hist">{v.notes.map((n) => <li key={n}><i className="fas fa-circle-info" /><span>{n}</span></li>)}</ul>}
+          <p className="org-muted">{t(v.method)}</p>
+        </>
+      )}
+    </>
+  );
+}
+
+/** The owner sets the price per kilogram and the weight of one fruit of each crop: what the harvest value is worked out from. */
+function PricesCard() {
+  const toast = useToast();
+  const { data: mine = [] } = useGhCrops();
+  const { updateCrop } = useGhMutations();
+  const [edits, setEdits] = useState({});
+  if (!mine.length) return null;
+  const val = (c, k, dflt) => (edits[c.id]?.[k] !== undefined ? edits[c.id][k] : c[k] ?? dflt);
+  const set = (c, k, v) => setEdits((e) => ({ ...e, [c.id]: { ...e[c.id], [k]: v } }));
+  const save = async (c) => {
+    try {
+      await updateCrop.mutateAsync({ id: c.id, price_per_kg: val(c, 'price_per_kg', null), fruit_weight_g: val(c, 'fruit_weight_g', 100), currency: c.price_per_kg == null ? val(c, 'currency', getCurrency()) : val(c, 'currency', c.currency) });
+      setEdits((x) => { const n = { ...x }; delete n[c.id]; return n; });
+      toast(t('Saved'));
+    } catch (err) { toast(err.message, 'error'); }
+  };
+  return (
+    <Card title="Prices and fruit weight" icon="fa-coins">
+      <p className="ai-lead" style={{ marginTop: 0 }}>{t('The harvest value is worked out from the fruit counted, the weight of one fruit and the price per kilogram. The weights start at a typical value: change them to match your own fruit.')}</p>
+      <div className="gh-prices">
+        {mine.map((c) => (
+          <div className="gh-price-row" key={c.id}>
+            <strong>{c.name}</strong>
+            <label>{t('Weight of one fruit (g)')}<input className="form-control" type="number" min="0.1" step="any" value={val(c, 'fruit_weight_g', 100)} onChange={(e) => set(c, 'fruit_weight_g', e.target.value)} /></label>
+            <label>{t('Price per kg')}<input className="form-control" type="number" min="0" step="any" value={val(c, 'price_per_kg', '') ?? ''} onChange={(e) => set(c, 'price_per_kg', e.target.value)} placeholder={t('not set')} /></label>
+            <label>{t('Currency')}<input className="form-control" maxLength={8} value={edits[c.id]?.currency !== undefined ? edits[c.id].currency : c.price_per_kg == null ? getCurrency() : c.currency} onChange={(e) => set(c, 'currency', e.target.value)} style={{ width: 80 }} /></label>
+            <button type="button" className="btn btn-primary btn-sm" disabled={!edits[c.id] || updateCrop.isPending} onClick={() => save(c)}>{t('Save')}</button>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -650,6 +779,7 @@ export default function Greenhouse() {
       {active === 'layout' && <LayoutTab role={role} />}
       {active === 'counts' && <CountsTab key={`${farm}${JSON.stringify(start)}`} start={start} role={role} />}
       {active === 'disease' && <DiseaseTab key={farm} />}
+      {active === 'harvest' && <HarvestTab key={farm} role={role} />}
       {active === 'crops' && <CropsTab />}
       {active === 'team' && <TeamTab />}
     </>

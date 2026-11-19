@@ -66,9 +66,9 @@ export type GhRole = 'owner' | 'manager' | 'collector';
 export const TABS_BY_ROLE: Record<GhRole, { id: string; icon: string; label: string }[]> = {
   owner: [
     { id: 'dashboard', icon: 'chart-column', label: 'Dashboard' }, { id: 'layout', icon: 'cube', label: 'Layout' }, { id: 'counts', icon: 'camera', label: 'Fruit counts' },
-    { id: 'disease', icon: 'virus', label: 'Disease report' }, { id: 'crops', icon: 'seedling', label: 'My crops' }, { id: 'team', icon: 'user-group', label: 'Team' },
+    { id: 'disease', icon: 'virus', label: 'Disease report' }, { id: 'harvest', icon: 'coins', label: 'Harvest value' }, { id: 'crops', icon: 'seedling', label: 'My crops' }, { id: 'team', icon: 'user-group', label: 'Team' },
   ],
-  manager: [{ id: 'dashboard', icon: 'chart-column', label: 'Dashboard' }, { id: 'disease', icon: 'virus', label: 'Disease report' }, { id: 'counts', icon: 'camera', label: 'Fruit counts' }],
+  manager: [{ id: 'dashboard', icon: 'chart-column', label: 'Dashboard' }, { id: 'disease', icon: 'virus', label: 'Disease report' }, { id: 'harvest', icon: 'coins', label: 'Harvest value' }, { id: 'counts', icon: 'camera', label: 'Fruit counts' }],
   collector: [{ id: 'layout', icon: 'table-cells', label: 'Plan and recording' }, { id: 'counts', icon: 'camera', label: 'My records' }],
 };
 

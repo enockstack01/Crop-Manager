@@ -24,6 +24,7 @@
     "test:fieldlocation": "node src/scripts/test-fieldlocation.mjs",
     "test:greenhouse": "node src/scripts/test-greenhouse.mjs",
     "test:greenhouse-team": "node src/scripts/test-greenhouse-team.mjs",
+    "test:greenhouse-revenue": "node src/scripts/test-greenhouse-revenue.mjs",
     "test:all": "node src/scripts/run-all-tests.mjs",
     "test:tenancy": "node src/scripts/test-tenancy.mjs",
     "test:invites": "node src/scripts/test-invites.mjs",

@@ -35,6 +35,8 @@ router.delete('/houses/:id', only('owner'), h.removeHouse);
 router.get('/catalog', g.catalog);
 router.get('/crops', g.listCrops);
 router.post('/crops', only('owner'), g.addCrop);
+router.put('/crops/:id', only('owner'), g.updateCrop);
+router.get('/revenue', only('owner', 'manager'), g.revenue);
 router.delete('/crops/:id', only('owner'), g.removeCrop);
 
 router.post('/check', only('owner', 'collector'), heavy, g.checkPhoto);

@@ -42,8 +42,25 @@ The farm owner invites people by email under **Greenhouse > Team**. A person sig
 | Plan and 3D map, layout, crops, team | yes | no | plan only, no layout, crops or team |
 | Dashboard | yes | yes | no |
 | Records (fruit counts) | all, edit, delete | read all, with disease details | record and edit their own; sees only their own; no delete |
+| Harvest value (fruit, healthy share, disease loss, money) | yes | yes | no |
+| Prices of the crops | set | no | no |
 | Disease report (number of diseased plants, disease, confidence, sick fruit numbers, photos) | yes | yes | no (the verdict of the photo check only) |
 | Freeze, deactivate, add positions | yes | no | yes (with a reason) |
+
+## Harvest value: price, healthy fruit and disease loss
+
+**Greenhouse > Harvest value** (owner and farm manager; the data collector does not see it) estimates what the harvest could be worth. The owner types the **price per kilogram**, the **weight of one fruit** and the **currency** of each crop under **My crops** (weights start at a typical value, for example 150 g for a tomato, so change them to match your fruit). From the latest count of every active plant and the health check of that count the page works out:
+
+| | How |
+|---|---|
+| Gross | every counted fruit x weight x price: everything sold as it is |
+| Sick fruit | fruit the check marked sick. The check looks at up to 20 fruit, so the share found sick among the checked fruit is applied to the whole count |
+| At risk | on a plant the check calls sick, a share of the remaining fruit may be lost too: 20 per cent unless the viewer changes it |
+| Expected value | gross without the sick fruit and the fruit at risk |
+| Best / worst | best loses only the sick fruit; worst loses every fruit of every sick plant |
+| Whole greenhouse | plants not counted yet get the average of the counted plants of the main crop of that house, with the same loss |
+
+Deactivated plants are left out; frozen plants are included. Money is never added across currencies: each currency is shown on its own. A crop without a price still shows fruit and kilograms, and the page says which prices are missing, how many plants have no health check (their fruit are taken as healthy) and when a count covers one fruit size only. It is an estimate: it is only as good as the counts, the weights and the prices behind it. The API is `GET /api/greenhouse/revenue?greenhouse=<name>&risk=<per cent>`; prices are set with `PUT /api/greenhouse/crops/:id` (owner only).
 
 ## Disease check, health card and health history
 

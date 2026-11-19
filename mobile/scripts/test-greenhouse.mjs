@@ -42,9 +42,10 @@ ok(JSON.stringify(FRUIT_SIZES.map((x) => x.value)) === '["all","small","medium",
 ok(markerColor({ state: 'frozen', latest: { recorded_count: 5, status: 'match' } }, 'status', 10) === STATUS_COLOR.frozen && markerColor({ state: 'inactive', latest: null }, 'fruit', 10) === STATUS_COLOR.inactive, 'a frozen plant is light blue and a deactivated position dark grey, whatever the colouring');
 ok(houseProblem({ ...house, plants_per_row: '0' }) === '' && houseProblem({ ...house, plants_per_row: '301' }) !== '', 'a row may have no plants yet (positions are added later), but not more than 300');
 const ids = (role) => TABS_BY_ROLE[role].map((x) => x.id).join(',');
-ok(ids('owner') === 'dashboard,layout,counts,disease,crops,team', 'the farm owner has every tab');
-ok(ids('manager') === 'dashboard,disease,counts' && !TABS_BY_ROLE.manager.some((x) => x.id === 'layout'), 'the farm manager has records and the disease report, and no plan or 3D');
+ok(ids('owner') === 'dashboard,layout,counts,disease,harvest,crops,team', 'the farm owner has every tab');
+ok(ids('manager') === 'dashboard,disease,harvest,counts' && !TABS_BY_ROLE.manager.some((x) => x.id === 'layout'), 'the farm manager has records and the disease report, and no plan or 3D');
 ok(ids('collector') === 'layout,counts' && !TABS_BY_ROLE.collector.some((x) => ['dashboard', 'disease', 'team', 'crops'].includes(x.id)), 'the data collector has the plan and recording, and nothing else');
+ok(!TABS_BY_ROLE.collector.some((x) => x.id === 'harvest'), 'the data collector has no harvest value');
 const shaped = { length_m: 20, width_m: 9, rows: 3, plants_per_row: 6, pattern: 'zigzag', row_defs: [{ plants: 4 }, { plants: 6 }, { plants: 3, sub_rows: 2 }] };
 const mine = positionsOf(shaped);
 ok(mine.length === 16 && totalPositions(shaped) === 16 && rowDefsOf(shaped)[2].sub_rows === 2 && mine.some((p) => p.row_id === 'R3B' && p.plant_label === 'P3'), 'rows of different lengths and a double row give R1 P4, R2 P6 and R3A P1 to R3B P3');

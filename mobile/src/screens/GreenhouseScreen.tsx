@@ -19,6 +19,7 @@ import { COLOR_HEX, FRUIT_SIZES, TABS_BY_ROLE, VERDICTS, countProblem, useGhAcce
 import type { GhRole } from '../lib/greenhouse';
 import { t } from '../i18n';
 import { LayoutTab } from './GreenhouseLayout';
+import { HarvestTab, PricesCard } from './GreenhouseHarvest';
 import { HealthCard } from '../components/HealthCard';
 
 type TabId = string;
@@ -362,6 +363,8 @@ function CropsTab() {
         </View>
       ))}
 
+      <PricesCard />
+
       <ChartCard title="Add a crop that is not in the list" icon="circle-plus">
         {err ? <AppText style={{ fontSize: 13, color: colors.red, marginBottom: 8 }}>{err}</AppText> : null}
         <TextField label="Crop name" required {...form.bind('name')} placeholder="e.g. Cape gooseberry" />
@@ -536,6 +539,7 @@ export function GreenhouseScreen() {
       {active === 'layout' ? <LayoutTab role={role} /> : null}
       {active === 'counts' ? <CountsTab key={`${farm}${JSON.stringify(start)}`} start={start} role={role} /> : null}
       {active === 'disease' ? <DiseaseTab key={farm} /> : null}
+      {active === 'harvest' ? <HarvestTab key={farm} role={role} /> : null}
       {active === 'crops' ? <CropsTab /> : null}
       {active === 'team' ? <TeamTab /> : null}
     </Screen>

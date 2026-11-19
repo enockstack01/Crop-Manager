@@ -232,6 +232,15 @@ try {
   const mCounts = await json(await req(MGR, 'GET', '/api/greenhouse/counts', undefined, OWNER));
   ok(mCounts.total >= 5 && mCounts.data.some((c) => c.verification?.health?.status === 'sick'), 'the farm manager reads all the records, with disease details');
   ok((await req(MGR, 'GET', '/api/greenhouse/dashboard', undefined, OWNER)).status === 200, 'and the dashboard');
+  // the price and the harvest value estimate
+  ok((await req(OWNER, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { price_per_kg: -3 })).status === 400 && (await req(OWNER, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { fruit_weight_g: 0 })).status === 400 && (await req(OWNER, 'PUT', `/api/greenhouse/crops/${cherry.id}`, {})).status === 400, 'a negative price, a zero weight or an empty change is refused');
+  const priced = await json(await req(OWNER, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { price_per_kg: 1200, fruit_weight_g: 20, currency: 'rwf' }));
+  ok(priced.price_per_kg === 1200 && priced.fruit_weight_g === 20 && priced.currency === 'RWF', 'the owner sets the price per kg, the weight of a fruit and the currency');
+  const val = await json(await req(MGR, 'GET', '/api/greenhouse/revenue?risk=20', undefined, OWNER));
+  ok(val.totals.fruit > 0 && val.totals.sick_plants >= 1 && val.totals.sick_fruit >= 1 && val.money[0].currency === 'RWF' && val.money[0].gross > val.money[0].net && val.money[0].net > val.money[0].net_worst, 'the farm manager sees the harvest value: fruit counted, the diseased share, the loss and the money', JSON.stringify(val.totals).slice(0, 300));
+  ok(val.by_house.some((x) => x.name === 'Shaped' && x.uncounted_plants > 0 && x.projected && x.projected.fruit > 0), 'plants not counted yet are projected from the counted ones');
+  const revDenied = await Promise.all([req(COL, 'GET', '/api/greenhouse/revenue', undefined, OWNER), req(COL, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { price_per_kg: 1 }, OWNER), req(MGR, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { price_per_kg: 1 }, OWNER)]);
+  ok(revDenied.every((r) => r.status === 403), 'the data collector cannot see the value, and only the owner can change prices', revDenied.map((r) => r.status).join(','));
   const mDenied = await Promise.all([
     req(MGR, 'POST', '/api/greenhouse/counts', countBody, OWNER), req(MGR, 'POST', '/api/greenhouse/check', { ...countBody }, OWNER), req(MGR, 'DELETE', `/api/greenhouse/counts/${cc.id}`, undefined, OWNER),
     pos({ row_id: 'R1', plant_label: 'P1', label: 'x' }, MGR, OWNER), req(MGR, 'PUT', `/api/greenhouse/houses/${house.id}`, { name: 'x' }, OWNER), req(MGR, 'POST', '/api/greenhouse/team', { email: 'a@b.cc', role: 'manager' }, OWNER),

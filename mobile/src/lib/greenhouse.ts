@@ -24,6 +24,9 @@ export const useGhTeam = () =>
 export const useGhHealth = (id?: string) =>
   useQuery({ queryKey: ['greenhouse', 'health', id], queryFn: () => api.get(`/greenhouse/houses/${id}/health`).then((r) => r.data), enabled: !!id, staleTime: 15_000 });
 
+export const useGhRevenue = ({ greenhouse = '', risk = 20 }: { greenhouse?: string; risk?: number } = {}) =>
+  useQuery({ queryKey: ['greenhouse', 'revenue', greenhouse, risk], queryFn: () => api.get('/greenhouse/revenue', { params: { greenhouse: greenhouse || undefined, risk } }).then((r) => r.data), staleTime: 15_000, placeholderData: (prev: any) => prev });
+
 export const useGhPositionLog = (id?: string) =>
   useQuery({ queryKey: ['greenhouse', 'poslog', id], queryFn: () => api.get(`/greenhouse/houses/${id}/positions/log`).then((r) => r.data.data as any[]), enabled: !!id });
 
@@ -44,6 +47,7 @@ export function useGhMutations() {
   const opts = { onSuccess: done };
   return {
     addCrop: useMutation({ mutationFn: (body: any) => api.post('/greenhouse/crops', body).then((r) => r.data), ...opts }),
+    updateCrop: useMutation({ mutationFn: ({ id, ...body }: any) => api.put(`/greenhouse/crops/${id}`, body).then((r) => r.data), ...opts }),
     removeCrop: useMutation({ mutationFn: (id: string) => api.delete(`/greenhouse/crops/${id}`).then((r) => r.data), ...opts }),
     createCount: useMutation({ mutationFn: (body: any) => api.post('/greenhouse/counts', body, LONG).then((r) => r.data), ...opts }),
     updateCount: useMutation({ mutationFn: ({ id, ...body }: any) => api.put(`/greenhouse/counts/${id}`, body, LONG).then((r) => r.data), ...opts }),
