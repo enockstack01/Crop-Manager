@@ -246,6 +246,8 @@ try {
   ok(nc.plants_not_counted_in_that_time === 38 && nc.never_counted === 38, 'it lists plants not counted lately');
   const top = await tool({ view: 'top_plants', order: 'most', limit: 1 });
   ok(top.plants[0].latest.recorded === 18, 'and the plants with the most fruit');
+  const hv = await tool({ view: 'harvest_value' });
+  ok(hv.totals.fruit === 30 && hv.totals.counted_plants === 2 && Array.isArray(hv.by_crop) && hv.how, 'and what the harvest could be worth');
   ok((await greenhouseTool(B).handlers.greenhouse_info({ view: 'overview' })).note, 'another farmer\'s question never reaches this data');
   await req(A, 'DELETE', `/api/greenhouse/houses/${h2.id}`);
 

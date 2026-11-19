@@ -1,5 +1,6 @@
-import { GreenhouseHouse, FruitCount } from '../../models/index.js';
+import { GreenhouseHouse, GreenhouseCrop, FruitCount } from '../../models/index.js';
 import { buildLayout } from '../../controllers/greenhouseHouses.controller.js';
+import { estimate } from '../greenhouse/revenue.js';
 
 /*
  * A tool for the chat assistant: lets the farmer ask in plain words about the greenhouse ("how many fruit on row 3 plant 7 in House 1?",
@@ -19,7 +20,7 @@ export function greenhouseTool(userId) {
     input_schema: {
       type: 'object',
       properties: {
-        view: { type: 'string', enum: ['overview', 'plant', 'row', 'mismatches', 'not_counted', 'top_plants', 'diseased'], description: 'overview: totals per greenhouse; plant: one plant with its history; row: every plant of one row; mismatches: plants whose photo did not match; not_counted: plants never counted or not counted for a number of days; top_plants: plants with the most or fewest fruit; diseased: plants whose last photo showed a disease (and which fruit)' },
+        view: { type: 'string', enum: ['overview', 'plant', 'row', 'mismatches', 'not_counted', 'top_plants', 'diseased', 'harvest_value'], description: 'harvest_value: what the harvest could be worth, fruit counted, healthy fruit, the loss to disease and the projection for the whole greenhouse; overview: totals per greenhouse; plant: one plant with its history; row: every plant of one row; mismatches: plants whose photo did not match; not_counted: plants never counted or not counted for a number of days; top_plants: plants with the most or fewest fruit; diseased: plants whose last photo showed a disease (and which fruit)' },
         greenhouse: { type: 'string', description: 'Greenhouse name, for example House 1. Optional when the farmer has only one.' },
         row: { type: 'integer', description: 'Row number, from 1' },
         plant: { type: 'integer', description: 'Plant number in the row, from 1' },
@@ -36,6 +37,17 @@ export function greenhouseTool(userId) {
       const houses = await GreenhouseHouse.find({ user_id: userId }).sort({ name: 1 });
       if (!houses.length) return { note: 'The farmer has not set up a greenhouse layout yet (Greenhouse, then Layout).' };
       const n = Math.min(30, Math.max(1, Number(limit) || 10));
+      if (view === 'harvest_value') {
+        const [crops, counts] = await Promise.all([
+          GreenhouseCrop.find({ user_id: userId }).lean(),
+          FruitCount.find({ user_id: userId }).sort({ count_date: -1, created_at: -1 }).limit(20000).select('crop_id greenhouse row_id plant_label recorded_count fruit_size verification.health count_date').lean(),
+        ]);
+        const e = estimate({ houses: houses.map((x) => x.toObject()), counts, crops, greenhouse: greenhouse ? String(greenhouse).trim() : null });
+        return {
+          totals: e.totals, money: e.money, by_crop: e.by_crop.map((c) => ({ crop: c.name, fruit: c.fruit, healthy_fruit: c.fruit - c.sick_fruit - c.at_risk_fruit, lost_to_disease_percent: c.loss_share_pct, price_per_kg: c.price_per_kg, currency: c.currency, expected_value: c.net })),
+          notes: e.notes, how: 'Expected value = counted fruit minus the fruit the photo check found sick and a share (20 per cent) of the other fruit on sick plants, at the price per kg. Plants not counted yet are projected from the counted ones.',
+        };
+      }
       const pick = greenhouse ? houses.filter((h) => h.name.toLowerCase() === String(greenhouse).trim().toLowerCase()) : houses.length === 1 ? houses : null;
       if (view === 'overview' || !pick) {
         if (view !== 'overview' && !pick) return { error: 'Which greenhouse?', greenhouses: houses.map((h) => h.name) };
