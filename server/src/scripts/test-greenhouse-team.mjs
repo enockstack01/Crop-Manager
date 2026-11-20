@@ -20,6 +20,8 @@ import { storage } from '../lib/storage.js';
 import { sizeBand } from '../lib/greenhouse/verify.js';
 import { positionsOf, parseRowId, hasPosition, totalPositions } from '../lib/greenhouse/layout.js';
 import { columnsFor } from '../lib/greenhouse/collage.js';
+import { combinePlant, pool } from '../lib/greenhouse/health.js';
+import { counterTimeoutMs } from '../lib/greenhouse/verify.js';
 import { positionsOf as clientPositions, totalPositions as clientTotal } from '../../../client/src/lib/greenhouseLayout.js';
 
 const PREFIX = 'ghteam_';
@@ -175,6 +177,14 @@ try {
   ok(single.collage === null && single.photo_urls.length === 1, 'one photo stays one photo, as before');
   const edit2 = await json(await req(OWNER, 'PUT', `/api/greenhouse/counts/${mc.id}`, { photo_urls: [urls[0], urls[1]] }));
   ok(edit2.collage.photos === 2 && edit2.photo_urls.length === 2 && edit2.photo_url !== mc.photo_url, 'photos can be changed when a count is edited: the collage is rebuilt');
+  ok((await storage.get(mc.photo_url.split('/').pop())) === null && (await storage.get(edit2.photo_url.split('/').pop())) !== null, 'the replaced collage is removed from storage, the new one is kept');
+  ok(edit2.verification.health.plant.per_photo?.length === 2 && edit2.verification.health.plant.per_photo[0].photo === 1, 'the disease check judges each photo of the collage on its own', JSON.stringify(edit2.verification.health.plant).slice(0, 200));
+  const sameAgain = await json(await req(OWNER, 'PUT', `/api/greenhouse/counts/${mc.id}`, { recorded_count: 10 }));
+  const filesNow = (await storage.list(`${OWNER}-`)).filter((f) => f.endsWith('-collage.jpg'));
+  ok(sameAgain.photo_url === edit2.photo_url && filesNow.filter((f) => f === edit2.photo_url.split('/').pop()).length === 1, 'editing only the number keeps the count\'s collage and leaves no duplicate behind');
+  const marked = edit2.annotated_url.split('/').pop();
+  const deleted = await req(OWNER, 'DELETE', `/api/greenhouse/counts/${mc.id}`);
+  ok(deleted.status === 200 && (await storage.get(edit2.photo_url.split('/').pop())) === null && (await storage.get(sameAgain.annotated_url.split('/').pop())) === null && (await storage.get(urls[0].split('/').pop())) !== null, 'deleting a count removes its collage and marked photo but never the farmer\'s own photographs', marked);
 
   const junk = `${OWNER}-${Date.now()}-junk.jpg`;
   await storage.put(junk, Buffer.from('this is not a picture'));
@@ -193,6 +203,19 @@ try {
   const oldC = await json(await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R2', plant_label: 'P6', recorded_count: 9, photo_urls: [await jpeg(OWNER), await jpeg(OWNER)] }));
   ok(oldC.verification.confidence === 'low' && oldC.verification.status !== 'match' && /not been updated/.test(oldC.verification.message), 'an older counter that cannot count a collage cell by cell is never trusted: low confidence and a message to update it', JSON.stringify(oldC.verification).slice(0, 200));
   mode.oldCounter = false;
+
+  console.log('4b. the disease check of several photos, and waiting for the counter');
+  const P = (photo, status, disease, confidence) => ({ photo, status, disease, confidence });
+  const mixed = combinePlant([P(1, 'healthy', null, 0.9), P(2, 'sick', 'Late blight', 0.7), P(3, 'sick', 'Early blight', 0.88)]);
+  ok(mixed.status === 'sick' && mixed.disease === 'Early blight' && mixed.confidence === 0.88 && JSON.stringify(mixed.photos_with_disease) === '[2,3]', 'one sick photo makes the plant sick: the most certain disease is reported, with the photos that show it');
+  ok(combinePlant([P(1, 'healthy', null, 0.9), P(2, 'healthy', null, 0.75)]).status === 'healthy' && combinePlant([P(1, 'healthy', null, 0.9), P(2, 'healthy', null, 0.75)]).confidence === 0.75, 'healthy only when every photo is healthy, with the lowest confidence');
+  ok(combinePlant([P(1, 'healthy', null, 0.9), P(2, 'unsure', 'Rust', 0.4)]).status === 'unsure' && combinePlant([P(1, 'not_checked'), P(2, 'not_checked')]).status === 'not_checked', 'one unsure photo leaves the plant unsure; nothing judged means not checked');
+  ok(combinePlant([P(1, 'not_checked'), P(2, 'healthy', null, 0.8)]).status === 'healthy', 'a photo the classifier could not reach does not block the others');
+  let running = 0;
+  let peak = 0;
+  const order = await pool([1, 2, 3, 4, 5, 6, 7], 3, async (n) => { running += 1; peak = Math.max(peak, running); await new Promise((r) => setTimeout(r, 10)); running -= 1; return n * 2; });
+  ok(peak === 3 && JSON.stringify(order) === '[2,4,6,8,10,12,14]', 'fruit are checked three or four at a time, and the answers keep their order');
+  ok(counterTimeoutMs(null) === 30000 && counterTimeoutMs({ photos: 4 }) === 50000 && counterTimeoutMs({ photos: 12 }) === 75000, 'the counter gets more time for a collage of more photos, up to 75 seconds');
 
   console.log('5. small, medium, large or all sizes');
   const dets = [10, 12, 14, 20, 22, 24, 40, 44, 48].map((r, i) => ({ x: 20 + i * 30, y: 100, r }));

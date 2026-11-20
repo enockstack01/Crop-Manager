@@ -57,6 +57,7 @@ function CheckResult({ verification: v, annotatedUrl, photoUrl }: { verification
           <AppText style={{ flex: 1, fontSize: 13, lineHeight: 19 }}>{t('Some photos seem to show the same part of the plant:')} {v.collage.overlap_warnings.map((w: any) => `${w.a} ${t('and')} ${w.b}`).join(', ')}. {t('A fruit that is in two photos is counted twice. Retake one of each pair so every fruit is in one photo only.')}</AppText>
         </View>
       ) : null}
+      {v.photo_counts?.length > 1 ? <AppText variant="caption">{t('Fruit counted in each photo')}: {v.photo_counts.map((c: any) => `${t('Photo')} ${c.cell}: ${c.count}`).join(' · ')}</AppText> : null}
       {v.fruit_size && v.fruit_size !== 'all' ? <AppText variant="caption">{t('Counting')} {t(FRUIT_SIZES.find((x) => x.value === v.fruit_size)?.label || v.fruit_size).toLowerCase()} {t('fruit only')}{v.detected_all_sizes != null ? ` (${v.detected_all_sizes} ${t('fruit of all sizes in the photo')})` : ''}.</AppText> : null}
       {v.health !== undefined ? <HealthCard health={v.health} /> : null}
       {photoUrl ? <Image source={{ uri: mediaUrl(photoUrl) }} resizeMode="contain" style={{ width: '100%', height: 220, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }} accessibilityLabel={t('Your photo')} /> : null}

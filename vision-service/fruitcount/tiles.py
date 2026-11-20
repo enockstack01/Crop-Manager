@@ -15,6 +15,7 @@ import numpy as np
 from .counter import annotate
 
 MAX_OUT = 2560  # longest side of the marked collage that is sent back
+MAX_CELLS = 12  # the most photos of one plant (the server refuses more)
 
 
 def _average(dicts: list[dict]) -> dict:
@@ -27,7 +28,7 @@ def _average(dicts: list[dict]) -> dict:
 
 def count_cells(data: bytes, count_one, cols: int, rows: int, cell_w: int, cell_h: int, n: int) -> dict:
     """`count_one(jpeg_bytes) -> result` counts one photo (the trained model or the colour method). Returns one result for the whole collage."""
-    if not (1 <= n <= cols * rows) or min(cols, rows, cell_w, cell_h) < 1:
+    if not (1 <= n <= min(MAX_CELLS, cols * rows)) or not (1 <= cols <= 6 and 1 <= rows <= 6) or min(cell_w, cell_h) < 1:
         raise ValueError('The collage grid is not valid.')
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
     if img is None or img.size == 0:

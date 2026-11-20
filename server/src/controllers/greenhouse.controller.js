@@ -1,4 +1,6 @@
+import path from 'node:path';
 import mongoose from 'mongoose';
+import { storage } from '../lib/storage.js';
 import createHttpError from '../lib/httpError.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import { GreenhouseCrop, FruitCount, GreenhouseHouse, GreenhouseMember, Profile } from '../models/index.js';
@@ -143,6 +145,17 @@ async function joinPhotos(req, urls) {
   return { photo_url, collage: { photos: urls.length, columns: joined.columns, rows: joined.rows, cell: joined.cell, overlap_warnings: overlaps } };
 }
 
+/**
+ * Collages and marked photos are made by the server for one count: they go when the count goes or is checked again, so storage does not fill
+ * with files nothing points to. The farmer's own photographs are never touched.
+ */
+async function dropGenerated(owner, urls) {
+  for (const u of urls) {
+    const name = path.basename(String(u || ''));
+    if (name.startsWith(`${owner}-`) && /-(collage|counted)\.jpg$/.test(name)) await storage.remove(name).catch(() => {});
+  }
+}
+
 /** A position that was deactivated (the plant was uprooted) takes no new counts. */
 async function refuseInactive(owner, greenhouse, rowId, plantLabel) {
   if (!greenhouse) return;
@@ -261,16 +274,24 @@ export const updateCount = asyncHandler(async (req, res) => {
   delete data.photo_url;
   doc.set(data);
   if (crop) { doc.crop_id = crop._id; doc.crop_name = crop.name; }
+  const gone = [];
   if (changed) {
     const use = crop || (await GreenhouseCrop.findOne({ _id: doc.crop_id, user_id: req.gh.owner }).lean());
     if (use) {
       const out = await checkCount(req, { urls: urls || (doc.photo_urls?.length > 1 ? doc.photo_urls : [doc.photo_url]), crop: use, recorded: doc.recorded_count, fruitSize: doc.fruit_size || 'all' });
+      gone.push(doc.annotated_url);
       doc.verification = out.verification;
       doc.annotated_url = out.annotated_url;
-      if (urls) { doc.photo_urls = urls; doc.photo_url = out.photo_url; doc.collage = out.collage; }
+      if (urls) {
+        if (doc.collage) gone.push(doc.photo_url); // the old collage is replaced
+        doc.photo_urls = urls; doc.photo_url = out.photo_url; doc.collage = out.collage;
+      } else if (out.collage && out.photo_url !== doc.photo_url) {
+        gone.push(out.photo_url); // the same photos were joined again for the check: the count keeps its first collage
+      }
     }
   }
   await doc.save();
+  await dropGenerated(req.gh.owner, gone);
   res.json(present(doc, req.gh.role));
 });
 
@@ -284,8 +305,10 @@ export const reverify = asyncHandler(async (req, res) => {
   const uploaders = await uploadersOf(req.gh.owner);
   const out = await verifyPhoto({ userId: req.gh.owner, uploaders, photoUrl: doc.photo_url, crop, recorded: doc.recorded_count, fruitSize: doc.fruit_size || 'all', collage: doc.collage });
   doc.verification = doc.collage ? { ...out.verification, collage: doc.collage } : out.verification;
+  const oldMarked = doc.annotated_url;
   doc.annotated_url = out.annotated_url;
   await doc.save();
+  await dropGenerated(req.gh.owner, [oldMarked]);
   res.json(present(doc, req.gh.role));
 });
 
@@ -293,6 +316,7 @@ export const removeCount = asyncHandler(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw createHttpError(404, 'Fruit count not found');
   const doc = await FruitCount.findOneAndDelete({ _id: req.params.id, user_id: req.gh.owner });
   if (!doc) throw createHttpError(404, 'Fruit count not found');
+  await dropGenerated(req.gh.owner, [doc.annotated_url, doc.collage ? doc.photo_url : null]);
   res.json({ id: req.params.id, deleted: true });
 });
 

@@ -92,6 +92,7 @@ function CheckResult({ verification: v, annotatedUrl, photoUrl }) {
           <div className="alert-content">{t('Some photos seem to show the same part of the plant:')} {v.collage.overlap_warnings.map((w) => `${w.a} ${t('and')} ${w.b}`).join(', ')}. {t('A fruit that is in two photos is counted twice. Retake one of each pair so every fruit is in one photo only.')}</div>
         </div>
       )}
+      {v.photo_counts?.length > 1 && <p className="org-muted" style={{ marginTop: 0 }}>{t('Fruit counted in each photo')}: {v.photo_counts.map((c) => `${t('Photo')} ${c.cell}: ${c.count}`).join(' · ')}</p>}
       {v.fruit_size && v.fruit_size !== 'all' && <p className="org-muted" style={{ marginTop: 0 }}>{t('Counting')} {t(FRUIT_SIZES.find((x) => x.value === v.fruit_size)?.label || v.fruit_size).toLowerCase()} {t('fruit only')}{v.detected_all_sizes != null ? ` (${v.detected_all_sizes} ${t('fruit of all sizes in the photo')})` : ''}.</p>}
       {v.health !== undefined && <HealthCard health={v.health} />}
       {(photoUrl || annotatedUrl) && (

@@ -39,7 +39,7 @@ export const useGhLayout = (id?: string) =>
 export const useGhPlant = (id?: string, row?: number, plant?: number, sub = '') =>
   useQuery({ queryKey: ['greenhouse', 'plant', id, row, plant, sub], queryFn: () => api.get(`/greenhouse/houses/${id}/plants/${row}/${plant}`, { params: sub ? { sub } : {} }).then((r) => r.data), enabled: !!(id && row && plant) });
 
-const LONG = { timeout: 90000 }; // the photo is counted on the server: allow time
+const LONG = { timeout: 150000 }; // the photo is counted on the server: allow time
 
 export function useGhMutations() {
   const qc = useQueryClient();

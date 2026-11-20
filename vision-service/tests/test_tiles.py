@@ -92,6 +92,8 @@ def test_empty_cells_and_a_bad_grid():
         count_cells(data, colour, 5, 5, CELL_W, CELL_H, 2)  # a grid that does not match the picture
     with pytest.raises(ValueError):
         count_cells(b'not an image', colour, 2, 1, CELL_W, CELL_H, 2)
+    with pytest.raises(ValueError):
+        count_cells(data, colour, 100, 100, CELL_W, CELL_H, 9000)  # an absurd grid is refused before anything is cut
 
 
 def test_the_service_counts_a_collage_when_given_its_grid():

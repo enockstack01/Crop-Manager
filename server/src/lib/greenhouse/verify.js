@@ -41,6 +41,9 @@ export const YOLO_CLASS = {
   strawberry: 'strawberry', melon: 'melon', // zucchini and green beans have no trained counter: they are counted by colour
 };
 
+/** How long to wait for the counter: a collage is counted cell by cell, so each photo adds time on a slow (CPU) server. */
+export const counterTimeoutMs = (collage) => Math.min(75_000, 30_000 + 5_000 * (collage?.photos > 1 ? collage.photos : 0));
+
 /** Asks the counter. Resolves its answer, or throws an Error with a `kind` of 'down' or 'unreadable'. */
 export async function askCounter(bytes, crop, collage = null) {
   const form = new FormData();
@@ -61,7 +64,7 @@ export async function askCounter(bytes, crop, collage = null) {
   let res;
   try {
     res = await fetch(`${counterUrl()}/count`, {
-      method: 'POST', body: form, signal: AbortSignal.timeout(40_000),
+      method: 'POST', body: form, signal: AbortSignal.timeout(counterTimeoutMs(collage)),
       headers: process.env.FRUIT_COUNTER_TOKEN ? { 'X-Token': process.env.FRUIT_COUNTER_TOKEN } : {},
     });
   } catch (e) {
@@ -142,7 +145,7 @@ export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded,
   const base = { recorded, detected: null, difference: null, tolerance: toleranceFor(recorded), confidence: null, warnings: [], method: null, checked_at: new Date().toISOString() };
   const bytes = await readUserPhoto(uploaders || userId, photoUrl);
   if (!counterConfigured()) {
-    const health = await checkHealth(bytes, null, crop);
+    const health = await checkHealth(bytes, null, crop, collage);
     return { verification: { ...base, status: 'not_checked', health, message: 'The photo was saved but not checked: the fruit counter is not connected yet. Ask your administrator to connect it.' }, annotated_url: null };
   }
   let seen;
@@ -150,13 +153,13 @@ export async function verifyPhoto({ userId, uploaders, photoUrl, crop, recorded,
     seen = await askCounter(bytes, crop, collage);
   } catch (e) {
     const unreadable = e.kind === 'unreadable';
-    const health = unreadable ? null : await checkHealth(bytes, null, crop);
+    const health = unreadable ? null : await checkHealth(bytes, null, crop, collage);
     return {
       verification: { ...base, health, status: 'failed', message: unreadable ? `${e.message} Take a clearer photo.` : 'The photo was saved but could not be checked right now. Check it again later.' },
       annotated_url: null,
     };
   }
-  const health = await checkHealth(bytes, seen, crop);
+  const health = await checkHealth(bytes, seen, crop, collage);
   let annotated = null;
   if (seen.annotated_jpeg_b64) {
     let jpeg = Buffer.from(seen.annotated_jpeg_b64, 'base64');
