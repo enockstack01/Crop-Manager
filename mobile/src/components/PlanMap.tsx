@@ -90,7 +90,7 @@ export function PlanMap({ layout, colorBy, selected, onPick }: { layout: any; co
             return (
               <G key={`${p.row_id}${p.plant_label}`} onPress={() => onPick(p)}>
                 <Circle cx={p.x} cy={p.z} r={r * 1.15} fill="transparent" />
-                <Circle cx={p.x} cy={p.z} r={r} fill={markerColor(p, colorBy, maxCount)} stroke={sel ? '#1565C0' : '#FFFFFF'} strokeWidth={sel ? r * 0.28 : r * 0.1} strokeDasharray={p.state === 'frozen' ? [r * 0.35, r * 0.25] : undefined} />
+                <Circle cx={p.x} cy={p.z} r={r} fill={markerColor(p, colorBy, maxCount)} stroke={sel ? '#1C2B1E' : '#FFFFFF'} strokeWidth={sel ? r * 0.28 : r * 0.1} strokeDasharray={p.state === 'frozen' ? [r * 0.35, r * 0.25] : undefined} />
                 {p.state === 'inactive' ? <Path d={`M${p.x - r * 0.5} ${p.z - r * 0.5} L${p.x + r * 0.5} ${p.z + r * 0.5} M${p.x + r * 0.5} ${p.z - r * 0.5} L${p.x - r * 0.5} ${p.z + r * 0.5}`} stroke="#FFFFFF" strokeWidth={r * 0.18} strokeLinecap="round" /> : null}
                 {p.state !== 'inactive' && p.latest ? <SvgText x={p.x} y={p.z + fontSize * 0.34} textAnchor="middle" fontSize={fontSize} fill="#FFFFFF" fontWeight="700">{String(n)}</SvgText> : null}
               </G>

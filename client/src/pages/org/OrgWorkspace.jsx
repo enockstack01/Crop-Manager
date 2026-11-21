@@ -127,13 +127,13 @@ function FarmerBody({ org }) {
       <Section title="Pest and disease">
         {data.scouting.length || data.protection.length ? (
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {data.scouting.map((s, i) => <li key={`s${i}`}>{formatDate(s.date)} · {s.disease || s.pest || s.health}{s.recommendation && ` — ${s.recommendation}`}</li>)}
+            {data.scouting.map((s, i) => <li key={`s${i}`}>{formatDate(s.date)} · {s.disease || s.pest || s.health}{s.recommendation && `: ${s.recommendation}`}</li>)}
             {data.protection.map((p, i) => <li key={`p${i}`}>{formatDate(p.date)} · {p.name} ({t(p.type)}{p.severity && `, ${t(p.severity)}`})</li>)}
           </ul>
         ) : none}
       </Section>
       <Section title="Recent work">
-        {data.activities.length ? <ul style={{ margin: 0, paddingLeft: 18 }}>{data.activities.map((a, i) => <li key={i}>{formatDate(a.date)} · {a.type}{a.description && ` — ${a.description}`}</li>)}</ul> : none}
+        {data.activities.length ? <ul style={{ margin: 0, paddingLeft: 18 }}>{data.activities.map((a, i) => <li key={i}>{formatDate(a.date)} · {a.type}{a.description && `: ${a.description}`}</li>)}</ul> : none}
       </Section>
       <Section title="Harvested">
         {data.harvested_kg.length ? <ul style={{ margin: 0, paddingLeft: 18 }}>{data.harvested_kg.map((h) => <li key={h.crop}><b>{h.crop}</b> · {h.kg.toLocaleString()} kg</li>)}</ul> : none}

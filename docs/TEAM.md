@@ -49,6 +49,13 @@ API (all under `/api`, farm manager only): `GET /team` (`?include=removed`), `PO
 
 Earlier greenhouse invitations keep working (the team is stored in the same collection). The older "greenhouse manager" role (a second person who reads the greenhouse records) is no longer offered; people who have it are shown on the Team page and can be removed there.
 
+## Protections
+
+- A data collector cannot join an organization through a referral link, and cannot register one.
+- Team invitations send real email, so they are limited to 30 an hour per farm manager (`TEAM_INVITES_PER_HOUR`); sending more gets a plain "try again in an hour".
+- Names that people choose for themselves are never shown as raw HTML. The confirmation dialog keeps only `<strong>` and `<br>` (`client/src/lib/safeHtml.js`), so a user cannot plant a script in their display name for an administrator to trigger.
+- A collector's session is checked on every request against the team list, so removing someone, or putting the manager's account on hold, takes effect at once.
+
 ## Checks
 
 `server/src/scripts/test-farmteam.mjs` (78 checks) runs the whole story against the API: invitation, first sign-in, waiting for approval, permissions, tagging, tasks, dashboards, the team list, cancelling, removing, adding again, exports and the manager's account status. `mobile/scripts/test-team.mjs` checks the phone's rules and that the phone, the website and the server list the same records for a collector.

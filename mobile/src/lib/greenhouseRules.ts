@@ -28,9 +28,9 @@ export function countProblem(v: { crop_id?: string; row_id?: string; recorded_co
 
 /* ---- greenhouse plan colours (same as the website) ---- */
 export const STATUS_COLOR: Record<string, string> = {
-  match: '#2E7D32', close: '#7CB342', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#546E7A', failed: '#EF6C00', none: '#B0BEC5', frozen: '#4FC3F7', inactive: '#616161',
+  match: '#2E7D32', close: '#1B5E20', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#5B6B5D', failed: '#5B6B5D', none: '#D5E3D6', frozen: '#4FC3F7', inactive: '#616161',
 };
-export const HEALTH_COLOR: Record<string, string> = { healthy: '#2E7D32', sick: '#C62828', unsure: '#F9A825', not_checked: '#546E7A', none: '#B0BEC5' };
+export const HEALTH_COLOR: Record<string, string> = { healthy: '#2E7D32', sick: '#C62828', unsure: '#F9A825', not_checked: '#5B6B5D', none: '#D5E3D6' };
 export const HEALTH: Record<string, { label: string; tone: Tone; icon: string }> = {
   healthy: { label: 'Healthy', tone: 'success', icon: 'leaf' },
   sick: { label: 'Possible disease', tone: 'danger', icon: 'virus' },

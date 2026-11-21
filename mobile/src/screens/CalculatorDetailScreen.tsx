@@ -206,7 +206,7 @@ function CalcReport({ r }: { r: any }) {
       <AppText weight="700" style={{ fontSize: 15, color: colors.primaryDark }}>{r.headline}</AppText>
       {r.meaning?.length ? <>{head('What the results mean')}{r.meaning.map((m: any, i: number) => p(`${m.result}. ${m.explanation}`, i))}</> : null}
       {r.estimates?.length ? <>{head('Other estimates')}{r.estimates.map((e: any, i: number) => p(`${e.label}: ${e.value}${e.note ? ` (${e.note})` : ''}`, i))}</> : null}
-      {r.recommendations?.length ? <>{head('Recommended steps')}{r.recommendations.map((x: any, i: number) => p(`${i + 1}. ${x.action}${x.detail ? ` — ${x.detail}` : ''}`, i))}</> : null}
+      {r.recommendations?.length ? <>{head('Recommended steps')}{r.recommendations.map((x: any, i: number) => p(`${i + 1}. ${x.action}${x.detail ? `: ${x.detail}` : ''}`, i))}</> : null}
       {r.farm_link ? <>{head('Your farm')}{p(r.farm_link)}</> : null}
       {r.weather_note ? <>{head('Weather')}{p(r.weather_note)}</> : null}
       {r.cautions?.length ? <>{head('Watch out for')}{r.cautions.map((x: string, i: number) => p(`• ${x}`, i))}</> : null}

@@ -1,9 +1,9 @@
 /* Colours for the greenhouse plan and 3D view. Kept apart from the 3D code so the plan loads without it. */
 export const STATUS_COLOR = {
-  match: '#2E7D32', close: '#7CB342', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#546E7A', failed: '#EF6C00', none: '#B0BEC5', frozen: '#4FC3F7', inactive: '#616161',
+  match: '#2E7D32', close: '#1B5E20', mismatch: '#C62828', inconclusive: '#F9A825', not_checked: '#5B6B5D', failed: '#5B6B5D', none: '#D5E3D6', frozen: '#4FC3F7', inactive: '#616161',
 };
 
-export const HEALTH_COLOR = { healthy: '#2E7D32', sick: '#C62828', unsure: '#F9A825', not_checked: '#546E7A', none: '#B0BEC5' };
+export const HEALTH_COLOR = { healthy: '#2E7D32', sick: '#C62828', unsure: '#F9A825', not_checked: '#5B6B5D', none: '#D5E3D6' };
 
 const hex = (n) => n.toString(16).padStart(2, '0');
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));

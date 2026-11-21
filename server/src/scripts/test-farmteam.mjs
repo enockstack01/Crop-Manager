@@ -51,7 +51,7 @@ await mkProfile(MGR, { full_name: 'Martha Manager' });
 await mkProfile(OTHER);
 await mkProfile(ADMIN, { is_admin: true });
 
-const child = spawn(process.execPath, ['src/index.js'], { cwd: new URL('../../', import.meta.url), env: { ...process.env, PORT: '5093', AI_MOCK: '1', ALLOW_DEV_AUTH: '1', INVITE_DRY_RUN: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+const child = spawn(process.execPath, ['src/index.js'], { cwd: new URL('../../', import.meta.url), env: { ...process.env, PORT: '5093', AI_MOCK: '1', ALLOW_DEV_AUTH: '1', INVITE_DRY_RUN: '1', TEAM_INVITES_PER_HOUR: '25' }, stdio: ['ignore', 'pipe', 'pipe'] });
 const base = 'http://localhost:5093';
 for (let i = 0; i < 180; i += 1) {
   try { if ((await fetch(`${base}/api/health`)).status < 500) break; } catch { /* not up yet */ }
@@ -247,6 +247,13 @@ try {
   ok(held.status === 403 && (await json(held)).details?.code === 'farm_inactive', 'a collector cannot work while an administrator has the manager account on hold');
   await M.Profile.updateOne({ user_id: MGR }, { $set: { account_status: 'active' } });
   ok((await req(A, 'GET', '/api/fields')).status === 200, 'and works again when the account is active');
+
+  console.log('14. abuse');
+  const joinTry = await req(A, 'POST', '/api/join/not-a-real-token', { consent: true });
+  ok(joinTry.status === 403 && (await json(joinTry)).details?.code === 'collector_account', 'a data collector cannot join an organization through a referral link');
+  const codes = [];
+  for (let i = 0; i < 40; i += 1) codes.push((await req(MGR, 'POST', '/api/team', { name: 'Spam Person', email: 'spam' + i + '@' + PREFIX + 'local.test' })).status);
+  ok(codes.includes(429) && codes.indexOf(429) > 0, 'invitations are limited per hour, so a stolen session cannot be used to send email to many addresses', codes.join(','));
 } catch (e) {
   failures += 1;
   console.log('  FAIL the test stopped with an error:', e && e.stack ? e.stack.split(String.fromCharCode(10)).slice(0, 5).join(' | ') : e);

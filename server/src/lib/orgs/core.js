@@ -78,6 +78,7 @@ const MESSAGES = {
   consent_required: [400, 'You must agree to share a summary of your farm activity to join.'],
   org_account: [403, 'This account belongs to an organization, so it cannot join as a farmer.'],
   admin_account: [403, 'Administrator accounts cannot join an organization as a farmer.'],
+  collector_account: [403, "A data collector works on their farm manager's farm, so this account cannot join an organization."],
   account_blocked: [403, 'Your account is not active. Please contact support.'],
 };
 export const joinError = (code) => {

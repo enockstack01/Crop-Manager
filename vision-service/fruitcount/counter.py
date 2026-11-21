@@ -39,7 +39,10 @@ SHAPES = ('round', 'elongated')
 
 def decode(data: bytes) -> np.ndarray:
     arr = np.frombuffer(data, np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    try:
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    except cv2.error as e:  # more pixels than the limit, or damaged beyond reading
+        raise ValueError('The photo is too large or could not be read. Take it again at a smaller size.') from e
     if img is None or img.size == 0:
         raise ValueError('The photo could not be read.')
     h, w = img.shape[:2]

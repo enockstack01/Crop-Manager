@@ -535,7 +535,7 @@ function HarvestTab({ role }) {
           {cur && priced && (
             <Card title="Best, expected and worst case" icon="fa-scale-balanced">
               <div style={{ height: 240 }}>
-                <Bar key={`scen-${dark}`} data={{ labels: [t('Worst case'), t('Expected'), t('Best case'), t('Sold as it is')], datasets: [{ data: [cur.net_worst, cur.net, cur.net_best, cur.gross], backgroundColor: ['#C62828', LEAF, '#7CB342', '#B0BEC5'], borderRadius: 4 }] }} options={breakdownOptions((x) => formatNumber(x))} />
+                <Bar key={`scen-${dark}`} data={{ labels: [t('Worst case'), t('Expected'), t('Best case'), t('Sold as it is')], datasets: [{ data: [cur.net_worst, cur.net, cur.net_best, cur.gross], backgroundColor: ['#C62828', LEAF, '#1B5E20', '#5B6B5D'], borderRadius: 4 }] }} options={breakdownOptions((x) => formatNumber(x))} />
               </div>
               <p className="org-muted" style={{ marginBottom: 0 }}>{t('Worst case: every fruit of every diseased plant is lost. Best case: only the fruit found sick. Expected: the sick fruit and the share at risk. In {{c}}, for the plants counted so far.', { c: cur.currency })}</p>
             </Card>

@@ -1493,7 +1493,7 @@
   "{{n}} items overdue in this view": "{{n}} überfällige Einträge in dieser Ansicht",
   "{{ok}} of {{total}} inventory items are stocked; {{low}} low and {{out}} out of stock.": "{{ok}} von {{total}} Lagerartikeln sind vorrätig; {{low}} mit niedrigem Bestand und {{out}} ausverkauft.",
   "{{pct}}% healthy": "{{pct}} % gesund",
-  "{{report}} Detail": "{{report}} – Details",
-  "{{report}} Overview": "{{report}} – Übersicht",
+  "{{report}} Detail": "{{report}}: Details",
+  "{{report}} Overview": "{{report}}: Übersicht",
   "{{report}} Report": "{{report}}-Bericht"
 }

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState } from 'react';
+import { safeHtml } from '../lib/safeHtml.js';
 import { Modal } from './Modal.jsx';
 import { t } from '../i18n/index.js';
 
@@ -45,7 +46,7 @@ export function ConfirmProvider({ children }) {
       >
         <p
           style={{ color: 'var(--text-light)', lineHeight: 1.6 }}
-          dangerouslySetInnerHTML={{ __html: t(state?.message) || '' }}
+          dangerouslySetInnerHTML={{ __html: safeHtml(t(state?.message)) }} // only <strong> and <br> survive: names in the message come from users
         />
       </Modal>
     </ConfirmCtx.Provider>

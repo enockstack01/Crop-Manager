@@ -25,7 +25,7 @@ export function HarvestTab({ role = 'owner' }: { role?: string }) {
   const cur = v.money[0];
   const priced = v.money.some((m: any) => m.gross > 0);
   const scenarios = cur && priced ? [
-    { label: 'Sold as it is', value: cur.gross, color: '#B0BEC5' }, { label: 'Best case', value: cur.net_best, color: '#7CB342' },
+    { label: 'Sold as it is', value: cur.gross, color: '#5B6B5D' }, { label: 'Best case', value: cur.net_best, color: '#1B5E20' },
     { label: 'Expected', value: cur.net, color: colors.primary }, { label: 'Worst case', value: cur.net_worst, color: '#C62828' },
   ] : [];
   const top = Math.max(1, ...scenarios.map((s) => s.value));

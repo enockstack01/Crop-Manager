@@ -222,6 +222,7 @@ export const joinOrganization = asyncHandler(async (req, res) => {
   const me = req.profile;
   if (me.is_admin) throw joinError('admin_account');
   if (me.user_type === 'org') throw joinError('org_account');
+  if (me.user_type === 'collector') throw joinError('collector_account');
   if (['on_hold', 'deactivated', 'rejected'].includes(me.account_status)) throw joinError('account_blocked');
   if (req.body?.consent !== true) throw joinError('consent_required');
 

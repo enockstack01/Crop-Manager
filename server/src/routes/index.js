@@ -22,6 +22,7 @@ import { orgRouter, publicJoin, selfRouter } from './org.routes.js';
 import aiRouter from './ai.routes.js';
 import greenhouseRouter from './greenhouse.routes.js';
 import { markAllRead } from '../controllers/notifications.controller.js';
+import { limiter as rateLimit } from '../lib/rateLimit.js';
 
 const api = Router();
 
@@ -84,10 +85,12 @@ api.put('/notifications/read-all', markAllRead);
 
 // the farm manager's team of data collectors (the farm manager only: a collector is refused by the policy before this)
 api.get('/team', listTeam);
-api.post('/team', addCollector);
+// invitations send real email: a farm manager can send a limited number an hour (a stolen session cannot be used to spam addresses)
+const inviteLimit = rateLimit({ name: 'team-invite', windowMs: 3_600_000, max: Number(process.env.TEAM_INVITES_PER_HOUR || 30), standardHeaders: true, legacyHeaders: false, keyGenerator: (r) => r.userId, message: { message: 'You have sent many invitations. Please try again in an hour.' } });
+api.post('/team', inviteLimit, addCollector);
 api.get('/team/:id', memberDetail);
 api.put('/team/:id', updateMember);
-api.post('/team/:id/resend', resendInvite);
+api.post('/team/:id/resend', inviteLimit, resendInvite);
 api.delete('/team/:id', removeMember);
 
 // tasks: the farm manager hands them out, a data collector marks their own done

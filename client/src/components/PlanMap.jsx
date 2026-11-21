@@ -76,7 +76,7 @@ export function PlanMap({ layout, colorBy = 'status', selected, onPick, showLabe
           return (
             <g key={`${p.row_id}${p.plant_label}`} role="button" tabIndex={0} aria-label={label} onClick={() => onPick?.(p)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick?.(p); } }} style={{ cursor: onPick ? 'pointer' : 'default' }}>
               <title>{label}</title>
-              <circle cx={p.x} cy={p.z} r={r} fill={markerColor(p, colorBy, maxCount)} stroke={sel ? '#1565C0' : '#fff'} strokeWidth={sel ? r * 0.28 : r * 0.1} strokeDasharray={p.state === 'frozen' ? `${r * 0.35} ${r * 0.25}` : undefined} />
+              <circle cx={p.x} cy={p.z} r={r} fill={markerColor(p, colorBy, maxCount)} stroke={sel ? '#1C2B1E' : '#fff'} strokeWidth={sel ? r * 0.28 : r * 0.1} strokeDasharray={p.state === 'frozen' ? `${r * 0.35} ${r * 0.25}` : undefined} />
               {p.state === 'inactive' && <path d={`M${p.x - r * 0.5} ${p.z - r * 0.5} L${p.x + r * 0.5} ${p.z + r * 0.5} M${p.x + r * 0.5} ${p.z - r * 0.5} L${p.x - r * 0.5} ${p.z + r * 0.5}`} stroke="#fff" strokeWidth={r * 0.18} strokeLinecap="round" />}
               {p.state !== 'inactive' && p.latest && r > 0.2 && <text x={p.x} y={p.z + fontSize * 0.34} textAnchor="middle" fontSize={fontSize} fill="#fff" fontWeight="700" pointerEvents="none">{n}</text>}
             </g>

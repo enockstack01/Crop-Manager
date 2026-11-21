@@ -317,7 +317,7 @@ export default function GreenhouseScene({ layout, colorBy = 'status', selected, 
     scene.add(stem, ...leafMeshes, flowers, poles, proxy, ringsMesh, ...fruitMeshes);
 
     // selection ring
-    const ring = new THREE.Mesh(own(new THREE.TorusGeometry(size * 1.6, size * 0.12, 8, 28)), own(new THREE.MeshBasicMaterial({ color: '#1565C0' })));
+    const ring = new THREE.Mesh(own(new THREE.TorusGeometry(size * 1.6, size * 0.12, 8, 28)), own(new THREE.MeshBasicMaterial({ color: '#1C2B1E' })));
     ring.rotation.x = Math.PI / 2;
     ring.visible = false;
     scene.add(ring);

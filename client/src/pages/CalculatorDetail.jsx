@@ -233,7 +233,7 @@ function CalcReport({ r }) {
       )}
       {r.recommendations?.length > 0 && (
         <section><h5>{t('Recommended steps')}</h5>
-          <ol>{r.recommendations.map((x, i) => (<li key={i}><strong>{x.action}</strong>{x.detail ? ` — ${x.detail}` : ''}</li>))}</ol>
+          <ol>{r.recommendations.map((x, i) => (<li key={i}><strong>{x.action}</strong>{x.detail ? `: ${x.detail}` : ''}</li>))}</ol>
         </section>
       )}
       {r.farm_link && <section><h5>{t('Your farm')}</h5><p>{r.farm_link}</p></section>}

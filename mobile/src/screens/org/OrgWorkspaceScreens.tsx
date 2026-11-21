@@ -126,10 +126,10 @@ function FarmerBody({ org, route }: { org: any; route: any }) {
         <Section title="Farms" empty={none} lines={data.farms.map((f: any) => `${f.name}${f.district ? ` · ${f.district}` : ''} · ${f.hectares} ha`)} />
         <Section title="Crops in the field" empty={none} lines={data.cycles.map((c: any) => `${c.crop} · ${t(c.status)} · ${c.hectares} ha${c.expected_harvest_date ? ` · ${t('harvest')} ${formatDate(c.expected_harvest_date)}` : ''}`)} />
         <Section title="Pest and disease" empty={none} lines={[
-          ...data.scouting.map((s: any) => `${formatDate(s.date)} · ${s.disease || s.pest || s.health}${s.recommendation ? ` — ${s.recommendation}` : ''}`),
+          ...data.scouting.map((s: any) => `${formatDate(s.date)} · ${s.disease || s.pest || s.health}${s.recommendation ? `: ${s.recommendation}` : ''}`),
           ...data.protection.map((p: any) => `${formatDate(p.date)} · ${p.name} (${t(p.type)}${p.severity ? `, ${t(p.severity)}` : ''})`),
         ]} />
-        <Section title="Recent work" empty={none} lines={data.activities.map((a: any) => `${formatDate(a.date)} · ${a.type}${a.description ? ` — ${a.description}` : ''}`)} />
+        <Section title="Recent work" empty={none} lines={data.activities.map((a: any) => `${formatDate(a.date)} · ${a.type}${a.description ? `: ${a.description}` : ''}`)} />
         <Section title="Harvested" empty={none} lines={data.harvested_kg.map((h: any) => `${h.crop} · ${Number(h.kg).toLocaleString()} kg`)} />
       </View>
     </>

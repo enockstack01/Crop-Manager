@@ -71,7 +71,7 @@ export default function Calendar() {
     else setCursor((c) => addDays(c, 30 * dir));
   };
   const title = view === 'month' ? fmt(cursor, { month: 'long', year: 'numeric' })
-    : view === 'week' ? `${fmt(startOfWeek(cursor), { day: 'numeric', month: 'short' })} – ${fmt(addDays(startOfWeek(cursor), 6), { day: 'numeric', month: 'short', year: 'numeric' })}`
+    : view === 'week' ? `${fmt(startOfWeek(cursor), { day: 'numeric', month: 'short' })} to ${fmt(addDays(startOfWeek(cursor), 6), { day: 'numeric', month: 'short', year: 'numeric' })}`
       : t('Next 90 days');
   const toggle = (k) => setHidden((h) => { const n = new Set(h); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const weekdays = Array.from({ length: 7 }, (_, i) => fmt(addDays(startOfWeek(new Date()), i), { weekday: 'short' }));
@@ -189,7 +189,7 @@ export default function Calendar() {
       )}
 
       {data?.bands?.length > 0 && view === 'month' && (
-        <p className="cal-bands">{data.bands.map((b) => `${b.name}: ${fmt(fromKey(b.start), { day: 'numeric', month: 'short' })} – ${fmt(fromKey(b.end), { day: 'numeric', month: 'short' })}`).join('  ·  ')}</p>
+        <p className="cal-bands">{data.bands.map((b) => `${b.name}: ${fmt(fromKey(b.start), { day: 'numeric', month: 'short' })} to ${fmt(fromKey(b.end), { day: 'numeric', month: 'short' })}`).join('  ·  ')}</p>
       )}
 
       {open && (

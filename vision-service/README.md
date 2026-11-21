@@ -12,6 +12,8 @@ python -m pytest tests                          # builds test photos with a know
 Settings: `FRUIT_COUNTER_TOKEN` (optional): when set, requests must send it as the `X-Token` header. Set the same value in the CropManager server.
 In the CropManager server set `FRUIT_COUNTER_URL` (for example `https://your-counter.onrender.com`) and, if used, `FRUIT_COUNTER_TOKEN`.
 
+Limits: a photo larger than 25 MB, a set of photos for the overlap check larger than 80 MB in all, or a picture with more than 80 million pixels is refused with a plain message (a small file can unpack to a huge picture and exhaust the memory). Without `FRUIT_COUNTER_TOKEN` anyone who knows the address can use the counter, so always set it in production; the service prints a warning at start-up when it is missing. The token is compared in constant time.
+
 Deploy: a Docker web service from this folder (see `Dockerfile`). See `docs/GREENHOUSE.md` for how the whole feature fits together.
 
 ## What it is and is not

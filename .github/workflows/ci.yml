@@ -106,6 +106,7 @@ jobs:
           node scripts/test-plaintext.mjs
           node scripts/test-fieldlocation.mjs
           node scripts/test-greenhouse.mjs
+          node scripts/test-team.mjs
       - name: No high or critical advisories
         run: npm audit --omit=dev --audit-level=high
 
