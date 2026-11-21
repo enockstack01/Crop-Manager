@@ -667,65 +667,16 @@ function DiseaseTab() {
 }
 
 /* ------------------------------------------------------------------ team */
-const ROLE_TEXT = {
-  manager: 'Farm manager: reads all the records, the dashboard and the disease report with the number of diseased plants. No 3D map, no recording, no changes.',
-  collector: 'Data collector: sees the plan view and records fruit counts with photos, and can freeze a plant with a reason. No disease details, dashboard or settings.',
-};
+/** The team is one thing for the whole farm: the Team page. A data collector added there records in the greenhouse too (plan view and recording). */
 function TeamTab() {
-  const toast = useToast();
-  const confirm = useConfirm();
-  const { data: team = [], isLoading } = useGhTeam();
-  const { invite, changeMember, removeMember } = useGhMutations();
-  const form = useForm({ email: '', name: '', role: 'collector' });
-  const [err, setErr] = useState('');
-  const add = async (e) => {
-    e.preventDefault();
-    setErr('');
-    try {
-      await invite.mutateAsync(form.values);
-      form.setValues({ email: '', name: '', role: form.values.role });
-      toast(t('Invitation saved. They get access when they sign in with that email address.'));
-    } catch (e2) { setErr(e2.message); }
-  };
-  const remove = async (m) => {
-    if (!(await confirm(t('Remove {{name}} from your team? They lose access at once.', { name: m.name || m.email }), { confirmLabel: 'Remove' }))) return;
-    try { await removeMember.mutateAsync(m.id); } catch (e) { toast(e.message, 'error'); }
-  };
   return (
-    <>
-      <Card title="Invite someone to your greenhouse" icon="fa-user-plus">
-        <p className="ai-lead" style={{ marginTop: 0 }}>{t('Give a farm manager or a data collector their own account. They sign in with the email address you enter here, and then choose your farm.')}</p>
-        <form onSubmit={add}>
-          {err && <div className="alert-item alert-danger" style={{ marginBottom: 12 }}><i className="fas fa-exclamation-circle" /><div className="alert-content">{err}</div></div>}
-          <FormRow>
-            <TextField label="Email address" required type="email" {...form.bind('email')} placeholder="name@example.com" />
-            <TextField label="Name (optional)" {...form.bind('name')} />
-          </FormRow>
-          <SelectField label="Role" {...form.bind('role')} options={[{ value: 'collector', label: 'Data collector' }, { value: 'manager', label: 'Farm manager' }]} />
-          <p className="form-hint">{t(ROLE_TEXT[form.values.role])}</p>
-          <button type="submit" className="btn btn-primary" disabled={invite.isPending}><i className="fas fa-plus" /> {t('Invite')}</button>
-        </form>
-      </Card>
-      <Card title="Your team" icon="fa-user-group">
-        {isLoading ? <Loading /> : team.length === 0 ? <p className="org-muted">{t('Nobody yet.')}</p> : (
-          <DataTable
-            rows={team}
-            rowKey={(m) => m.id}
-            columns={[
-              { key: 'who', label: 'Person', render: (m) => <><strong>{m.name || m.email}</strong>{m.name ? <div className="org-muted">{m.email}</div> : null}</> },
-              { key: 'role', label: 'Role', render: (m) => (
-                <select className="form-control" value={m.role} onChange={(e) => changeMember.mutate({ id: m.id, role: e.target.value })} aria-label={t('Role')}>
-                  <option value="collector">{t('Data collector')}</option>
-                  <option value="manager">{t('Farm manager')}</option>
-                </select>
-              ) },
-              { key: 'status', label: 'Status', render: (m) => <span className={`badge badge-${m.status === 'active' ? 'success' : 'warning'}`}>{m.status === 'active' ? t('Signed in') : t('Waiting for them to sign in')}</span> },
-            ]}
-            actions={(m) => <button type="button" className="btn btn-secondary btn-sm" onClick={() => remove(m)}>{t('Remove')}</button>}
-          />
-        )}
-      </Card>
-    </>
+    <EmptyState
+      icon="fa-user-group"
+      title="Your team is managed on the Team page"
+      description="Add a data collector once and they can record in the whole farm, the greenhouse included: the plan view and recording, with everything tagged with their name."
+      actionLabel="Open the Team page"
+      onAction={() => { window.location.assign('/team'); }}
+    />
   );
 }
 
@@ -736,7 +687,7 @@ export default function Greenhouse() {
   const [farm, setFarm] = useState(() => { try { return localStorage.getItem('gh-farm') || ''; } catch { return ''; } }); // '' = my own farm
   const farms = access?.farms || [];
   const current = farms.find((f) => f.owner_id === farm) || null;
-  const role = current ? current.role : 'owner';
+  const role = current ? current.role : access?.own?.role || 'owner'; // a data collector account is on its manager's farm automatically
   // a person who only works on someone else's farm lands there; the farm they stored may also have been taken away
   useEffect(() => {
     if (!access) return;

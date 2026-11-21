@@ -20,6 +20,15 @@ export const FARMER_TABS: BarTab[] = [
   { name: 'more', label: 'More', icon: 'bars' },
 ];
 
+/** A data collector's tabs: today's work, the two records they make most, their tasks. */
+export const COLLECTOR_TABS: BarTab[] = [
+  { name: 'dashboard', label: 'Today', icon: 'house' },
+  { name: 'activities', label: 'Activities', icon: 'list-check' },
+  { name: 'scouting', label: 'Scouting', icon: 'magnifying-glass', center: true },
+  { name: 'tasks', label: 'Tasks', icon: 'clipboard-check' },
+  { name: 'more', label: 'More', icon: 'bars' },
+];
+
 /** Organization workspace tabs. */
 export const ORG_TABS: BarTab[] = [
   { name: 'org-dashboard', label: 'Overview', icon: 'house' },

@@ -9,7 +9,7 @@ import { t } from '../i18n/index.js';
  * crops, farms, fields...). Arrow keys move, Enter opens, Esc closes, "/" jumps to the box.
  * Picking a record opens its page with the box on that page already filled in.
  */
-export function GlobalSearch({ orgUser = false }) {
+export function GlobalSearch({ collector = false, orgUser = false }) {
   const navigate = useNavigate();
   const box = useRef(null);
   const wrap = useRef(null);
@@ -23,7 +23,7 @@ export function GlobalSearch({ orgUser = false }) {
   const pages = useMemo(() => {
     const n = q.trim().toLowerCase();
     if (n.length < 2) return [];
-    return NAV_PAGES(orgUser).filter((p) => t(p.label).toLowerCase().includes(n) || p.label.toLowerCase().includes(n)).slice(0, 5);
+    return NAV_PAGES(orgUser, collector).filter((p) => t(p.label).toLowerCase().includes(n) || p.label.toLowerCase().includes(n)).slice(0, 5);
   }, [q, orgUser]);
 
   useEffect(() => {

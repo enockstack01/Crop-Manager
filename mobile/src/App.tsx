@@ -25,7 +25,7 @@ import { useProfile } from './lib/useResource';
 import { ThemeProvider, useTheme } from './theme/ThemeProvider';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
-import { Loading } from './components/ui';
+import { EmptyState, Loading } from './components/ui';
 import { SplashHost, SplashReadyOnMount, useSplashReady } from './components/AppSplash';
 import { OfflineGate } from './components/OfflineGate';
 import { AppNavigator } from './navigation/AppNavigator';
@@ -130,10 +130,23 @@ function RootGate() {
   if (!profile.is_admin && profile.account_status !== 'active') {
     return <AccountGateScreen onRegisterOrg={() => setRegisteringOrg(true)} profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
   }
+  // a data collector the farm manager removed: nothing to open until the manager adds them again
+  if (!profile.is_admin && profile.user_type === 'collector' && profile.farm_team?.linked === false) return <CollectorEnded />;
   if (!profile.onboarded) return <OnboardingScreen profile={profile} />;
   // the default currency pre-fills new records (each record keeps its own currency)
   setCurrency(profile.currency);
   return <AppNavigator />;
+}
+
+/** Shown to a data collector whose farm manager removed them. Their entries stay in the farm's records. */
+function CollectorEnded() {
+  const { signOut } = useAuth();
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', padding: 20 }}>
+      <EmptyState icon="user-slash" title="Your access to the farm has ended" description="Your farm manager removed you from their team. The entries you recorded stay in their records. Ask them to add you again if this is a mistake." />
+      <Button title="Sign out" kind="secondary" onPress={() => signOut()} />
+    </View>
+  );
 }
 
 function NavRoot() {

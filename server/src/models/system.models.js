@@ -32,7 +32,7 @@ const ProfileSchema = ownedSchema({
   currency: { type: String, enum: CURRENCY_CODES, default: 'USD' },
   language: { type: String, enum: ['en', 'fr', 'rw', 'sw', 'ar', 'de', 'es', 'hi', 'pt', 'zh', null], default: null }, // interface language (web + mobile)
   public_id: { type: String, unique: true, sparse: true, index: true }, // Crop + six digits, see lib/publicId.js
-  user_type: { type: String, enum: ['farmer', 'org'], default: 'farmer' }, // organization staff use the organization workspace, farmers the farm modules
+  user_type: { type: String, enum: ['farmer', 'org', 'collector'], default: 'farmer' }, // organization staff use the organization workspace, farmers the farm modules, data collectors work in their farm manager's farm
   ai_daily_limit: { type: Number, default: null, min: 0 }, // admin override of the AI requests per day (null = platform default)
   last_seen_at: { type: Date, default: null },
 });

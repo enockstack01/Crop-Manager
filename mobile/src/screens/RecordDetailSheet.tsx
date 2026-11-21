@@ -10,11 +10,13 @@ export function RecordDetailSheet({
   row,
   onClose,
   onEdit,
+  canEdit = true,
 }: {
   config: ModuleConfig;
   row: any;
   onClose: () => void;
   onEdit: () => void;
+  canEdit?: boolean;
 }) {
   return (
     <Sheet
@@ -24,7 +26,7 @@ export function RecordDetailSheet({
       footer={
         <>
           <Button title="Close" kind="secondary" onPress={onClose} />
-          <Button title="Edit" icon="pencil" onPress={onEdit} />
+          {canEdit ? <Button title="Edit" icon="pencil" onPress={onEdit} /> : null}
         </>
       }
     >

@@ -10,6 +10,7 @@ import { useAll, useResourceMutations } from '../lib/useResource.js';
 import { t } from '../i18n/index.js';
 import { formatDate } from '../lib/format.js';
 import { PLANT_HEALTH } from '../lib/options.js';
+import { useIsCollector } from '../components/profile.jsx';
 
 const INITIAL = {
   farm_id: '', field_id: '', crop_id: '', crop_cycle_id: '', scouting_date: '', scout_name: '',
@@ -20,6 +21,7 @@ const INITIAL = {
 
 function Body(form) {
   const { bind, values, set } = form;
+  const collector = useIsCollector(); // the assistant is the farm manager's
   const { items: crops } = useAll('crops');
   const [diagnosing, setDiagnosing] = useState(false);
   const cropName = crops.find((c) => c.id === values.crop_id)?.name || '';
@@ -52,12 +54,14 @@ function Body(form) {
       </FormRow>
       <TextArea label="Recommendation" {...bind('recommendation')} />
       <PhotoUpload value={values.photo_url} onChange={(url) => set('photo_url', url)} />
-      <div className="form-group">
-        <button type="button" className="btn btn-outline" onClick={() => setDiagnosing(true)}>
-          <i className="fas fa-wand-magic-sparkles" /> {t('Diagnose with AI')}
-        </button>
-        <div className="form-hint">{t('Get the cause, treatment, medication and how to give it from the photo and your notes.')}</div>
-      </div>
+      {!collector && (
+        <div className="form-group">
+          <button type="button" className="btn btn-outline" onClick={() => setDiagnosing(true)}>
+            <i className="fas fa-wand-magic-sparkles" /> {t('Diagnose with AI')}
+          </button>
+          <div className="form-hint">{t('Get the cause, treatment, medication and how to give it from the photo and your notes.')}</div>
+        </div>
+      )}
       {diagnosing && (
         <DiagnoseModal
           open
@@ -104,10 +108,11 @@ export default function Scouting() {
   const { items: farms } = useAll('farms');
   const { update } = useResourceMutations('crop-scouting-records');
   const [diagnosing, setDiagnosing] = useState(null);
+  const collector = useIsCollector();
   return (
     <>
     <CrudPage
-      extraActions={(r) => <IconButton icon="fa-wand-magic-sparkles" title="Diagnose with AI" onClick={() => setDiagnosing(r)} />}
+      extraActions={collector ? undefined : (r) => <IconButton icon="fa-wand-magic-sparkles" title="Diagnose with AI" onClick={() => setDiagnosing(r)} />}
       resource="crop-scouting-records"
       title="Crop Scouting"
       subtitle="Monitor crop health with field observations."

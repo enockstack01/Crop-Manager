@@ -265,7 +265,7 @@ export async function orgContextFor(profile) {
       }
     }
     // farmers invited by email (no account at the time) are linked to the organization at the first sign-in with that verified address
-    if (profile.email && profile.email_verified && !profile.is_admin && profile.user_type !== 'org') await joinInvitedFarmer(profile);
+    if (profile.email && profile.email_verified && !profile.is_admin && profile.user_type !== 'org' && profile.user_type !== 'collector') await joinInvitedFarmer(profile);
     const m = await OrganizationMember.findOne({ user_id: profile.user_id, status: 'active' }).lean();
     if (m) {
       const org = await Organization.findById(m.organization_id).lean();

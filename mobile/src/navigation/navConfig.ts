@@ -48,6 +48,10 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [{ route: 'greenhouse', label: 'Greenhouse', icon: 'warehouse' }],
   },
   {
+    label: 'Team',
+    items: [{ route: 'team', label: 'Team', icon: 'user-group' }, { route: 'tasks', label: 'Tasks', icon: 'list-check' }],
+  },
+  {
     label: 'Resources',
     items: ['inventory', 'equipment', 'maintenance'].map(moduleItem),
   },
@@ -101,6 +105,16 @@ const FIRST: Record<string, string[]> = {
   Agronomist: ['Dashboard', 'Tools', 'Production', 'Farm Management', 'Analytics'],
   'Farm Manager': ['Dashboard', 'Production', 'Resources', 'Finance', 'Analytics'],
 };
+/** A data collector's menu: today's work, recording, their tasks, the greenhouse and the weather. No finances, reports, calendar or assistant. */
+export const COLLECTOR_SECTIONS: NavSection[] = [
+  { items: [{ route: 'dashboard', label: 'Today', icon: 'table-cells-large' }, { route: 'tasks', label: 'My tasks', icon: 'list-check' }] },
+  {
+    label: 'Record',
+    items: ['activities', 'scouting', 'irrigation', 'fertilizers', 'crop-protection', 'planting', 'harvest'].map(moduleItem).concat([{ route: 'greenhouse', label: 'Greenhouse', icon: 'warehouse' }]),
+  },
+  { label: 'More', items: [{ route: 'weather', label: 'Weather', icon: 'cloud-sun' }, { route: 'settings', label: 'Settings', icon: 'gear' }] },
+];
+
 export function sectionsFor(role?: string): NavSection[] {
   const all = offlineLlmSupported() ? NAV_SECTIONS : NAV_SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => i.route !== 'offline-assistant') })); // a 32-bit phone is not offered the offline assistant
   const order = FIRST[role || ''];

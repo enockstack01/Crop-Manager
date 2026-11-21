@@ -124,6 +124,12 @@ export const resources = [
     relations: [farm, crop],
   },
   {
+    path: 'tasks', name: 'Task', model: M.Task,
+    search: ['title', 'description'], filters: ['status', 'assigned_to', 'field_id', 'priority'],
+    defaultSort: 'due_date', defaultOrder: 'asc',
+    relations: [field],
+  },
+  {
     path: 'notifications', name: 'Notification', model: M.Notification,
     filters: ['is_read'], defaultSort: 'created_at',
   },

@@ -13,6 +13,9 @@ export function ownedSchema(definition, options = {}) {
     {
       // indexed via the compound index below (and per-model unique index where needed)
       user_id: { type: String, required: true },
+      // who entered the record: the farm manager or one of their data collectors (set by the server, never by the request)
+      recorded_by: { type: String },
+      recorded_by_name: { type: String },
       ...definition,
     },
     {

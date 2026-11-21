@@ -31,6 +31,9 @@ const Calendar = lazy(() => import('./pages/Calendar.jsx'));
 const Weather = lazy(() => import('./pages/Weather.jsx'));
 const Greenhouse = lazy(() => import('./pages/Greenhouse.jsx'));
 const Assistant = lazy(() => import('./pages/Assistant.jsx'));
+const Team = lazy(() => import('./pages/Team.jsx'));
+const Tasks = lazy(() => import('./pages/Tasks.jsx'));
+const CollectorHome = lazy(() => import('./pages/CollectorHome.jsx'));
 const Join = lazy(() => import('./pages/Join.jsx'));
 const OrgRegister = lazy(() => import('./pages/OrgRegister.jsx'));
 const OrgDashboard = lazy(() => import('./pages/org/OrgDashboard.jsx'));
@@ -46,6 +49,7 @@ const AdminOrganizationDetail = lazy(() => import('./pages/admin/AdminOrganizati
 const AdminAudit = lazy(() => import('./pages/admin/AdminAudit.jsx'));
 const AdminAI = lazy(() => import('./pages/admin/AdminAI.jsx'));
 import { useMyOrg } from './lib/orgApi.js';
+import { useProfile } from './components/profile.jsx';
 const Settings = lazy(() => import('./pages/Settings.jsx'));
 import { AdminGuard } from './components/AdminGuard.jsx';
 import { Loading } from './components/ui.jsx';
@@ -58,7 +62,15 @@ const AdminSettings = lazy(() => import('./pages/admin/AdminSettings.jsx'));
 /** Organization staff open their workspace instead of the farm dashboard. */
 function Home() {
   const { platformRole } = useMyOrg();
+  const { profile } = useProfile();
+  if (profile?.user_type === 'collector') return <CollectorHome />; // a data collector's first page is today's work
   return platformRole === 'org_user' ? <Navigate to="/org" replace /> : <Dashboard />;
+}
+
+/** Pages for the farm manager only: a data collector who opens one by its address is sent to their own page (the server refuses them anyway). */
+function ManagerOnly({ children }) {
+  const { profile } = useProfile();
+  return profile?.user_type === 'collector' ? <Navigate to="/" replace /> : children;
 }
 
 export function App() {
@@ -85,12 +97,12 @@ export function App() {
         }
       >
         <Route index element={<Home />} />
-        <Route path="farms" element={<Farms />} />
+        <Route path="farms" element={<ManagerOnly><Farms /></ManagerOnly>} />
         <Route path="fields" element={<Fields />} />
         <Route path="crops" element={<Crops />} />
-        <Route path="varieties" element={<Varieties />} />
-        <Route path="seasons" element={<Seasons />} />
-        <Route path="crop-cycles" element={<CropCycles />} />
+        <Route path="varieties" element={<ManagerOnly><Varieties /></ManagerOnly>} />
+        <Route path="seasons" element={<ManagerOnly><Seasons /></ManagerOnly>} />
+        <Route path="crop-cycles" element={<ManagerOnly><CropCycles /></ManagerOnly>} />
         <Route path="planting" element={<Planting />} />
         <Route path="activities" element={<Activities />} />
         <Route path="irrigation" element={<Irrigation />} />
@@ -98,16 +110,18 @@ export function App() {
         <Route path="crop-protection" element={<CropProtection />} />
         <Route path="scouting" element={<Scouting />} />
         <Route path="harvest" element={<Harvest />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="equipment" element={<Equipment />} />
-        <Route path="maintenance" element={<Maintenance />} />
-        <Route path="expenses" element={<Expenses />} />
-        <Route path="sales" element={<Sales />} />
-        <Route path="calculators" element={<Calculators />} />
-        <Route path="calculators/:type" element={<CalculatorDetail />} />
-        <Route path="assistant" element={<Assistant />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="calendar" element={<Calendar />} />
+        <Route path="inventory" element={<ManagerOnly><Inventory /></ManagerOnly>} />
+        <Route path="equipment" element={<ManagerOnly><Equipment /></ManagerOnly>} />
+        <Route path="maintenance" element={<ManagerOnly><Maintenance /></ManagerOnly>} />
+        <Route path="expenses" element={<ManagerOnly><Expenses /></ManagerOnly>} />
+        <Route path="sales" element={<ManagerOnly><Sales /></ManagerOnly>} />
+        <Route path="calculators" element={<ManagerOnly><Calculators /></ManagerOnly>} />
+        <Route path="calculators/:type" element={<ManagerOnly><CalculatorDetail /></ManagerOnly>} />
+        <Route path="team" element={<ManagerOnly><Team /></ManagerOnly>} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="assistant" element={<ManagerOnly><Assistant /></ManagerOnly>} />
+        <Route path="reports" element={<ManagerOnly><Reports /></ManagerOnly>} />
+        <Route path="calendar" element={<ManagerOnly><Calendar /></ManagerOnly>} />
         <Route path="weather" element={<Weather />} />
         <Route path="greenhouse" element={<Greenhouse />} />
         <Route path="settings" element={<Settings />} />

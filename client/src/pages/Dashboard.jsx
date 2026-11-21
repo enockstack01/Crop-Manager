@@ -9,6 +9,9 @@ import { formatCurrency, formatNumber, getGreeting, displayName, formatTotals, s
 import { FarmProfile } from '../features/dashboard/FarmProfile.jsx';
 import { RoleSummary } from '../features/dashboard/RoleSummary.jsx';
 import { t } from '../i18n/index.js';
+import { Link } from 'react-router-dom';
+import { ago } from '../lib/team.js';
+import { formatDate } from '../lib/format.js';
 import { InsightTiles } from '../features/dashboard/InsightTiles.jsx';
 import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed.jsx';
 import { computeActivity, computeAlerts, computeInsights, computeUpcoming } from '../features/dashboard/insights.js';
@@ -85,6 +88,33 @@ export default function Dashboard() {
       </div>
 
       <RoleSummary />
+
+      {/* the farm manager's data collectors: this week's entries and last activity */}
+      {Array.isArray(d.team) && (
+        <div className="chart-card" style={{ marginBottom: 20 }}>
+          <div className="chart-card-header">
+            <h3><i className="fas fa-user-group" style={{ color: 'var(--primary)', marginRight: 8 }} />{t('Your team')}</h3>
+            <Link className="btn btn-secondary btn-sm" to="/team">{d.team.length ? t('Open the team') : t('Add data collector')}</Link>
+          </div>
+          <div className="chart-card-body" style={{ minHeight: 0 }}>
+            {d.team.length === 0 ? <p className="org-muted" style={{ margin: 0 }}>{t('Get help in the field: add a data collector. Everything they record goes into your farm, tagged with their name.')}</p> : (
+              <ul className="gh-health-hist">
+                {d.team.map((m) => {
+                  const a = ago(m.last_activity);
+                  return (
+                    <li key={m.id}>
+                      <strong>{m.name || m.email}</strong>
+                      <span>
+                        {m.status === 'active' ? `${m.week_entries} ${t('entries this week')} · ${a ? t(a.key, { n: a.n, date: a.date ? formatDate(a.date) : '' }) : t('no activity yet')}` : t('Waiting for sign-in')}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Farm profile: land utilization + farm at a glance (same design and order as the mobile app) */}
       <FarmProfile

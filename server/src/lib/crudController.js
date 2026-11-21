@@ -73,7 +73,8 @@ export function crudController(resource) {
       if (hasCurrency && !body.currency) body.currency = req.profile?.currency || 'USD';
       await assertOwnLinks(links, body, req.userId);
       assertValid(resource, body);
-      const doc = new Model({ ...body, user_id: req.userId });
+      // every record says who entered it: the farm manager or the data collector (the name is theirs, taken from their account)
+      const doc = new Model({ ...body, user_id: req.userId, recorded_by: req.actorId || req.userId, recorded_by_name: req.profile?.full_name || req.profile?.email || '' });
       await doc.save();
       res.status(201).json(await readOne(doc._id, req.userId));
     }),
@@ -81,6 +82,8 @@ export function crudController(resource) {
     update: asyncHandler(async (req, res) => {
       const doc = await Model.findOne({ _id: req.params.id, user_id: req.userId });
       if (!doc) throw createHttpError(404, `${resource.name} not found`);
+      // a data collector edits only the entries they made, never a colleague's or the farm manager's
+      if (req.farmRole === 'collector' && doc.recorded_by !== req.actorId) throw createHttpError(403, 'You can edit only the entries you recorded.', { code: 'collector_not_yours' });
       const body = stripReadOnly(req.body);
       if (hasCurrency && !body.currency) delete body.currency; // keep the record's currency
       await assertOwnLinks(links, body, req.userId);
@@ -108,6 +111,6 @@ function assertValid(resource, record) {
 
 function stripReadOnly(body = {}) {
   const clone = { ...body };
-  for (const k of ['_id', 'id', 'user_id', 'created_at', 'updated_at', '__v']) delete clone[k];
+  for (const k of ['_id', 'id', 'user_id', 'created_at', 'updated_at', '__v', 'recorded_by', 'recorded_by_name']) delete clone[k];
   return clone;
 }

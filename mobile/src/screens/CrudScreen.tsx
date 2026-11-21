@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, TextInput, View } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Icon } from '../components/Icon';
 import { ExportButton } from '../components/ExportSheet';
 import { shareExport } from '../lib/exports';
-import { useList, useResourceMutations } from '../lib/useResource';
+import { useList, useProfile, useResourceMutations } from '../lib/useResource';
+import { mayAdd, mayDelete, mayEdit, mayExport } from '../lib/teamRules';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { useTheme } from '../theme/ThemeProvider';
@@ -33,6 +34,9 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const toast = useToast();
   const confirm = useConfirm();
   const { remove } = useResourceMutations(config.resource);
+  const { profile } = useProfile();
+  // a data collector adds entries of field work, edits only their own and never deletes (the server enforces the same)
+  const canAdd = mayAdd(profile, config.resource);
 
   const filters: FilterDef[] = config.useFilters ? config.useFilters() : [];
 
@@ -48,6 +52,11 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [form, setForm] = useState<{ editing: any | null } | null>(null);
+  const navigation = useNavigation<any>();
+  // the collector's big buttons open the form straight away
+  useEffect(() => {
+    if (route.params?.add && canAdd) { setForm({ editing: null }); navigation.setParams({ add: undefined }); }
+  }, [route.params?.add]); // eslint-disable-line react-hooks/exhaustive-deps
   const [viewRow, setViewRow] = useState<any | null>(null);
   const [stock, setStock] = useState<{ item: any; type: 'in' | 'out' } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,8 +107,8 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
         subtitle={config.subtitle}
         action={(
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <ExportButton period run={(format, period) => shareExport(config.resource, format, { ...period, ...(q ? { q } : {}), ...Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v)) })} />
-            <Button title={addLabel} icon="plus" onPress={() => setForm({ editing: null })} />
+            {mayExport(profile) ? <ExportButton period run={(format, period) => shareExport(config.resource, format, { ...period, ...(q ? { q } : {}), ...Object.fromEntries(Object.entries(filterValues).filter(([, v]) => v)) })} /> : null}
+            {canAdd ? <Button title={addLabel} icon="plus" onPress={() => setForm({ editing: null })} /> : null}
           </View>
         )}
       />
@@ -180,8 +189,8 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
               <IconButton name="arrow-down" color={colors.red} onPress={() => setStock({ item, type: 'out' })} label="Stock out" />
             </>
           ) : null}
-          <IconButton name="pen" color={colors.blue} onPress={() => setForm({ editing: item })} label="Edit" />
-          <IconButton name="trash-can" color={colors.red} onPress={() => onDelete(item)} label="Delete" />
+          {mayEdit(profile, config.resource, item) ? <IconButton name="pen" color={colors.blue} onPress={() => setForm({ editing: item })} label="Edit" /> : null}
+          {mayDelete(profile) ? <IconButton name="trash-can" color={colors.red} onPress={() => onDelete(item)} label="Delete" /> : null}
         </View>
       </Pressable>
     );
@@ -236,7 +245,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
                 icon={config.emptyIcon}
                 title={q || Object.values(filterValues).some(Boolean) ? t('No matching records') : config.emptyTitle}
                 description={q || Object.values(filterValues).some(Boolean) ? 'Try a different search or clear the filters.' : config.emptyDescription}
-                actionLabel={q ? undefined : addLabel}
+                actionLabel={q || !canAdd ? undefined : addLabel}
                 onAction={() => setForm({ editing: null })}
               />
             </View>
@@ -258,6 +267,7 @@ export function CrudScreen({ config }: { config: ModuleConfig }) {
           config={config}
           row={viewRow}
           onClose={() => setViewRow(null)}
+          canEdit={mayEdit(profile, config.resource, viewRow)}
           onEdit={() => { setForm({ editing: viewRow }); setViewRow(null); }}
         />
       ) : null}

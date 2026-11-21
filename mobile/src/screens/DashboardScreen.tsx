@@ -25,6 +25,9 @@ import { InsightTiles } from '../features/dashboard/InsightTiles';
 import { AlertsCard, RecentActivity, UpcomingHarvests } from '../features/dashboard/DashboardFeed';
 import { computeActivity, computeAlerts, computeInsights, computeUpcoming } from '../features/dashboard/insights';
 import { t } from '../i18n';
+import { agoParts } from '../lib/teamRules';
+import { Button } from '../components/Button';
+import { formatDate } from '../lib/format';
 
 /*
  * Mirrors the web dashboard (client/src/pages/Dashboard.jsx): same greeting, farm
@@ -69,6 +72,25 @@ export function DashboardScreen({ navigation }: any) {
         <AppText variant="subtitle" style={{ fontSize: 15, marginTop: 2 }}>{t("Here's what's happening across your farm today.")}</AppText>
       </View>
       <RoleSummary navigation={navigation} />
+      {Array.isArray(d.team) ? (
+        <View style={{ marginBottom: 16 }}>
+          <ChartCard title="Your team" icon="user-group" right={<Button title={d.team.length ? 'Open the team' : 'Add data collector'} size="sm" kind="secondary" onPress={() => navigation.navigate('team')} />}>
+            {d.team.length === 0 ? <AppText style={{ fontSize: 13, color: colors.textLight }}>{t('Get help in the field: add a data collector. Everything they record goes into your farm, tagged with their name.')}</AppText> : (
+              <View style={{ gap: 8 }}>
+                {d.team.map((m: any) => {
+                  const a = agoParts(m.last_activity);
+                  return (
+                    <View key={m.id} style={{ gap: 2 }}>
+                      <AppText weight="700" style={{ fontSize: 14 }}>{m.name || m.email}</AppText>
+                      <AppText style={{ fontSize: 12, color: colors.textLight }}>{m.status === 'active' ? `${m.week_entries} ${t('entries this week')} · ${a ? t(a.key, { n: a.n, date: a.date ? formatDate(a.date) : '' }) : t('no activity yet')}` : t('Waiting for sign-in')}</AppText>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </ChartCard>
+        </View>
+      ) : null}
       <View style={{ marginBottom: 16, marginHorizontal: -16 }}>
         <View style={{ paddingLeft: 16 }}>
           <QuickActions onOpen={(r) => navigation.navigate(r)} />

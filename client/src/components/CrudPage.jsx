@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useList, useResourceMutations } from '../lib/useResource.js';
 import { debounce } from '../lib/format.js';
 import { useToast } from './Toast.jsx';
+import { COLLECTOR_RESOURCES, useProfile } from './profile.jsx';
 import { useConfirm } from './Confirm.jsx';
 import { Modal } from './Modal.jsx';
 import { ExportMenu } from './ExportMenu.jsx';
@@ -47,6 +48,11 @@ export function CrudPage({
   const loc = useLocation();
   const confirm = useConfirm();
   const { remove } = useResourceMutations(resource);
+  const { profile } = useProfile();
+  // a data collector records field work: adds entries, edits only their own, and never deletes. The server enforces the same rules.
+  const collector = profile?.user_type === 'collector';
+  const mayAdd = !collector || COLLECTOR_RESOURCES.includes(resource);
+  const mayEdit = (row) => !collector || (COLLECTOR_RESOURCES.includes(resource) && row.recorded_by === profile.user_id);
 
   const [page, setPage] = useState(1);
   const [q, setQ] = useState(() => new URLSearchParams(window.location.search).get('q') || ''); // the top bar search opens a page with its box filled in
@@ -57,7 +63,7 @@ export function CrudPage({
   const [sort, setSort] = useState(defaultSort.sort);
   const [order, setOrder] = useState(defaultSort.order);
   const [filterValues, setFilterValues] = useState({});
-  const [formState, setFormState] = useState(null); // null | { editing: row|null }
+  const [formState, setFormState] = useState(() => (new URLSearchParams(window.location.search).get('add') ? { editing: null } : null)); // null | { editing: row|null }; ?add=1 opens the form (the collector's big buttons)
   const [viewRow, setViewRow] = useState(null);
 
   const params = { page, perPage: PER_PAGE, sort, order };
@@ -99,10 +105,10 @@ export function CrudPage({
     <>
       {viewFields && <IconButton icon="fa-eye" title="View" onClick={() => setViewRow(row)} />}
       {extraActions?.(row)}
-      {FormComponent && (
+      {FormComponent && mayEdit(row) && (
         <IconButton icon="fa-pen" title="Edit" onClick={() => setFormState({ editing: row })} />
       )}
-      <IconButton icon="fa-trash" title="Delete" danger onClick={() => onDelete(row)} />
+      {!collector && <IconButton icon="fa-trash" title="Delete" danger onClick={() => onDelete(row)} />}
     </>
   );
 
@@ -113,10 +119,12 @@ export function CrudPage({
         subtitle={subtitle}
         action={(
           <div className="page-actions">
-            <ExportMenu
-              run={(format, period) => downloadExport(`/export/${resource}`, { format, ...period, ...(q ? { q } : {}), ...filterValues }, `${resource}.${format}`)}
-            />
-            {FormComponent && (
+            {!collector && (
+              <ExportMenu
+                run={(format, period) => downloadExport(`/export/${resource}`, { format, ...period, ...(q ? { q } : {}), ...filterValues }, `${resource}.${format}`)}
+              />
+            )}
+            {FormComponent && mayAdd && (
               <button className="btn btn-primary" onClick={() => setFormState({ editing: null })}>
                 <i className="fas fa-plus" /> {t(addLabel)}
               </button>
@@ -146,7 +154,7 @@ export function CrudPage({
         <EmptyState icon="fa-exclamation-triangle" title="Could not load data" description={error?.message} />
       ) : (
         <DataTable
-          columns={columns}
+          columns={withWho(columns, rows)}
           rows={rows}
           loading={isLoading}
           sort={sort}
@@ -158,7 +166,7 @@ export function CrudPage({
               icon={emptyIcon}
               title={emptyTitle || t('No {{name}}', { name: t(title) })}
               description={emptyDescription}
-              actionLabel={FormComponent ? addLabel : undefined}
+              actionLabel={FormComponent && mayAdd ? addLabel : undefined}
               onAction={() => setFormState({ editing: null })}
             />
           }
@@ -185,6 +193,12 @@ export function CrudPage({
       )}
     </>
   );
+}
+
+/** A "Recorded by" column, added when any row says who entered it (the farm manager sees which collector recorded what). */
+function withWho(columns, rows) {
+  if (!rows.some((r) => r.recorded_by_name) || columns.some((c) => c.key === 'recorded_by_name')) return columns;
+  return [...columns, { key: 'recorded_by_name', label: 'Recorded by', render: (r) => r.recorded_by_name || '—' }];
 }
 
 function escapeHtml(s) {

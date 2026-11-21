@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
@@ -472,59 +473,17 @@ function DiseaseTab() {
 }
 
 /* ------------------------------------------------------------------ team */
-const ROLE_TEXT: Record<string, string> = {
-  manager: 'Farm manager: reads all the records, the dashboard and the disease report with the number of diseased plants. No 3D map, no recording, no changes.',
-  collector: 'Data collector: sees the plan view and records fruit counts with photos, and can freeze a plant with a reason. No disease details, dashboard or settings.',
-};
+/** The team is one thing for the whole farm: the Team screen. A data collector added there records in the greenhouse too. */
 function TeamTab() {
-  const { colors } = useTheme();
-  const toast = useToast();
-  const confirm = useConfirm();
-  const { data: team = [], isLoading } = useGhTeam();
-  const { invite, changeMember, removeMember } = useGhMutations();
-  const form = useForm({ email: '', name: '', role: 'collector' });
-  const [err, setErr] = useState('');
-  const add = async () => {
-    setErr('');
-    try {
-      await invite.mutateAsync(form.values);
-      form.setValues({ email: '', name: '', role: form.values.role });
-      toast(t('Invitation saved. They get access when they sign in with that email address.'));
-    } catch (e: any) { setErr(e?.message || ''); }
-  };
-  const remove = async (m: any) => {
-    if (!(await confirm(t('Remove {{name}} from your team? They lose access at once.', { name: m.name || m.email }), { confirmLabel: 'Remove' }))) return;
-    try { await removeMember.mutateAsync(m.id); } catch (e: any) { toast(e?.message || '', 'error'); }
-  };
+  const navigation = useNavigation<any>();
   return (
-    <View style={{ gap: 16 }}>
-      <ChartCard title="Invite someone to your greenhouse" icon="user-plus">
-        <AppText style={{ fontSize: 13, lineHeight: 19, color: colors.textLight, marginBottom: 8 }}>{t('Give a farm manager or a data collector their own account. They sign in with the email address you enter here, and then choose your farm.')}</AppText>
-        {err ? <AppText style={{ fontSize: 13, color: colors.red, marginBottom: 8 }}>{err}</AppText> : null}
-        <TextField label="Email address" required {...form.bind('email')} placeholder="name@example.com" autoCapitalize="none" keyboardType="email-address" />
-        <TextField label="Name (optional)" {...form.bind('name')} />
-        <SelectField label="Role" {...form.bind('role')} placeholder="" options={[{ value: 'collector', label: t('Data collector') }, { value: 'manager', label: t('Farm manager') }]} />
-        <AppText variant="caption" style={{ marginBottom: 10 }}>{t(ROLE_TEXT[form.values.role])}</AppText>
-        <View style={{ alignSelf: 'flex-start' }}><Button title="Invite" icon="plus" loading={invite.isPending} onPress={add} /></View>
-      </ChartCard>
-      <ChartCard title="Your team" icon="user-group">
-        {isLoading ? <Loading /> : team.length === 0 ? <AppText style={{ color: colors.textLight }}>{t('Nobody yet.')}</AppText> : team.map((m: any, i: number) => (
-          <View key={m.id} style={{ gap: 8, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
-            <AppText weight="700" style={{ fontSize: 14 }}>{m.name || m.email}</AppText>
-            {m.name ? <AppText style={{ fontSize: 12, color: colors.textLight }}>{m.email}</AppText> : null}
-            <View style={{ alignSelf: 'flex-start' }}><Badge label={t(m.status === 'active' ? 'Signed in' : 'Waiting for them to sign in')} tone={m.status === 'active' ? 'success' : 'warning'} /></View>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <Button title={m.role === 'manager' ? 'Farm manager' : 'Data collector'} kind="secondary" size="sm" onPress={() => changeMember.mutate({ id: m.id, role: m.role === 'manager' ? 'collector' : 'manager' })} />
-              <Button title="Remove" icon="trash" kind="secondary" size="sm" onPress={() => remove(m)} />
-            </View>
-          </View>
-        ))}
-      </ChartCard>
+    <View style={{ gap: 12 }}>
+      <EmptyState icon="user-group" title="Your team is managed on the Team screen" description="Add a data collector once and they can record in the whole farm, the greenhouse included: the plan view and recording, with everything tagged with their name." />
+      <Button title="Open the Team screen" icon="user-group" onPress={() => navigation.navigate('team')} />
     </View>
   );
 }
 
-/* ------------------------------------------------------------------ page */
 export function GreenhouseScreen() {
   const { colors } = useTheme();
   const qc = useQueryClient();
@@ -532,7 +491,7 @@ export function GreenhouseScreen() {
   const [farm, setFarm] = useState(''); // '' = my own farm
   const farms = access?.farms || [];
   const current = farms.find((f) => f.owner_id === farm) || null;
-  const role: GhRole = current ? current.role : 'owner';
+  const role: GhRole = current ? current.role : ((access?.own?.role as GhRole) || 'owner'); // a data collector account is on its manager's farm automatically
   setFarmOwner(current ? current.owner_id : null); // before any request of this render goes out
   const switchFarm = (id: string) => {
     setFarmOwner(id || null);

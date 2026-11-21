@@ -211,7 +211,7 @@ export const platformStats = asyncHandler(async (_req, res) => {
   const [orgCounts, links, farmerProfiles, farms] = await Promise.all([
     Organization.aggregate([{ $group: { _id: '$status', n: { $sum: 1 }, farmers: { $sum: '$farmer_count' } } }]),
     FarmerOrganization.find({ status: 'active' }, 'farmer_id').lean(),
-    Profile.countDocuments({ is_admin: { $ne: true }, user_type: { $ne: 'org' }, account_status: 'active' }),
+    Profile.countDocuments({ is_admin: { $ne: true }, user_type: { $nin: ['org', 'collector'] }, account_status: 'active' }), // farmers: data collectors work on a farm manager's farm
     Farm.find({}, 'user_id total_area area_unit').lean(),
   ]);
   const inOrg = new Set(links.map((l) => l.farmer_id));

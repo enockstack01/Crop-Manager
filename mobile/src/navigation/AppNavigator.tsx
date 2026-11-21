@@ -6,7 +6,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useLayout } from '../components/ui';
 import { CustomDrawer } from './CustomDrawer';
 import { TopBar } from './TopBar';
-import { BottomBar, FARMER_TABS } from './BottomBar';
+import { BottomBar, COLLECTOR_TABS, FARMER_TABS } from './BottomBar';
 import { screenHeader, useStackScreenOptions } from './headers';
 import { MODULES } from './modules';
 import { CrudScreen } from '../screens/CrudScreen';
@@ -24,7 +24,11 @@ import { GreenhouseScreen } from '../screens/GreenhouseScreen';
 import { OfflineAssistantScreen } from '../screens/OfflineAssistantScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 import { useProfile } from '../lib/useResource';
-import { ADMIN_SECTION, sectionsFor } from './navConfig';
+import { ADMIN_SECTION, COLLECTOR_SECTIONS, sectionsFor } from './navConfig';
+import { TeamScreen } from '../screens/TeamScreen';
+import { TasksScreen } from '../screens/TasksScreen';
+import { CollectorHomeScreen } from '../screens/CollectorHomeScreen';
+import { isCollector } from '../lib/teamRules';
 import { AdminOverviewScreen } from '../screens/admin/AdminOverviewScreen';
 import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminUserDetailScreen } from '../screens/admin/AdminUserDetailScreen';
@@ -72,11 +76,13 @@ function AdminOrgsStack() {
 }
 
 /** Every page of the app, shared by the phone tabs and the tablet side menu. */
-function screens(Nav: typeof Tabs | typeof Drawer, isAdmin: boolean) {
+function screens(Nav: typeof Tabs | typeof Drawer, isAdmin: boolean, collector = false) {
   const S: any = Nav.Screen;
   return (
     <>
-      <S name="dashboard" component={DashboardScreen} options={{ title: 'Home' }} />
+      <S name="dashboard" component={collector ? CollectorHomeScreen : DashboardScreen} options={{ title: collector ? 'Today' : 'Home' }} />
+      <S name="team" component={TeamScreen} options={{ title: 'Team' }} />
+      <S name="tasks" component={TasksScreen} options={{ title: 'Tasks' }} />
 
       {MODULES.map((m) => (
         <S key={m.key} name={m.key} options={{ title: m.title }}>
@@ -116,20 +122,22 @@ export function AppNavigator() {
   const { isTablet } = useLayout();
   const { profile } = useProfile();
   const isAdmin = !!profile?.is_admin;
-  const sections = isAdmin ? [...sectionsFor(), ADMIN_SECTION] : sectionsFor(profile?.role);
+  const collector = isCollector(profile) && !isAdmin;
+  const sections = collector ? COLLECTOR_SECTIONS : isAdmin ? [...sectionsFor(), ADMIN_SECTION] : sectionsFor(profile?.role);
+  const tabs = collector ? COLLECTOR_TABS : FARMER_TABS;
 
   if (!isTablet) {
     return (
       <Tabs.Navigator
         initialRouteName="dashboard"
         backBehavior="history"
-        tabBar={(props) => <BottomBar {...props} tabs={FARMER_TABS} />}
+        tabBar={(props) => <BottomBar {...props} tabs={tabs} />}
         screenOptions={{
           sceneStyle: { backgroundColor: colors.bg },
-          header: screenHeader(FARMER_TABS),
+          header: screenHeader(tabs),
         }}
       >
-        {screens(Tabs, isAdmin)}
+        {screens(Tabs, isAdmin, collector)}
         <Tabs.Screen name="more" options={{ title: 'More' }}>
           {({ navigation }) => <MoreScreen navigation={navigation} sections={sections} />}
         </Tabs.Screen>
@@ -150,7 +158,7 @@ export function AppNavigator() {
         swipeEdgeWidth: 40,
       })}
     >
-      {screens(Drawer, isAdmin)}
+      {screens(Drawer, isAdmin, collector)}
     </Drawer.Navigator>
   );
 }

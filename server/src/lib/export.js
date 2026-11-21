@@ -17,7 +17,7 @@ const LOGO = path.join(HERE, '..', '..', 'assets', 'agricoders-logo-disc.png');
 const C = { pine: '#14532D', forest: '#1B5E20', leaf: '#2E7D32', amber: '#F9A825', ink: '#1C2B1E', slate: '#5B6B5D', mist: '#F3F8F3', fern: '#D5E3D6', white: '#FFFFFF' };
 
 const SINGULAR = { farms: 'Farm', fields: 'Field', crops: 'Crop', crop_varieties: 'Variety', seasons: 'Season', equipment: 'Equipment', inventory_items: 'Item' };
-const SKIP = new Set(['id', 'user_id', 'updated_at', '__v', 'created_at']);
+const SKIP = new Set(['id', 'user_id', 'updated_at', '__v', 'created_at', 'recorded_by']);
 const title = (k) => { const s = String(k).replace(/_/g, ' ').trim(); return s.charAt(0).toUpperCase() + s.slice(1); };
 
 const cell = (v) => {
@@ -51,7 +51,7 @@ function flatten(row) {
   const unitFor = new Map([...units].filter(([, t]) => cell(row[t]) !== '').map(([u, t]) => [t, cell(row[u])]));
   for (const [k, v] of own) {
     if (units.has(k)) continue;
-    put(title(k), unitFor.has(k) ? `${cell(v)} ${unitFor.get(k)}` : v);
+    put(k === 'recorded_by_name' ? 'Recorded by' : title(k), unitFor.has(k) ? `${cell(v)} ${unitFor.get(k)}` : v); // who entered the record: the farm manager or a data collector
   }
   return pairs;
 }

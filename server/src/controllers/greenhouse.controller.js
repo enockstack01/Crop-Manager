@@ -276,7 +276,7 @@ export const createCount = asyncHandler(async (req, res) => {
   let doc;
   try {
     doc = await FruitCount.create({
-      user_id: req.gh.owner, crop_id: crop._id, crop_name: crop.name, ...data, photo_url: out.photo_url, collage: out.collage,
+      user_id: req.gh.owner, crop_id: crop._id, crop_name: crop.name, ...data, photo_url: out.photo_url, collage: out.collage, recorded_by: req.gh.actor, recorded_by_name: req.gh.actorName,
       verification: out.verification, annotated_url: out.annotated_url, entered_by: req.gh.actor, entered_by_name: req.gh.actorName, ...(clientId ? { client_id: clientId } : {}),
     });
   } catch (e) {
@@ -368,11 +368,11 @@ export const checkPhoto = asyncHandler(async (req, res) => {
 /* ------------------------------------------------------- who works on this farm */
 /** The farms the signed-in person can work on: their own and any they were invited to. Accepts invitations written to their verified address. */
 export const access = asyncHandler(async (req, res) => {
-  const farms = await accessList(req.userId, req.profile);
+  const farms = req.farmRole === 'collector' ? [] : await accessList(req.actorId || req.userId, req.profile);
   const owners = await Profile.find({ user_id: { $in: farms.map((f) => f.owner_id) } }).select('user_id full_name').lean();
   const name = new Map(owners.map((o) => [o.user_id, o.full_name || 'A farm']));
   res.json({
-    own: { owner_id: req.userId, role: 'owner' },
+    own: { owner_id: req.gh.owner, role: req.gh.role },
     farms: farms.map((f) => ({ ...f, farm_name: name.get(f.owner_id) || 'A farm' })),
   });
 });

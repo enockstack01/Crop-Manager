@@ -68,13 +68,32 @@ GreenhouseHouseSchema.index({ user_id: 1, name: 1 }, { unique: true });
 
 export const GreenhouseHouse = mongoose.model('GreenhouseHouse', GreenhouseHouseSchema);
 
-/** A person the farm owner lets into the greenhouse tab: a farm manager (records and disease details, no 3D map) or a data collector (plan view and recording). */
-const GreenhouseMemberSchema = ownedSchema({ // user_id is the farm owner
+/**
+ * The farm manager's team. A person the farm manager (user_id, the owner of the records) invites to help in the field:
+ *   collector  a data collector: records entries into the manager's farm, tagged with their name, with a simpler dashboard (see lib/farmPolicy.js)
+ *   manager    (older, greenhouse only) a second manager who can read the greenhouse records and disease details
+ * The invitation becomes the person's account when they first sign in with the invited address, and then waits for a system administrator's
+ * approval like every account. Removing a member ends their access; the entries they made stay in the farm's records.
+ * Kept in the collection the greenhouse team used before, so earlier invitations keep working.
+ */
+const FarmMemberSchema = ownedSchema({ // user_id is the farm manager (the owner of the records)
   member_id: { type: String, default: null, index: true }, // the member's own account, set when they sign in with the invited address
   invited_email: { type: String, trim: true, lowercase: true, required: true },
   name: { type: String, trim: true, default: '' },
+  phone: { type: String, trim: true, default: '' },
   role: { type: String, enum: ['manager', 'collector'], required: true },
   status: { type: String, enum: ['invited', 'active', 'removed'], default: 'invited' },
+  invited_at: { type: Date, default: Date.now },
+  expires_at: { type: Date, default: null }, // an invitation not accepted by then reads as expired (resending renews it)
+  email_sent: { type: Boolean, default: false },
+  email_error: { type: String, default: '' },
+  sent_count: { type: Number, default: 0 },
+  last_sent_at: { type: Date, default: null },
+  accepted_at: { type: Date, default: null },
+  ended_at: { type: Date, default: null },
+  ended_as: { type: String, enum: ['cancelled', 'removed', null], default: null }, // an invitation cancelled before it was accepted, or a member removed
+  last_activity_at: { type: Date, default: null }, // the last time they used the farm's records
 });
-GreenhouseMemberSchema.index({ user_id: 1, invited_email: 1 }, { unique: true });
-export const GreenhouseMember = mongoose.model('GreenhouseMember', GreenhouseMemberSchema);
+FarmMemberSchema.index({ user_id: 1, invited_email: 1 }, { unique: true });
+export const FarmMember = mongoose.model('FarmMember', FarmMemberSchema, 'greenhousemembers');
+export const GreenhouseMember = FarmMember; // the name the greenhouse code and its tests use

@@ -11,7 +11,7 @@ import { spawn } from 'node:child_process';
 
 const SUITES = [
   ['security', 85], ['orgs', 68], ['invites', 18], ['workspace', 31], ['tenancy', 14], ['images', null],
-  ['storage', 20], ['plaintext', 52], ['aierrors', 8], ['fieldlocation', 30], ['greenhouse', 101], ['greenhouse-team', 105], ['greenhouse-alerts', 29], ['xlsx', 24], ['greenhouse-revenue', 32], ['ratelimit', 10], ['vision', 34], ['diagnose-vision', 15], ['hardening', 35],
+  ['storage', 20], ['plaintext', 52], ['aierrors', 8], ['fieldlocation', 30], ['greenhouse', 101], ['greenhouse-team', 105], ['farmteam', 78], ['greenhouse-alerts', 29], ['xlsx', 24], ['greenhouse-revenue', 32], ['ratelimit', 10], ['vision', 34], ['diagnose-vision', 15], ['hardening', 35],
 ];
 const cwd = new URL('../../', import.meta.url);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

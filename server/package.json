@@ -26,6 +26,7 @@
     "test:greenhouse-team": "node src/scripts/test-greenhouse-team.mjs",
     "test:greenhouse-revenue": "node src/scripts/test-greenhouse-revenue.mjs",
     "test:greenhouse-alerts": "node src/scripts/test-greenhouse-alerts.mjs",
+    "test:farmteam": "node src/scripts/test-farmteam.mjs",
     "test:xlsx": "node src/scripts/test-xlsx.mjs",
     "test:all": "node src/scripts/run-all-tests.mjs",
     "test:tenancy": "node src/scripts/test-tenancy.mjs",

@@ -46,7 +46,7 @@ export function Topbar({ onMobileMenu, dark, onToggleDark, profile }) {
         <button id="mobile-menu-btn" onClick={onMobileMenu}>
           <i className="fas fa-bars" />
         </button>
-        <GlobalSearch orgUser={profile?.org_context?.platform_role === 'org_user'} />
+        <GlobalSearch orgUser={profile?.org_context?.platform_role === 'org_user'} collector={profile?.user_type === 'collector'} />
       </div>
 
       <div className="topbar-right">

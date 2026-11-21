@@ -17,6 +17,13 @@ const SECTIONS = [
     ],
   },
   {
+    label: 'Team',
+    items: [
+      { to: '/team', icon: 'fa-user-group', label: 'Team' },
+      { to: '/tasks', icon: 'fa-list-check', label: 'Tasks' },
+    ],
+  },
+  {
     label: 'Production',
     items: [
       { to: '/crop-cycles', icon: 'fa-sync-alt', label: 'Crop Cycles' },
@@ -88,6 +95,25 @@ export function sectionsFor(role, hasOrg = false) {
   return list;
 }
 
+/** A data collector's menu: today's work, recording, their tasks, the greenhouse and the weather. No finances, reports, calendar or assistant. */
+const COLLECTOR_SECTIONS = [
+  { items: [{ to: '/', icon: 'fa-th-large', label: 'Today', end: true }, { to: '/tasks', icon: 'fa-list-check', label: 'My tasks' }] },
+  {
+    label: 'Record',
+    items: [
+      { to: '/activities', icon: 'fa-tasks', label: 'Field Activities' },
+      { to: '/scouting', icon: 'fa-search', label: 'Crop Scouting' },
+      { to: '/irrigation', icon: 'fa-tint', label: 'Irrigation' },
+      { to: '/fertilizers', icon: 'fa-flask', label: 'Fertilizer' },
+      { to: '/crop-protection', icon: 'fa-shield-alt', label: 'Crop Protection' },
+      { to: '/planting', icon: 'fa-hand-holding-seedling', label: 'Planting' },
+      { to: '/harvest', icon: 'fa-wheat-awn', label: 'Harvest' },
+      { to: '/greenhouse', icon: 'fa-warehouse', label: 'Greenhouse' },
+    ],
+  },
+  { label: 'More', items: [{ to: '/weather', icon: 'fa-cloud-sun', label: 'Weather' }, { to: '/settings', icon: 'fa-cog', label: 'Settings' }] },
+];
+
 const ORG_SECTIONS = [
   { items: [{ to: '/org', icon: 'fa-th-large', label: 'Overview', end: true }] },
   {
@@ -118,8 +144,8 @@ const ADMIN_SECTION = {
 };
 
 /** Every page a person can open, for the search box. */
-export const NAV_PAGES = (orgUser = false) =>
-  (orgUser ? ORG_SECTIONS : SECTIONS).flatMap((sec) => sec.items).map((i) => ({ to: i.to, label: i.label, icon: i.icon }));
+export const NAV_PAGES = (orgUser = false, collector = false) =>
+  (orgUser ? ORG_SECTIONS : collector ? COLLECTOR_SECTIONS : SECTIONS).flatMap((sec) => sec.items).map((i) => ({ to: i.to, label: i.label, icon: i.icon }));
 
 export function Sidebar({ collapsed, mobileOpen, isAdmin, orgRole = '', onToggle, onNavigate }) {
   const { signOut } = useClerk();
@@ -140,7 +166,7 @@ export function Sidebar({ collapsed, mobileOpen, isAdmin, orgRole = '', onToggle
       </div>
 
       <nav className="sidebar-nav">
-        {(orgRole ? ORG_SECTIONS : isAdmin ? [...SECTIONS, ADMIN_SECTION] : sectionsFor(profile?.role, !!orgId)).map((section, i) => (
+        {(orgRole ? ORG_SECTIONS : profile?.user_type === 'collector' ? COLLECTOR_SECTIONS : isAdmin ? [...SECTIONS, ADMIN_SECTION] : sectionsFor(profile?.role, !!orgId)).map((section, i) => (
           <div key={section.label || i}>
             {section.label && <div className="sidebar-label">{t(section.label)}</div>}
             {section.items.filter((item) => !item.admin || orgRole === 'org_admin').map((item) => (

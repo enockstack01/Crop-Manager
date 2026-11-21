@@ -137,3 +137,9 @@
 .gh-alert-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .gh-alert-form .form-control { flex: 1 1 260px; }
 .gh-alert-ack { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; }
+
+/* the data collector's big buttons: one per kind of field record */
+.gh-big-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.gh-big-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 96px; padding: 14px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-bg, #fff); color: var(--text); font-weight: 700; text-align: center; text-decoration: none; transition: transform 0.1s, box-shadow 0.1s; }
+.gh-big-button i { font-size: 26px; color: var(--primary); }
+.gh-big-button:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1); }

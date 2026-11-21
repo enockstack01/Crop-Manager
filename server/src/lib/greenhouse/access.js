@@ -1,5 +1,6 @@
 import createHttpError from '../httpError.js';
 import { GreenhouseMember } from '../../models/index.js';
+import { acceptFarmInvites } from '../farmTeam.js';
 
 /*
  * Who may do what in the greenhouse tab.
@@ -18,10 +19,16 @@ export const ROLES = ['owner', 'manager', 'collector'];
 /** Sets req.gh = { owner, role, actor, actorName } for the farm this request is about, or refuses. */
 export async function greenhouseContext(req, _res, next) {
   try {
+    const actor = req.actorId || req.userId;
+    // a data collector account works on its farm manager's farm, whatever the request names (farmContext has already moved the request onto it)
+    if (req.farmRole === 'collector') {
+      req.gh = { owner: req.farmOwner, role: 'collector', actor, actorName: req.profile?.full_name || '' };
+      return next();
+    }
     const named = String(req.headers['x-farm-owner'] || '').trim();
-    req.gh = { owner: req.userId, role: 'owner', actor: req.userId, actorName: req.profile?.full_name || '' };
+    req.gh = { owner: req.userId, role: 'owner', actor, actorName: req.profile?.full_name || '' };
     if (named && named !== req.userId) {
-      const m = await GreenhouseMember.findOne({ user_id: named, member_id: req.userId, status: 'active' }).lean();
+      const m = await GreenhouseMember.findOne({ user_id: named, member_id: actor, status: 'active' }).lean();
       if (!m) throw createHttpError(403, 'You do not have access to that farm.');
       req.gh.owner = named;
       req.gh.role = m.role;
@@ -39,13 +46,9 @@ export const only = (...roles) => (req, _res, next) => (roles.includes(req.gh?.r
 
 /** Accepts the invitations written to the signed-in person's verified address. Returns the farms they can work on. */
 export async function accessList(userId, profile) {
-  const email = profile?.email_verified && profile?.email ? String(profile.email).toLowerCase() : null;
-  if (email) {
-    await GreenhouseMember.updateMany(
-      { invited_email: email, status: 'invited' },
-      { $set: { member_id: userId, status: 'active', name: profile.full_name || '' } },
-    );
-  }
+  await acceptFarmInvites(profile); // an invitation written to a verified address is accepted here too
+  // a data collector account works on its farm manager's farm automatically: it is its own farm, not one to switch to
+  if (profile?.user_type === 'collector') return [];
   const mine = await GreenhouseMember.find({ member_id: userId, status: 'active' }).lean();
   return mine.map((m) => ({ owner_id: m.user_id, role: m.role }));
 }

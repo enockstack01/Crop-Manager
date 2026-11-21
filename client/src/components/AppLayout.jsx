@@ -9,6 +9,7 @@ import { EmptyState, Loading } from './ui.jsx';
 import { setCurrency } from '../lib/format.js';
 import { setLanguage } from '../i18n/index.js';
 import { useMyOrg } from '../lib/orgApi.js';
+import { t } from '../i18n/index.js';
 
 function readDark() {
   try {
@@ -54,6 +55,16 @@ function Shell() {
   // accounts that are not approved yet see the request form / status page instead of the app
   if (profile && !profile.is_admin && profile.account_status !== 'active') {
     return <AccountGate profile={profile} onRefresh={() => refetch()} refreshing={isFetching} />;
+  }
+
+  // a data collector the farm manager removed: nothing to open until the manager adds them again
+  if (profile?.user_type === 'collector' && profile?.farm_team?.linked === false) {
+    return (
+      <div className="auth-split"><div className="auth-split-form"><div className="auth-split-form-wrapper">
+        <EmptyState icon="fa-user-slash" title="Your access to the farm has ended" description="Your farm manager removed you from their team. The entries you recorded stay in their records. Ask them to add you again if this is a mistake." />
+        <p className="subtitle auth-split-switch"><a href="#" onClick={(e) => { e.preventDefault(); window.location.assign('/sign-in'); }}>{t('Sign out')}</a></p>
+      </div></div></div>
+    );
   }
 
   // the default currency pre-fills new records (each record keeps its own currency)

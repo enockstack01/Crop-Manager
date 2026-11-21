@@ -2,6 +2,7 @@ import { asyncHandler } from '../lib/asyncHandler.js';
 import { serialize } from '../lib/serialize.js';
 import { recordLoader } from '../lib/records.js';
 import * as M from '../models/index.js';
+import { teamSummary } from './team.controller.js';
 
 const loader = (path, opts) => recordLoader(path, opts);
 
@@ -27,7 +28,10 @@ export const getDashboard = asyncHandler(async (req, res) => {
       M.InventoryItem.find({ user_id: uid }).lean(),
     ]);
 
+  const team = await teamSummary(uid); // the farm manager's data collectors: this week's entries and last activity
+
   res.json({
+    team,
     farms: serialize(farms),
     fields,
     crops: serialize(crops),

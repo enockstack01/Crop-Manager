@@ -17,7 +17,7 @@ export const OWNED_MODELS = [
   M.FieldActivity, M.IrrigationRecord, M.FertilizerApplication, M.CropProtectionRecord,
   M.CropScoutingRecord, M.HarvestRecord, M.InventoryItem, M.InventoryTransaction,
   M.Equipment, M.EquipmentMaintenance, M.Expense, M.Sale, M.Notification, M.CalculationHistory,
-  M.GreenhouseCrop, M.FruitCount, M.GreenhouseHouse, M.GreenhouseMember, // the greenhouse tab: removed with the account like everything else
+  M.GreenhouseCrop, M.FruitCount, M.GreenhouseHouse, M.GreenhouseMember, M.Task, // the greenhouse tab and the farm team's tasks: removed with the account like everything else
 ];
 
 export async function clearUser(userId) {

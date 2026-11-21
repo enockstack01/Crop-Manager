@@ -7,6 +7,7 @@ import { CURRENCY_CODES } from '../lib/currencies.js';
 import { notifyAdmins, statusPatch } from '../lib/accountStatus.js';
 import { Profile } from '../models/index.js';
 import { orgContextFor } from '../lib/orgs/core.js';
+import { acceptFarmInvites, farmTeamContext } from '../lib/farmTeam.js';
 
 // role is deliberately absent: new users are Farmers and only an admin can change it
 // (PATCH /api/admin/users/:id)
@@ -87,7 +88,9 @@ export const getMe = asyncHandler(async (req, res) => {
   }
 
   // role and organization context: tells the apps which workspace to open
-  res.json({ ...serialize(profile), org_context: await orgContextFor(profile) });
+  // an invitation written to this verified address becomes the person's account (a data collector linked to the manager's farm, waiting for approval)
+  await acceptFarmInvites(profile);
+  res.json({ ...serialize(profile), org_context: await orgContextFor(profile), farm_team: await farmTeamContext(profile) });
 });
 
 export const updateMe = asyncHandler(async (req, res) => {

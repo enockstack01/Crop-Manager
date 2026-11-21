@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { farmerOnly, loadProfile, requireActiveAccount } from '../middleware/profile.js';
+import { farmContext } from '../middleware/farmContext.js';
+import { addCollector, listTeam, memberDetail, removeMember, resendInvite, updateMember } from '../controllers/team.controller.js';
+import { tasksGuard } from '../controllers/tasks.controller.js';
+import { collectorDashboard } from '../controllers/collectorDashboard.controller.js';
 import { resources } from '../resources.js';
 import { genericRouter } from './generic.routes.js';
 import { getDashboard } from '../controllers/dashboard.controller.js';
@@ -44,11 +48,15 @@ api.use('/admin', adminRouter);
 // farm data: approved (active) accounts only
 api.use(requireActiveAccount);
 
+// whose farm is this about? A data collector's request is moved onto their farm manager's farm, within what a collector may reach (lib/farmPolicy.js)
+api.use(farmContext);
+
 // organization workspace and notifications are the only things an organization account reaches below
 api.use('/organizations', orgRouter);
 
-api.use(['/dashboard', '/export', '/calendar', '/weather', '/calculators', '/search', '/uploads', '/ai', '/inventory-items', '/greenhouse'], farmerOnly);
+api.use(['/dashboard', '/export', '/calendar', '/weather', '/calculators', '/search', '/uploads', '/ai', '/inventory-items', '/greenhouse', '/team'], farmerOnly);
 
+api.get('/dashboard/collector', collectorDashboard); // the data collector's page: today's work
 api.get('/dashboard', getDashboard);
 api.get('/dashboard/role', getRoleDashboard);
 api.get('/export', exportAll);
@@ -73,6 +81,17 @@ api.post('/inventory-items/:id/stock', adjustStock);
 
 // notifications: mark them all read in one request (before the generic /:id routes)
 api.put('/notifications/read-all', markAllRead);
+
+// the farm manager's team of data collectors (the farm manager only: a collector is refused by the policy before this)
+api.get('/team', listTeam);
+api.post('/team', addCollector);
+api.get('/team/:id', memberDetail);
+api.put('/team/:id', updateMember);
+api.post('/team/:id/resend', resendInvite);
+api.delete('/team/:id', removeMember);
+
+// tasks: the farm manager hands them out, a data collector marks their own done
+api.use('/tasks', tasksGuard);
 
 // generic CRUD for every declared resource
 for (const resource of resources) {
