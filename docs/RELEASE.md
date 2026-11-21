@@ -23,7 +23,7 @@ Or in the GitHub web page: Settings → Branches → Add rule for `main` → req
 3. Uploads: set `STORAGE_DRIVER=s3` and the `S3_*` settings, then copy old pictures once with `node server/src/scripts/migrate-uploads.mjs`. Until then pictures live on the server disk and are lost on redeploy.
 4. Health: point the uptime monitor at `/api/ready` (503 when the database is down).
 5a. Counter service: `FRUIT_COUNTER_TOKEN` is set on it and on the server (without it the counter is open to anyone with its address).
-5b. Translations: after adding interface text run `node scripts/i18n/ai_translate.mjs` then `python scripts/i18n/build.py` (needs a valid `AI_API_KEY` in `server/.env`); text that is not translated yet shows in English.
+5b. Translations: French, Kinyarwanda and Swahili cover every screen (the greenhouse, harvest value, alerts, team and tasks text was written directly and should be read by a native speaker). Arabic, German, Spanish, Hindi, Portuguese and Chinese still show English on those screens until the script below is run with a valid key. After adding interface text run `node scripts/i18n/ai_translate.mjs` then `python scripts/i18n/build.py` (needs a valid `AI_API_KEY` in `server/.env`); text that is not translated yet shows in English.
 5. Rotate any secret that was ever shown in a chat or a log (the Hugging Face token pasted in a conversation).
 6. Phones: run `docs/DEVICE-TESTS.md` on the minimum phones; build the release app with a real signing key (not the debug key).
 7. Privacy notice and photo retention are written and linked in the app (photos go to two outside services).

@@ -15,7 +15,8 @@ STR = r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\$]|\\.)*)`"
 PROPS = r"(?:label|title|subtitle|placeholder|hint|addLabel|emptyTitle|emptyDescription|searchPlaceholder|actionLabel|description|saveLabel|confirmLabel|formTitle|heading|intro|text|sub|unit|name|tip)"
 # plain lowercase words that are UI text rather than code
 LOWER_OK = {'utilised', 'harvest', 'harvests', 'or', 'total area', 'this month', 'farm', 'records', 'total', 'kg', 'ha',
-            'this record', 'hectares', 'acres', 'kg/ha', 'net', 'generated', 'farms', 'fields'}
+            'this record', 'hectares', 'acres', 'kg/ha', 'net', 'generated', 'farms', 'fields',
+            'of', 'and', 'plants', 'left', 'late', 'sick', 'high', 'photos', 'photo', 'counts', 'counted', 'fruit', 'never', 'none', 'someone', 'entries', 'positions', 'numbers', 'today', 'farmers', 'sure', 'healthy', 'frozen', 'deactivated', 'all', 'errors', 'reused', 'words', 'locked', 'managed'}
 
 
 def _first_arg(src, i):

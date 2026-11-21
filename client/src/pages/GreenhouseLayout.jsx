@@ -162,7 +162,7 @@ function HouseForm({ crops, editing, onClose, onSaved }) {
             <div className="farm-profile-section">{t('Preview')}</div>
             {preview.tooMany ? <div className="alert-item alert-danger"><i className="fas fa-exclamation-circle" /><div className="alert-content">{t('A greenhouse can hold at most 6000 plants in the layout. Split a very large house in two.')}</div></div> : (
               <>
-                <p className="form-hint" style={{ marginTop: 0 }}>{t('This greenhouse will have')} {formatNumber(total)} {t('plant positions')}. {t('They are named R1 P1, R1 P2 and so on; in a double row R1A P1 and R1B P1.')}</p>
+                <p className="form-hint" style={{ marginTop: 0 }}>{t('This greenhouse will have')} {formatNumber(total)} {t('plant positions')}. {t('They are named R1 P1, R1 P2 and so on. In a double row they are R1A P1 and R1B P1.')}</p>
                 <PlanMap layout={{ house: preview.house, plants: preview.plants }} colorBy="status" />
               </>
             )}
