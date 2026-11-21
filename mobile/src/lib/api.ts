@@ -18,9 +18,11 @@ let farmOwner: string | null = null; // set when the signed-in person works on a
 export function setFarmOwner(id: string | null) {
   farmOwner = id || null;
 }
+export const getFarmOwner = () => farmOwner;
 
 api.interceptors.request.use(async (config) => {
-  if (farmOwner && /^\/?greenhouse\//.test(String(config.url || '')) && !/^\/?greenhouse\/access/.test(String(config.url || ''))) config.headers['X-Farm-Owner'] = farmOwner;
+  // a request that names its farm itself (the offline queue sends each count to the farm it was recorded for) keeps it
+  if (config.headers['X-Farm-Owner'] === undefined && farmOwner && /^\/?greenhouse\//.test(String(config.url || '')) && !/^\/?greenhouse\/access/.test(String(config.url || ''))) config.headers['X-Farm-Owner'] = farmOwner;
   if (tokenGetter) {
     try {
       const token = await tokenGetter();

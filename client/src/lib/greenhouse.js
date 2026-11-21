@@ -27,6 +27,15 @@ export const useGhHealth = (id) =>
 export const useGhRevenue = ({ greenhouse = '', risk = 20 } = {}) =>
   useQuery({ queryKey: ['greenhouse', 'revenue', greenhouse, risk], queryFn: () => api.get('/greenhouse/revenue', { params: { greenhouse: greenhouse || undefined, risk } }).then((r) => r.data), staleTime: 15_000, placeholderData: (prev) => prev });
 
+export const useGhOverview = () =>
+  useQuery({ queryKey: ['greenhouse', 'overview'], queryFn: () => api.get('/greenhouse/overview').then((r) => r.data), staleTime: 20_000 });
+
+export const useGhAlerts = ({ days = 30, greenhouse = '' } = {}) =>
+  useQuery({ queryKey: ['greenhouse', 'alerts', days, greenhouse], queryFn: () => api.get('/greenhouse/alerts', { params: { days, greenhouse: greenhouse || undefined } }).then((r) => r.data), staleTime: 15_000 });
+
+export const useGhRevenueHistory = ({ greenhouse = '', risk = 20, weeks = 12 } = {}) =>
+  useQuery({ queryKey: ['greenhouse', 'revenue-history', greenhouse, risk, weeks], queryFn: () => api.get('/greenhouse/revenue/history', { params: { greenhouse: greenhouse || undefined, risk, weeks } }).then((r) => r.data), staleTime: 30_000, placeholderData: (prev) => prev });
+
 export const useGhPositionLog = (id) =>
   useQuery({ queryKey: ['greenhouse', 'poslog', id], queryFn: () => api.get(`/greenhouse/houses/${id}/positions/log`).then((r) => r.data.data), enabled: !!id });
 
@@ -45,6 +54,7 @@ export function useGhMutations() {
   const opts = { onSuccess: done };
   return {
     addCrop: useMutation({ mutationFn: (body) => api.post('/greenhouse/crops', body).then((r) => r.data), ...opts }),
+    ackAlert: useMutation({ mutationFn: ({ id, ...body }) => api.put(`/greenhouse/counts/${id}/alert`, body).then((r) => r.data), ...opts }),
     updateCrop: useMutation({ mutationFn: ({ id, ...body }) => api.put(`/greenhouse/crops/${id}`, body).then((r) => r.data), ...opts }),
     removeCrop: useMutation({ mutationFn: (id) => api.delete(`/greenhouse/crops/${id}`).then((r) => r.data), ...opts }),
     createCount: useMutation({ mutationFn: (body) => api.post('/greenhouse/counts', body, { timeout: 150000 }).then((r) => r.data), ...opts }),

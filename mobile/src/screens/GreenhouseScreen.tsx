@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from 'react';
+import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { radius } from '../theme/theme';
@@ -9,7 +9,9 @@ import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { Bars, HBars } from '../components/charts';
 import { DateField, NumberField, SelectField, TextAreaField, TextField, useForm } from '../components/fields';
-import { PhotoSetField } from '../components/PhotoSetField';
+import { PhotoSetField, isLocalPhoto } from '../components/PhotoSetField';
+import { queueCount } from '../lib/ghOutboxRuntime';
+import { newClientId } from '../lib/ghOutbox';
 import { api, setFarmOwner } from '../lib/api';
 import { useConfirm } from '../components/Confirm';
 import { useToast } from '../components/Toast';
@@ -20,6 +22,8 @@ import type { GhRole } from '../lib/greenhouse';
 import { t } from '../i18n';
 import { LayoutTab } from './GreenhouseLayout';
 import { HarvestTab, PricesCard } from './GreenhouseHarvest';
+import { AlertsTab, CollectorDashboard, ManagerDashboard } from './GreenhouseHome';
+import { OutboxBanner } from './GreenhouseOutbox';
 import { HealthCard } from '../components/HealthCard';
 
 type TabId = string;
@@ -164,6 +168,7 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
   } : { crop_id: preset?.crop_id && crops.some((c) => c.id === preset.crop_id) ? preset.crop_id : crops[0]?.id || '', greenhouse: preset?.greenhouse || '', row_id: preset?.row_id || '', plant_label: preset?.plant_label || '', count_date: today(), recorded_count: '', photo_urls: [] as string[], notes: '', label: '', fruit_size: 'all' });
   const [err, setErr] = useState('');
   const [result, setResult] = useState<any>(null);
+  const clientId = useRef(newClientId()); // this count's own id: sent with it, so a count that is sent twice is saved once
   const v = form.values;
   const saving = createCount.isPending || updateCount.isPending;
 
@@ -171,6 +176,7 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
     const p = countProblem(v);
     if (p) { setErr(t(p)); return; }
     setErr('');
+    if (!onlineManager.isOnline() || v.photo_urls.some(isLocalPhoto)) { setErr(t('Checking the photo needs a connection. You can still save the count: it is checked when it is sent.')); return; }
     try {
       const out = await check.mutateAsync({ crop_id: v.crop_id, photo_urls: v.photo_urls, recorded_count: Number(v.recorded_count), fruit_size: v.fruit_size });
       setResult({ ...out, preview: true });
@@ -180,15 +186,38 @@ export function CountSheet({ crops, editing, preset, onClose, onSaved }: { crops
     const p = countProblem(v);
     if (p) { setErr(t(p)); return; }
     setErr('');
+    const body = { ...v, recorded_count: Number(v.recorded_count) };
+    // no signal, or a photo that is still only on this phone: the count is kept on the phone and sent when the phone is back online
+    const keepOnPhone = async () => {
+      const { photo_urls: photos, ...rest } = body;
+      await queueCount({ id: clientId.current, place: [v.greenhouse, v.row_id, v.plant_label].filter(Boolean).join(' '), body: rest, photos });
+      toast(t('Saved on this phone. It is sent when you are back online.'), 'info');
+      setResult({ queued: true });
+    };
     try {
-      const body = { ...v, recorded_count: Number(v.recorded_count) };
-      const saved = editing ? await updateCount.mutateAsync({ id: editing.id, ...body }) : await createCount.mutateAsync(body);
+      if (!editing && (!onlineManager.isOnline() || v.photo_urls.some(isLocalPhoto))) { await keepOnPhone(); return; }
+      if (editing && !onlineManager.isOnline()) { setErr(t('Editing a count needs a connection.')); return; }
+      const saved = editing ? await updateCount.mutateAsync({ id: editing.id, ...body }) : await createCount.mutateAsync({ ...body, client_id: clientId.current });
       toast(t('Fruit count saved'));
       onSaved?.();
       setResult({ verification: saved.verification, annotated_url: saved.annotated_url, photo_url: saved.photo_url, saved: true });
-    } catch (e: any) { setErr(e?.message || t('Could not save')); }
+    } catch (e: any) {
+      // the connection dropped while saving: the count may or may not have reached the server, so it is queued under the same id (the server saves it once)
+      if (!editing && e?.network) { try { await keepOnPhone(); return; } catch (e2: any) { setErr(e2?.message || t('Could not save')); return; } }
+      setErr(e?.message || t('Could not save'));
+    }
   };
 
+  if (result?.queued) {
+    return (
+      <Sheet visible onClose={onClose} title={t('Saved on this phone')} footer={<Button title="Done" onPress={() => { onSaved?.(); onClose(); }} />}>
+        <View style={{ gap: 10 }}>
+          <AppText style={{ fontSize: 14, lineHeight: 21 }}>{t('There is no connection right now, so this count and its photos are kept on the phone. They are sent by themselves when you are back online, and the photos are checked then.')}</AppText>
+          <AppText variant="caption">{t('You can follow what is waiting at the top of the Greenhouse screen.')}</AppText>
+        </View>
+      </Sheet>
+    );
+  }
   if (result?.saved) {
     return (
       <Sheet visible onClose={onClose} title={t('Fruit count saved')} footer={<Button title="Done" onPress={onClose} />}>
@@ -521,7 +550,7 @@ export function GreenhouseScreen() {
   const [start, setStart] = useState<any>(null);
   const active = tabs.some((x) => x.id === tab) ? tab : tabs[0].id;
   const go = (id: TabId, opts: any = null) => { setStart(opts); setTab(id); };
-  const subtitle = role === 'collector' ? 'Pick a plant on the plan and record its fruit with photos.' : role === 'manager' ? 'Read the records and see which plants are diseased.' : 'Count the fruit on your plants with a photo, and check each photo with the fruit counter.';
+  const subtitle = role === 'collector' ? 'See what is left to record today, pick a plant on the plan and record its fruit with photos.' : role === 'manager' ? 'Watch the farm: the harvest value, disease, alerts, and who is recording.' : 'Count the fruit on your plants with a photo, and check each photo with the fruit counter.';
   return (
     <Screen>
       <PageHeader title="Greenhouse" subtitle={subtitle} />
@@ -536,7 +565,10 @@ export function GreenhouseScreen() {
           </Pressable>
         ))}
       </ScrollView>
-      {active === 'dashboard' ? <DashboardTab go={go} /> : null}
+      {role !== 'manager' ? <OutboxBanner /> : null}
+      {active === 'dashboard' ? (role === 'manager' ? <ManagerDashboard key={farm} go={go} /> : <DashboardTab go={go} />) : null}
+      {active === 'today' ? <CollectorDashboard key={farm} go={go} /> : null}
+      {active === 'alerts' ? <AlertsTab key={farm} /> : null}
       {active === 'layout' ? <LayoutTab role={role} /> : null}
       {active === 'counts' ? <CountsTab key={`${farm}${JSON.stringify(start)}`} start={start} role={role} /> : null}
       {active === 'disease' ? <DiseaseTab key={farm} /> : null}

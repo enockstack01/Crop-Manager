@@ -44,7 +44,9 @@ The farm owner invites people by email under **Greenhouse > Team**. A person sig
 | Plan and 3D map, layout, crops, team | yes | no | plan only, no layout, crops or team |
 | Dashboard | yes | yes | no |
 | Records (fruit counts) | all, edit, delete | read all, with disease details | record and edit their own; sees only their own; no delete |
-| Harvest value (fruit, healthy share, disease loss, money) | yes | yes | no |
+| Harvest value (fruit, healthy share, disease loss, money) and its history | yes | yes | no |
+| Theft and loss alerts, explaining them | yes | yes | no |
+| First page | dashboard | Overview | Today |
 | Prices of the crops | set | no | no |
 | Disease report (number of diseased plants, disease, confidence, sick fruit numbers, photos) | yes | yes | no (the verdict of the photo check only) |
 | Freeze, deactivate, add positions | yes | no | yes (with a reason) |
@@ -63,6 +65,26 @@ The farm owner invites people by email under **Greenhouse > Team**. A person sig
 | Whole greenhouse | plants not counted yet get the average of the counted plants of the main crop of that house, with the same loss |
 
 Deactivated plants are left out; frozen plants are included. Money is never added across currencies: each currency is shown on its own. A crop without a price still shows fruit and kilograms, and the page says which prices are missing, how many plants have no health check (their fruit are taken as healthy) and when a count covers one fruit size only. It is an estimate: it is only as good as the counts, the weights and the prices behind it. The API is `GET /api/greenhouse/revenue?greenhouse=<name>&risk=<per cent>`; prices are set with `PUT /api/greenhouse/crops/:id` (owner only).
+
+## Value over time, theft alerts, the two dashboards, recording without a signal
+
+**Value over the weeks.** Under **Harvest value** a chart shows, week by week, the expected value (or the fruit counted when there are no prices) and the share lost to disease, with a sentence saying whether the loss is growing, falling or steady. Each week uses only the counts made by the end of that week (the latest count of each plant by then), with today's prices and weights. `GET /api/greenhouse/revenue/history?weeks=12&greenhouse=&risk=20` (owner and farm manager).
+
+**Theft and loss alerts** (owner and farm manager only, never the data collector, so nobody is tipped off). Computed from the counts; `GET /api/greenhouse/alerts?days=30`.
+
+| Alert | When |
+|---|---|
+| Recorded below the photo | the photo check says "does not match", the photo shows clearly more fruit than was recorded (at least 3, and at least a quarter of the photo count), with a counter that was sure. High when the record is under half of the photo or 10 or more fruit are missing |
+| Count fell | between two counts of the same plant, at most 21 days apart, the count fell by at least 30 per cent and 3 fruit (plants under 5 fruit are too small to judge), on the recorded number or on the photo count. The strongest sign is the photo showing fewer fruit while the recorded number stayed the same. High when both fell, when the photo fell and the record did not follow, or when the fall is 60 per cent or more |
+| A person | a data collector whose counts are often below the photos (at least 5 checked counts and 40 per cent or more below) |
+
+These are signs to look into, not proof: fruit also drops after a harvest, pruning, wind, pests and disease. The owner or farm manager **explains** each alert (a reason is required, for example "harvested on Tuesday") and it stops counting as open; it can be opened again (`PUT /api/greenhouse/counts/:id/alert`). Alerts compare only counts of all fruit sizes. The assistant can answer "which plants have numbers that do not add up?" and "is disease loss growing?".
+
+**The first page of each role** (`GET /api/greenhouse/overview`). The **farm manager's Overview**: totals (fruit, healthy fruit, loss, expected value), the last eight weeks, each greenhouse (plants counted, not counted for 7 days, diseased plants), the diseased plants, who is recording, and the alerts. The **data collector's Today**: counts and fruit recorded today and this week, how many plants are left this week and which to record next in each greenhouse, counts to redo because the photo did not match (verdict only), their latest counts, and the plants frozen on purpose. A collector never sees totals, alerts or disease details.
+
+**Recording without a signal (phone).** With no signal, or when a photo exists only on the phone, saving a count keeps it on the phone (the photos are copied into the app's own folder). When the phone is back online, when the app is opened and every minute while counts wait, they are sent in the order they were recorded: first each photo is uploaded (and remembered, so it is never uploaded twice), then the count. Every count carries its own id (`client_id`) so a count sent twice, for example after a reply was lost on a bad connection, is saved once; the real time it was recorded is kept (`recorded_at`). A count the server refuses (a plant that was deactivated meanwhile) stays in the list with the reason, to try again or delete, and never blocks the others. The banner at the top of the Greenhouse screen shows what is waiting. Checking the photo before saving, and editing a saved count, need a connection. A count dated one day ahead of the server's date is accepted, so a phone east of UTC can record late in the evening.
+
+**Excel export.** The .xlsx files are written by the server's own small writer (`server/src/lib/xlsxWriter.js`, no library), replacing a spreadsheet library whose dependencies had open security advisories. Same look: bold title, green header row, striped rows, wrapped text, column widths, frozen header and filter. Codes with a leading zero and numbers longer than 15 digits stay as text.
 
 ## Disease check, health card and health history
 

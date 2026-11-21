@@ -6,6 +6,7 @@
  */
 import { countProblem, VERDICTS, COLOR_HEX, houseProblem, heatColor, markerColor, STATUS_COLOR, FRUIT_SIZES, TABS_BY_ROLE } from '../src/lib/greenhouseRules.ts';
 import { positionsOf, totalPositions, rowDefsOf, northOnPlan } from '../src/lib/greenhouseLayout.ts';
+import { createOutbox, newClientId, isServerPhoto } from '../src/lib/ghOutbox.ts';
 import { positionsOf as serverPositions } from '../../server/src/lib/greenhouse/layout.js';
 
 let passed = 0;
@@ -42,9 +43,9 @@ ok(JSON.stringify(FRUIT_SIZES.map((x) => x.value)) === '["all","small","medium",
 ok(markerColor({ state: 'frozen', latest: { recorded_count: 5, status: 'match' } }, 'status', 10) === STATUS_COLOR.frozen && markerColor({ state: 'inactive', latest: null }, 'fruit', 10) === STATUS_COLOR.inactive, 'a frozen plant is light blue and a deactivated position dark grey, whatever the colouring');
 ok(houseProblem({ ...house, plants_per_row: '0' }) === '' && houseProblem({ ...house, plants_per_row: '301' }) !== '', 'a row may have no plants yet (positions are added later), but not more than 300');
 const ids = (role) => TABS_BY_ROLE[role].map((x) => x.id).join(',');
-ok(ids('owner') === 'dashboard,layout,counts,disease,harvest,crops,team', 'the farm owner has every tab');
-ok(ids('manager') === 'dashboard,disease,harvest,counts' && !TABS_BY_ROLE.manager.some((x) => x.id === 'layout'), 'the farm manager has records and the disease report, and no plan or 3D');
-ok(ids('collector') === 'layout,counts' && !TABS_BY_ROLE.collector.some((x) => ['dashboard', 'disease', 'team', 'crops'].includes(x.id)), 'the data collector has the plan and recording, and nothing else');
+ok(ids('owner') === 'dashboard,layout,counts,disease,harvest,alerts,crops,team', 'the farm owner has every tab');
+ok(ids('manager') === 'dashboard,disease,harvest,alerts,counts' && !TABS_BY_ROLE.manager.some((x) => x.id === 'layout'), 'the farm manager has records and the disease report, and no plan or 3D');
+ok(ids('collector') === 'today,layout,counts' && !TABS_BY_ROLE.collector.some((x) => ['dashboard', 'disease', 'team', 'crops', 'alerts', 'harvest'].includes(x.id)), 'the data collector has the plan and recording, and nothing else');
 ok(!TABS_BY_ROLE.collector.some((x) => x.id === 'harvest'), 'the data collector has no harvest value');
 const shaped = { length_m: 20, width_m: 9, rows: 3, plants_per_row: 6, pattern: 'zigzag', row_defs: [{ plants: 4 }, { plants: 6 }, { plants: 3, sub_rows: 2 }] };
 const mine = positionsOf(shaped);
@@ -57,6 +58,137 @@ const same = [shaped, { length_m: 10, width_m: 4, rows: 2, plants_per_row: 4, pa
 ok(same, 'the phone places every plant exactly where the server does');
 const [nx, nz] = northOnPlan(90);
 ok(Math.abs(nx + 1) < 1e-9 && Math.abs(nz) < 1e-9 && northOnPlan(0)[1] === -1, 'north is up when the top wall faces north, and to the left when it faces east');
+
+
+/* ---- recording without a signal (src/lib/ghOutbox.ts) ---- */
+console.log('offline queue');
+const net = (m = 'No internet connection') => Object.assign(new Error(m), { network: true });
+const http = (status, m) => Object.assign(new Error(m || `HTTP ${status}`), { status });
+function rig(overrides = {}) {
+  const w = { store: [], saved: 0, uploads: [], posts: [], discarded: [], seq: 0, tick: 0, ...overrides.world };
+  const deps = {
+    load: async () => JSON.parse(JSON.stringify(w.store)),
+    save: async (items) => { w.store = JSON.parse(JSON.stringify(items)); w.saved += 1; },
+    upload: overrides.upload || (async (uri) => { w.uploads.push(uri); return `/uploads/u1-${(w.seq += 1)}.jpg`; }),
+    post: overrides.post || (async (farm, body) => { w.posts.push({ farm, body }); return { id: 'x' }; }),
+    discard: async (uri) => { w.discarded.push(uri); },
+    isNetwork: (e) => !!e?.network,
+    statusOf: (e) => e?.status,
+    messageOf: (e) => e?.message || '',
+    now: () => 1_700_000_000_000 + (w.tick += 1) * 1000,
+  };
+  return { w, deps, box: createOutbox(deps) };
+}
+const rec = (n, photos = ['file:///a.jpg'], extra = {}) => ({ user: 'u1', farm: '', place: `House A R1 P${n}`, body: { crop_id: 'c', greenhouse: 'House A', row_id: 'R1', plant_label: `P${n}`, recorded_count: 10 + n, count_date: '2026-11-20' }, photos, ...extra });
+
+{
+  const id = newClientId();
+  ok(/^[A-Za-z0-9_-]{8,64}$/.test(id) && newClientId() !== newClientId(), 'a count id is 8 to 64 safe characters, and different each time');
+  ok(isServerPhoto('/uploads/u-1.jpg') && isServerPhoto('https://x/y.jpg') && !isServerPhoto('file:///data/p.jpg') && !isServerPhoto('content://media/1'), 'a photo on the server is told from a file on the phone');
+}
+{
+  const { w, box } = rig({ upload: async () => { throw net(); } });
+  const a = await box.add(rec(1)); const b = await box.add(rec(2));
+  const r = await box.flush('u1');
+  ok(r.stopped === 'network' && r.sent === 0 && (await box.list('u1')).length === 2, 'with no signal nothing is sent and nothing is lost');
+  ok(w.store.length === 2 && w.store[0].id === a.id && w.store[1].id === b.id && w.store.every((q) => q.status === 'waiting'), 'the queue is saved on the phone, oldest first');
+}
+{
+  const { w, box } = rig();
+  await box.add(rec(1, ['file:///a.jpg', 'file:///b.jpg'])); await box.add(rec(2, ['/uploads/u1-already.jpg']));
+  const r = await box.flush('u1');
+  ok(r.sent === 2 && r.failed === 0 && r.stopped === null && w.store.length === 0, 'online, everything is sent and the queue empties');
+  ok(w.uploads.join() === 'file:///a.jpg,file:///b.jpg' && w.posts[0].body.photo_urls.join() === '/uploads/u1-1.jpg,/uploads/u1-2.jpg' && w.posts[1].body.photo_urls.join() === '/uploads/u1-already.jpg', 'photos are uploaded in order, and a photo already on the server is not uploaded again');
+  ok(w.posts[0].body.client_id.length >= 8 && w.posts[0].body.recorded_at && w.posts[0].body.recorded_count === 11 && w.posts[0].body.row_id === 'R1' && w.posts[0].body.photo_url === undefined, 'the count is sent with its own id, the time it was recorded, and the form as filled in');
+  ok(w.discarded.join() === 'file:///a.jpg,file:///b.jpg', 'the copies on the phone are deleted once uploaded');
+  ok(w.posts[0].body.recorded_at < w.posts[1].body.recorded_at, 'counts keep the order they were recorded in');
+}
+{
+  // the photos reached the server, the connection dropped before the count was saved: the retry must not upload the photos again
+  let fail = true;
+  const { w, box } = rig({ post: undefined });
+  const orig = box;
+  const posts = [];
+  const r2 = rig({ post: async (farm, body) => { if (fail) throw net(); posts.push(body); return {}; } });
+  await r2.box.add(rec(1, ['file:///a.jpg']));
+  const first = await r2.box.flush('u1');
+  ok(first.stopped === 'network' && r2.w.uploads.length === 1 && r2.w.store[0].photos[0] === '/uploads/u1-1.jpg', 'a photo that was uploaded is remembered even if the count could not be saved');
+  fail = false;
+  const second = await r2.box.flush('u1');
+  ok(second.sent === 1 && r2.w.uploads.length === 1 && posts.length === 1 && posts[0].photo_urls[0] === '/uploads/u1-1.jpg', 'the retry saves the count without uploading the photo again');
+}
+{
+  // the count was saved but the reply was lost: the same id is sent again, and the server answers with the count it already has
+  let calls = 0;
+  const seen = [];
+  const { box } = rig({ post: async (farm, body) => { calls += 1; seen.push(body.client_id); if (calls === 1) throw net(); return { id: 'same' }; } });
+  await box.add(rec(1));
+  await box.flush('u1');
+  await box.flush('u1');
+  ok(calls === 2 && seen[0] === seen[1], 'a retry sends the same id, so the server can recognise a count it already saved');
+}
+{
+  const { w, box } = rig({ post: async (farm, body) => { if (body.row_id === 'R1' && body.plant_label === 'P1') throw http(409, 'R1 P1 is deactivated: uprooted.'); w.posts.push(body); return {}; } });
+  const bad = await box.add(rec(1)); await box.add(rec(2)); await box.add(rec(3));
+  const r = await box.flush('u1');
+  const left = await box.list('u1');
+  ok(r.sent === 2 && r.failed === 1 && left.length === 1 && left[0].id === bad.id && left[0].status === 'failed' && /deactivated/.test(left[0].error), 'a count the server refuses is kept with the reason and does not block the others');
+  ok((await box.flush('u1')).sent === 0 && w.posts.length === 2, 'a failed count is not sent again by itself');
+  await box.retry(bad.id);
+  ok((await box.list('u1'))[0].status === 'waiting' && (await box.list('u1'))[0].error === '', 'a failed count can be tried again');
+  await box.remove(bad.id);
+  ok((await box.list('u1')).length === 0 && w.discarded.includes('file:///a.jpg'), 'or deleted, with its photos on the phone');
+}
+{
+  const { box } = rig({ post: async () => { throw http(401, 'expired'); } });
+  await box.add(rec(1));
+  const r = await box.flush('u1');
+  ok(r.stopped === 'auth' && (await box.list('u1'))[0].status === 'waiting', 'an expired session stops the sending and keeps the count');
+  const s = rig({ post: async () => { throw http(503, 'down'); } });
+  await s.box.add(rec(1)); await s.box.add(rec(2));
+  const r5 = await s.box.flush('u1');
+  ok(r5.stopped === 'server' && (await s.box.list('u1')).length === 2 && (await s.box.list('u1'))[0].attempts === 1, 'a server that is down stops the sending, counts the try, and keeps everything');
+  const lim = rig({ post: async () => { throw http(429, 'slow down'); } });
+  await lim.box.add(rec(1));
+  ok((await lim.box.flush('u1')).stopped === 'server' && (await lim.box.list('u1'))[0].status === 'waiting', 'too many requests is waited out, not treated as a refusal');
+}
+{
+  const { w, box } = rig();
+  await box.add(rec(1)); await box.add({ ...rec(2), user: 'u2' });
+  const r = await box.flush('u1');
+  ok(r.sent === 1 && (await box.list('u2')).length === 1 && w.posts.length === 1, 'only the signed-in person\'s counts are sent');
+}
+{
+  let release;
+  const gate = new Promise((res) => { release = res; });
+  const { w, box } = rig({ post: async (farm, body) => { await gate; w.posts?.push?.(body); return {}; } });
+  await box.add(rec(1));
+  const a = box.flush('u1');
+  const b = await box.flush('u1');
+  release();
+  const aRes = await a;
+  ok(b.sent === 0 && aRes.sent === 1 && box.isFlushing() === false, 'two sendings at once do not send a count twice');
+}
+{
+  const first = rig();
+  await first.box.add(rec(1)); await first.box.add(rec(2));
+  const again = createOutbox(first.deps);
+  const list = await again.list('u1');
+  ok(list.length === 2 && list[0].place === 'House A R1 P1', 'after the app is closed and opened again the queue is still there');
+  let heard = 0;
+  const off = again.subscribe(() => { heard += 1; });
+  await again.remove(list[0].id);
+  off();
+  await again.remove(list[1].id);
+  ok(heard >= 1, 'the screen is told when the queue changes');
+}
+{
+  const farmSeen = [];
+  const { box } = rig({ post: async (farm) => { farmSeen.push(farm); return {}; } });
+  await box.add(rec(1, ['/uploads/x.jpg'], { farm: 'owner-9' })); await box.add(rec(2, ['/uploads/x.jpg']));
+  await box.flush('u1');
+  ok(farmSeen.join() === 'owner-9,', 'each count is saved on the farm it was recorded for');
+}
 
 console.log(`\n${passed} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

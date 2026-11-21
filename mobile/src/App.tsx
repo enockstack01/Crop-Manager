@@ -41,6 +41,7 @@ import { ConnectionErrorScreen } from './screens/ConnectionErrorScreen';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useToast } from './components/Toast';
 import { onSyncFailure, setSyncUser, startOfflineSupport } from './lib/offline';
+import { setGhOutboxUser, startGhOutbox } from './lib/ghOutboxRuntime';
 import { t } from './i18n';
 import { forgetAccount, rememberAccount } from './lib/savedAccount';
 import { prefetchForOffline } from './lib/prefetch';
@@ -55,6 +56,7 @@ const queryClient = new QueryClient({
 });
 const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'cropmanager-cache' });
 startOfflineSupport(queryClient);
+startGhOutbox(queryClient);
 
 /** Bridges Clerk's session token into the axios instance (set during render,
  * before any query fires — mirrors the web client's main.jsx). */
@@ -66,6 +68,7 @@ function ApiTokenBridge() {
   // offline changes sync only for the person who made them; signing out clears the saved data
   useEffect(() => {
     setSyncUser(isSignedIn && userId ? userId : null);
+    setGhOutboxUser(isSignedIn && userId ? userId : null);
     if (isSignedIn === false) { queryClient.clear(); forgetAccount(); }
   }, [isSignedIn, userId]);
 

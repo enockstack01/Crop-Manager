@@ -8,6 +8,7 @@ import { NumberField, SelectField, TextField } from '../components/fields';
 import { useToast } from '../components/Toast';
 import { formatCurrency, formatNumber, getCurrency } from '../lib/format';
 import { useGhCrops, useGhHouses, useGhMutations, useGhRevenue } from '../lib/greenhouse';
+import { HistoryCard } from './GreenhouseHome';
 import { t } from '../i18n';
 
 /** What the harvest could be worth: fruit counted, the healthy share, the loss to disease and the money, with the rest of the house projected. */
@@ -96,6 +97,7 @@ export function HarvestTab({ role = 'owner' }: { role?: string }) {
               ))}
             </View>
           </ChartCard>
+          <HistoryCard greenhouse={house} risk={pct} />
           {v.notes.map((n: string) => <AppText key={n} style={{ fontSize: 12, lineHeight: 17, color: colors.textLight }}>{n}</AppText>)}
           <AppText style={{ fontSize: 12, lineHeight: 17, color: colors.textLight }}>{t(v.method)}</AppText>
         </>

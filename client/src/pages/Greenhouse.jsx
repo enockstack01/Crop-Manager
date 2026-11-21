@@ -13,6 +13,7 @@ import { formatCurrency, formatDate, formatNumber, getCurrency } from '../lib/fo
 import { FRUIT_SIZES, useGhAccess, useGhCatalog, useGhCounts, useGhCrops, useGhDashboard, useGhHealth, useGhHouses, useGhMutations, useGhRevenue, useGhTeam, VERDICTS } from '../lib/greenhouse.js';
 import { t } from '../i18n/index.js';
 import LayoutTab from './GreenhouseLayout.jsx';
+import { AlertsTab, CollectorDashboard, HistoryCard, ManagerDashboard } from './GreenhouseHome.jsx';
 import { HealthCard } from '../components/HealthCard.jsx';
 
 /** What each role sees: the owner everything; the farm manager records and disease details, no plan or 3D; the data collector the plan view and recording. */
@@ -23,16 +24,19 @@ const TABS_BY_ROLE = {
     { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
     { id: 'disease', icon: 'fa-virus', label: 'Disease report' },
     { id: 'harvest', icon: 'fa-coins', label: 'Harvest value' },
+    { id: 'alerts', icon: 'fa-triangle-exclamation', label: 'Alerts' },
     { id: 'crops', icon: 'fa-seedling', label: 'My crops' },
     { id: 'team', icon: 'fa-user-group', label: 'Team' },
   ],
   manager: [
-    { id: 'dashboard', icon: 'fa-chart-column', label: 'Dashboard' },
+    { id: 'dashboard', icon: 'fa-gauge-high', label: 'Overview' },
     { id: 'disease', icon: 'fa-virus', label: 'Disease report' },
     { id: 'harvest', icon: 'fa-coins', label: 'Harvest value' },
+    { id: 'alerts', icon: 'fa-triangle-exclamation', label: 'Alerts' },
     { id: 'counts', icon: 'fa-camera', label: 'Fruit counts' },
   ],
   collector: [
+    { id: 'today', icon: 'fa-list-check', label: 'Today' },
     { id: 'layout', icon: 'fa-table-cells', label: 'Plan and recording' },
     { id: 'counts', icon: 'fa-camera', label: 'My records' },
   ],
@@ -567,6 +571,7 @@ function HarvestTab({ role }) {
             />
           </Card>
           {v.notes.length > 0 && <ul className="gh-health-hist">{v.notes.map((n) => <li key={n}><i className="fas fa-circle-info" /><span>{n}</span></li>)}</ul>}
+          <HistoryCard greenhouse={house} risk={risk} />
           <p className="org-muted">{t(v.method)}</p>
         </>
       )}
@@ -756,7 +761,7 @@ export default function Greenhouse() {
   const [start, setStart] = useState(null);
   const active = tab && tabs.some((x) => x.id === tab) ? tab : tabs[0].id;
   const go = (id, opts = null) => { setStart(opts); setTab(id); };
-  const subtitle = role === 'collector' ? 'Pick a plant on the plan and record its fruit with photos.' : role === 'manager' ? 'Read the records and see which plants are diseased.' : 'Count the fruit on your plants with a photo, and check each photo with the fruit counter.';
+  const subtitle = role === 'collector' ? 'See what is left to record today, pick a plant on the plan and record its fruit with photos.' : role === 'manager' ? 'Watch the farm: the harvest value, disease, alerts, and who is recording.' : 'Count the fruit on your plants with a photo, and check each photo with the fruit counter.';
   return (
     <>
       <PageHeader title="Greenhouse" subtitle={subtitle} />
@@ -776,7 +781,9 @@ export default function Greenhouse() {
           </button>
         ))}
       </div>
-      {active === 'dashboard' && <DashboardTab go={go} />}
+      {active === 'dashboard' && (role === 'manager' ? <ManagerDashboard key={farm} go={go} /> : <DashboardTab go={go} />)}
+      {active === 'today' && <CollectorDashboard key={farm} go={go} />}
+      {active === 'alerts' && <AlertsTab key={farm} />}
       {active === 'layout' && <LayoutTab role={role} />}
       {active === 'counts' && <CountsTab key={`${farm}${JSON.stringify(start)}`} start={start} role={role} />}
       {active === 'disease' && <DiseaseTab key={farm} />}
