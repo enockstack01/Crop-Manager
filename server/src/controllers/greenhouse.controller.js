@@ -17,6 +17,7 @@ import { estimate, DEFAULT_RISK } from '../lib/greenhouse/revenue.js';
  */
 const text = (v, max = 80) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const today = () => new Date().toISOString().slice(0, 10);
+const tomorrow = () => new Date(Date.now() + 86400000).toISOString().slice(0, 10); // a phone east of UTC is already on the next date
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 
@@ -169,7 +170,8 @@ async function refuseInactive(owner, greenhouse, rowId, plantLabel) {
 /** What a role may see of a count: a data collector sees the verdict but not the disease details. */
 const forRole = (doc, role) => {
   const o = doc.toJSON ? doc.toJSON() : doc;
-  return role === 'collector' && o.verification ? { ...o, verification: { ...o.verification, health: undefined } } : o;
+  if (role !== 'collector') return o;
+  return { ...o, alerts_ack: undefined, client_id: undefined, verification: o.verification ? { ...o.verification, health: undefined } : o.verification };
 };
 
 function readCount(body, { partial = false } = {}) {
@@ -194,13 +196,19 @@ function readCount(body, { partial = false } = {}) {
   if (!partial || body.count_date !== undefined) {
     const d = text(body.count_date, 10) || today();
     if (!isDate(d)) throw createHttpError(400, 'The date must look like 2026-11-17.');
-    if (d > today()) throw createHttpError(400, 'The date cannot be in the future.');
+    if (d > tomorrow()) throw createHttpError(400, 'The date cannot be in the future.');
     out.count_date = d;
   }
   if (body.fruit_size !== undefined || !partial) {
     const size = body.fruit_size === undefined || body.fruit_size === '' ? 'all' : String(body.fruit_size);
     if (!['all', 'small', 'medium', 'large'].includes(size)) throw createHttpError(400, 'Choose the size of the fruit: small, medium, large, or all sizes.');
     out.fruit_size = size;
+  }
+  if (body.recorded_at !== undefined && body.recorded_at !== null && body.recorded_at !== '') {
+    const at = new Date(body.recorded_at);
+    const now = Date.now();
+    if (Number.isNaN(at.getTime()) || at.getTime() > now + 10 * 60000 || at.getTime() < now - 400 * 86400000) throw createHttpError(400, 'recorded_at must be a recent date and time.');
+    out.recorded_at = at;
   }
   put('label', text(body.label, 60));
   put('greenhouse', text(body.greenhouse, 60));
@@ -246,16 +254,38 @@ async function checkCount(req, { urls, crop, recorded, fruitSize }) {
   return { ...out, photo_url: joined.photo_url, collage: joined.collage };
 }
 
+/** The phone's own id for a count: it lets a count that was sent twice (a reply lost on a bad connection, a retry after being offline) be saved once. */
+function readClientId(body) {
+  if (body.client_id === undefined || body.client_id === null || body.client_id === '') return null;
+  const id = String(body.client_id);
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) throw createHttpError(400, 'client_id must be 8 to 64 letters, digits, - or _.');
+  return id;
+}
+
 export const createCount = asyncHandler(async (req, res) => {
   const body = req.body || {};
+  const clientId = readClientId(body);
+  if (clientId) {
+    const again = await FruitCount.findOne({ user_id: req.gh.owner, client_id: clientId });
+    if (again) return res.status(200).json(present(again, req.gh.role)); // already saved: send it back, check nothing twice
+  }
   const crop = await ownCrop(req.gh.owner, body.crop_id);
   const data = readCount(body);
   await refuseInactive(req.gh.owner, data.greenhouse, data.row_id, data.plant_label);
   const out = await checkCount(req, { urls: data.photo_urls, crop, recorded: data.recorded_count, fruitSize: data.fruit_size });
-  const doc = await FruitCount.create({
-    user_id: req.gh.owner, crop_id: crop._id, crop_name: crop.name, ...data, photo_url: out.photo_url, collage: out.collage,
-    verification: out.verification, annotated_url: out.annotated_url, entered_by: req.gh.actor, entered_by_name: req.gh.actorName,
-  });
+  let doc;
+  try {
+    doc = await FruitCount.create({
+      user_id: req.gh.owner, crop_id: crop._id, crop_name: crop.name, ...data, photo_url: out.photo_url, collage: out.collage,
+      verification: out.verification, annotated_url: out.annotated_url, entered_by: req.gh.actor, entered_by_name: req.gh.actorName, ...(clientId ? { client_id: clientId } : {}),
+    });
+  } catch (e) {
+    if (e?.code === 11000 && clientId) { // the same count arrived twice at once: keep the first
+      await dropGenerated(req.gh.owner, [out.annotated_url, out.collage ? out.photo_url : null]);
+      return res.status(200).json(present(await FruitCount.findOne({ user_id: req.gh.owner, client_id: clientId }), req.gh.role));
+    }
+    throw e;
+  }
   res.status(201).json(present(doc, req.gh.role));
 });
 

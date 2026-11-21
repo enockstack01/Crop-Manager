@@ -246,6 +246,10 @@ try {
   ok(nc.plants_not_counted_in_that_time === 38 && nc.never_counted === 38, 'it lists plants not counted lately');
   const top = await tool({ view: 'top_plants', order: 'most', limit: 1 });
   ok(top.plants[0].latest.recorded === 18, 'and the plants with the most fruit');
+  const ta = await tool({ view: 'theft_alerts' });
+  ok(ta.summary && Array.isArray(ta.alerts) && ta.note, 'and which plants have numbers that do not add up');
+  const vt = await tool({ view: 'value_trend' });
+  ok(Array.isArray(vt.weeks) && vt.weeks.length === 8 && vt.weeks[7].fruit === 30, 'and how the harvest value moved week by week');
   const hv = await tool({ view: 'harvest_value' });
   ok(hv.totals.fruit === 30 && hv.totals.counted_plants === 2 && Array.isArray(hv.by_crop) && hv.how, 'and what the harvest could be worth');
   ok((await greenhouseTool(B).handlers.greenhouse_info({ view: 'overview' })).note, 'another farmer\'s question never reaches this data');

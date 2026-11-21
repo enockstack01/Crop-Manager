@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { limiter as rateLimit } from '../lib/rateLimit.js';
 import * as g from '../controllers/greenhouse.controller.js';
 import * as h from '../controllers/greenhouseHouses.controller.js';
+import * as ins from '../controllers/greenhouseInsights.controller.js';
 import { greenhouseContext, only } from '../lib/greenhouse/access.js';
 
 const router = Router();
@@ -22,6 +23,9 @@ router.put('/team/:id', only('owner'), g.changeMember);
 router.delete('/team/:id', only('owner'), g.removeMember);
 
 router.get('/dashboard', only('owner', 'manager'), g.dashboard);
+router.get('/overview', ins.overview); // the first page of each role: the farm for the owner and manager, today's work for the data collector
+router.get('/alerts', only('owner', 'manager'), ins.alerts);
+router.get('/revenue/history', only('owner', 'manager'), ins.revenueHistory);
 router.get('/houses', h.listHouses);
 router.post('/houses', only('owner'), h.createHouse);
 router.get('/houses/:id/layout', only('owner', 'collector'), h.getLayout); // the plan and 3D data: not for the farm manager
@@ -43,6 +47,7 @@ router.post('/check', only('owner', 'collector'), heavy, g.checkPhoto);
 router.get('/counts', g.listCounts);
 router.post('/counts', only('owner', 'collector'), heavy, g.createCount);
 router.get('/counts/:id', g.getCount);
+router.put('/counts/:id/alert', only('owner', 'manager'), ins.ackAlert);
 router.put('/counts/:id', only('owner', 'collector'), heavy, g.updateCount);
 router.post('/counts/:id/verify', only('owner'), heavy, g.reverify);
 router.delete('/counts/:id', only('owner'), g.removeCount);

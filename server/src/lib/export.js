@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ExcelJS from 'exceljs';
+import { buildXlsx } from './xlsxWriter.js';
 import PDFDocument from 'pdfkit';
 import { resources, resourceByPath } from '../resources.js';
 import { recordLoader } from './records.js';
@@ -120,36 +120,15 @@ export function toCsv(tables) {
 }
 
 /* ------------------------------------------------------------------- xlsx */
+/** A figure written as text in a table becomes a number in Excel, unless that would change it (a code with a leading zero, a very long number). */
+const excelValue = (v) => {
+  const c = cell(v);
+  if (typeof c === 'string' && /^-?(0|[1-9]\d{0,14})(\.\d{1,10})?$/.test(c)) return Number(c);
+  return c;
+};
+
 export async function toXlsx(tables, meta = {}) {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'CropManager';
-  wb.created = new Date();
-  const used = new Set();
-  for (const t of tables) {
-    let name = String(t.title || 'Sheet').replace(/[\\/?*[\]:]/g, ' ').slice(0, 28) || 'Sheet';
-    for (let i = 2; used.has(name.toLowerCase()); i += 1) name = `${name.slice(0, 25)} ${i}`;
-    used.add(name.toLowerCase());
-    const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: meta.subtitle ? 3 : 2 }] });
-    ws.addRow([t.title]).font = { bold: true, size: 14, color: { argb: 'FF1B5E20' } };
-    if (meta.subtitle) ws.addRow([meta.subtitle]).font = { color: { argb: 'FF5B6B5D' }, size: 10 };
-    const head = ws.addRow(t.headers);
-    head.eachCell((c) => {
-      c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B5E20' } };
-      c.alignment = { vertical: 'middle', wrapText: true };
-    });
-    t.rows.forEach((r, i) => {
-      const row = ws.addRow(r.map((v) => { const c = cell(v); return typeof c === 'string' && c !== '' && !Number.isNaN(Number(c)) && /^-?\d+(\.\d+)?$/.test(c) ? Number(c) : c; }));
-      row.alignment = { vertical: 'top', wrapText: true };
-      if (i % 2) row.eachCell({ includeEmpty: true }, (c) => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F8F3' } }; });
-    });
-    t.headers.forEach((h, i) => {
-      const longest = t.rows.reduce((m, r) => Math.max(m, String(cell(r[i])).length), String(h).length);
-      ws.getColumn(i + 1).width = Math.min(60, Math.max(10, longest + 2));
-    });
-    if (t.headers.length) ws.autoFilter = { from: { row: meta.subtitle ? 3 : 2, column: 1 }, to: { row: meta.subtitle ? 3 : 2, column: t.headers.length } };
-  }
-  return Buffer.from(await wb.xlsx.writeBuffer());
+  return buildXlsx(tables.map((t) => ({ title: t.title, subtitle: meta.subtitle, headers: t.headers, rows: t.rows.map((r) => r.map(excelValue)) })), { creator: 'CropManager' });
 }
 
 /* -------------------------------------------------------------------- pdf */

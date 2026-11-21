@@ -284,6 +284,66 @@ try {
   ok(val.by_house.some((x) => x.name === 'Shaped' && x.uncounted_plants > 0 && x.projected && x.projected.fruit > 0), 'plants not counted yet are projected from the counted ones');
   const revDenied = await Promise.all([req(COL, 'GET', '/api/greenhouse/revenue', undefined, OWNER), req(COL, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { price_per_kg: 1 }, OWNER), req(MGR, 'PUT', `/api/greenhouse/crops/${cherry.id}`, { price_per_kg: 1 }, OWNER)]);
   ok(revDenied.every((r) => r.status === 403), 'the data collector cannot see the value, and only the owner can change prices', revDenied.map((r) => r.status).join(','));
+  console.log('7. value history, theft alerts, the two dashboards, and counts recorded without a signal');
+  const dayMs = 86400000;
+  const past = (n) => new Date(Date.now() - n * dayMs).toISOString().slice(0, 10);
+  const hist = await json(await req(MGR, 'GET', '/api/greenhouse/revenue/history?weeks=6', undefined, OWNER));
+  ok(hist.weeks.length === 6 && hist.weeks[5].fruit > 0 && hist.weeks[0].week < hist.weeks[5].week && hist.weeks[5].money[0].currency === 'RWF', 'the farm manager sees the harvest value week by week', JSON.stringify(hist.weeks[5]).slice(0, 200));
+  const noView = await Promise.all([req(COL, 'GET', '/api/greenhouse/revenue/history', undefined, OWNER), req(COL, 'GET', '/api/greenhouse/alerts', undefined, OWNER)]);
+  ok(noView.every((r) => r.status === 403), 'the data collector sees neither the history nor the alerts, so nobody is tipped off');
+
+  // the photo shows 14, the person recorded 5: under-recorded. Then a plant that fell from 20 to 8 in ten days.
+  mode.dets = []; mode.count = 14;
+  const under = await json(await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R3', plant_label: 'P1', recorded_count: 5, photo_url: await jpeg(OWNER) }));
+  ok(under.verification.status === 'mismatch', 'a count far below the photo is a mismatch', under.verification.status);
+  mode.count = 20;
+  await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R3', plant_label: 'P2', recorded_count: 20, count_date: past(10), photo_url: await jpeg(OWNER) });
+  mode.count = 8;
+  const fall = await json(await req(OWNER, 'POST', '/api/greenhouse/counts', { ...countBody, row_id: 'R3', plant_label: 'P2', recorded_count: 8, photo_url: await jpeg(OWNER) }));
+  const al = await json(await req(MGR, 'GET', '/api/greenhouse/alerts', undefined, OWNER));
+  const aUnder = al.alerts.find((a) => a.kind === 'under_recorded' && a.row_id === 'R3' && a.plant_label === 'P1');
+  const aFall = al.alerts.find((a) => a.kind === 'fall' && a.row_id === 'R3' && a.plant_label === 'P2');
+  ok(aUnder && aUnder.severity === 'high' && aUnder.difference === 9 && aFall && aFall.drop === 12 && aFall.severity === 'high' && al.summary.open >= 2, 'the farm manager is shown the under-recorded plant and the plant that fell 20 to 8', JSON.stringify(al.summary));
+  ok((await req(MGR, 'PUT', `/api/greenhouse/counts/${fall.id}/alert`, { kind: 'fall', reason: 'x' }, OWNER)).status === 400 && (await req(COL, 'PUT', `/api/greenhouse/counts/${fall.id}/alert`, { kind: 'fall', reason: 'harvested on Monday' }, OWNER)).status === 403, 'an explanation needs a real reason, and the data collector cannot give one');
+  const exp = await json(await req(MGR, 'PUT', `/api/greenhouse/counts/${fall.id}/alert`, { kind: 'fall', reason: 'harvested on Monday' }, OWNER));
+  const al2 = await json(await req(MGR, 'GET', '/api/greenhouse/alerts', undefined, OWNER));
+  ok(exp.ack.reason === 'harvested on Monday' && al2.summary.open === al.summary.open - 1 && al2.alerts.find((a) => a.kind === 'fall' && a.plant_label === 'P2').ack.by === MGR, 'an explained alert stops counting as open and remembers who explained it');
+  await req(MGR, 'PUT', `/api/greenhouse/counts/${fall.id}/alert`, { kind: 'fall', state: 'open' }, OWNER);
+  ok((await json(await req(MGR, 'GET', '/api/greenhouse/alerts', undefined, OWNER))).summary.open === al.summary.open, 'and it can be opened again');
+  mode.count = 12; mode.dets = [];
+
+  // recording without a signal: the phone sends its own id, so a count sent twice is saved once
+  const callsBefore = seen.count;
+  const offBody = { ...countBody, row_id: 'R3', plant_label: 'P6', recorded_count: 12, photo_url: await jpeg(OWNER), client_id: 'offline-0001-abcdef', recorded_at: new Date(Date.now() - 3 * 3600000).toISOString() };
+  const first = await req(COL, 'POST', '/api/greenhouse/counts', offBody, OWNER);
+  const firstBody = await json(first);
+  const second = await req(COL, 'POST', '/api/greenhouse/counts', offBody, OWNER);
+  const secondBody = await json(second);
+  ok(first.status === 201 && second.status === 200 && secondBody.id === firstBody.id && seen.count === callsBefore + 1, 'the same count sent twice is saved once, and the counter is not asked twice');
+  ok(firstBody.client_id === undefined && firstBody.alerts_ack === undefined, 'the data collector is not shown internal fields');
+  const savedRow = await M.FruitCount.findOne({ _id: firstBody.id }).lean();
+  ok(savedRow.client_id === 'offline-0001-abcdef' && new Date(savedRow.recorded_at).getTime() < Date.now() - 2 * 3600000, 'the time it was really recorded is kept');
+  ok((await M.FruitCount.countDocuments({ user_id: OWNER, client_id: 'offline-0001-abcdef' })) === 1, 'there is only one record');
+  const odd = await Promise.all([
+    req(COL, 'POST', '/api/greenhouse/counts', { ...offBody, client_id: 'bad id!' }, OWNER),
+    req(COL, 'POST', '/api/greenhouse/counts', { ...offBody, client_id: 'offline-0002-abcdef', recorded_at: new Date(Date.now() + 86400000).toISOString() }, OWNER),
+    req(COL, 'POST', '/api/greenhouse/counts', { ...offBody, client_id: 'offline-0003-abcdef', count_date: past(-3) }, OWNER),
+  ]);
+  ok(odd.every((r) => r.status === 400), 'a bad id, a recording time in the future, and a date three days ahead are refused', odd.map((r) => r.status).join(','));
+  const nextDay = await req(COL, 'POST', '/api/greenhouse/counts', { ...offBody, client_id: 'offline-0004-abcdef', plant_label: 'P7', count_date: past(-1), photo_url: await jpeg(OWNER) }, OWNER);
+  ok(nextDay.status === 201, 'a phone east of UTC that is already on tomorrow\'s date can record (one day ahead is allowed)', String(nextDay.status));
+
+  // the first page of each role
+  const mo = await json(await req(MGR, 'GET', '/api/greenhouse/overview', undefined, OWNER));
+  ok(mo.role === 'manager' && mo.headline.fruit > 0 && mo.houses.length >= 1 && mo.trend.length === 8 && mo.alerts.summary.open >= 2 && Array.isArray(mo.diseased) && mo.activity.counts_this_week > 0, 'the farm manager\'s dashboard: totals, each greenhouse, the weekly trend, alerts, diseased plants and who is recording', JSON.stringify(Object.keys(mo)));
+  const co = await json(await req(COL, 'GET', '/api/greenhouse/overview', undefined, OWNER));
+  const todo = co.todo.find((x) => x.name === 'Shaped');
+  ok(co.role === 'collector' && co.headline === undefined && co.alerts === undefined && co.diseased === undefined, 'the data collector\'s dashboard has no totals, alerts or disease details');
+  ok(todo && todo.remaining > 0 && todo.next.length > 0 && todo.counted_this_week >= 1 && co.today.counts >= 2 && co.week.counts >= 2, 'it lists what is left to record and what they did today', JSON.stringify(todo).slice(0, 200));
+  ok(co.recent.length >= 2 && co.recent.every((r) => r.result && r.health === undefined) && !JSON.stringify(co.recent).includes('Late blight') && !JSON.stringify(co.recent).includes('disease'), 'their recent counts show the verdict of the photo only', JSON.stringify([co.recent.length, co.recent.map((r) => [r.result, r.health]), JSON.stringify(co).includes('Late blight')]));
+  const oo = await json(await req(OWNER, 'GET', '/api/greenhouse/overview'));
+  ok(oo.role === 'owner' && oo.headline && oo.alerts, 'the owner gets the farm overview too');
+
   const mDenied = await Promise.all([
     req(MGR, 'POST', '/api/greenhouse/counts', countBody, OWNER), req(MGR, 'POST', '/api/greenhouse/check', { ...countBody }, OWNER), req(MGR, 'DELETE', `/api/greenhouse/counts/${cc.id}`, undefined, OWNER),
     pos({ row_id: 'R1', plant_label: 'P1', label: 'x' }, MGR, OWNER), req(MGR, 'PUT', `/api/greenhouse/houses/${house.id}`, { name: 'x' }, OWNER), req(MGR, 'POST', '/api/greenhouse/team', { email: 'a@b.cc', role: 'manager' }, OWNER),

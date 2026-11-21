@@ -1,6 +1,7 @@
 import { GreenhouseHouse, GreenhouseCrop, FruitCount } from '../../models/index.js';
 import { buildLayout } from '../../controllers/greenhouseHouses.controller.js';
-import { estimate } from '../greenhouse/revenue.js';
+import { estimate, history } from '../greenhouse/revenue.js';
+import { theftAlerts } from '../greenhouse/alerts.js';
 
 /*
  * A tool for the chat assistant: lets the farmer ask in plain words about the greenhouse ("how many fruit on row 3 plant 7 in House 1?",
@@ -20,7 +21,7 @@ export function greenhouseTool(userId) {
     input_schema: {
       type: 'object',
       properties: {
-        view: { type: 'string', enum: ['overview', 'plant', 'row', 'mismatches', 'not_counted', 'top_plants', 'diseased', 'harvest_value'], description: 'harvest_value: what the harvest could be worth, fruit counted, healthy fruit, the loss to disease and the projection for the whole greenhouse; overview: totals per greenhouse; plant: one plant with its history; row: every plant of one row; mismatches: plants whose photo did not match; not_counted: plants never counted or not counted for a number of days; top_plants: plants with the most or fewest fruit; diseased: plants whose last photo showed a disease (and which fruit)' },
+        view: { type: 'string', enum: ['overview', 'plant', 'row', 'mismatches', 'not_counted', 'top_plants', 'diseased', 'harvest_value', 'theft_alerts', 'value_trend'], description: 'theft_alerts: plants whose numbers do not add up (the photo shows more fruit than was recorded, or the count fell with nothing to explain it) and people whose counts are often below the photos; value_trend: the harvest value week by week, to see whether disease loss is growing; harvest_value: what the harvest could be worth, fruit counted, healthy fruit, the loss to disease and the projection for the whole greenhouse; overview: totals per greenhouse; plant: one plant with its history; row: every plant of one row; mismatches: plants whose photo did not match; not_counted: plants never counted or not counted for a number of days; top_plants: plants with the most or fewest fruit; diseased: plants whose last photo showed a disease (and which fruit)' },
         greenhouse: { type: 'string', description: 'Greenhouse name, for example House 1. Optional when the farmer has only one.' },
         row: { type: 'integer', description: 'Row number, from 1' },
         plant: { type: 'integer', description: 'Plant number in the row, from 1' },
@@ -37,6 +38,17 @@ export function greenhouseTool(userId) {
       const houses = await GreenhouseHouse.find({ user_id: userId }).sort({ name: 1 });
       if (!houses.length) return { note: 'The farmer has not set up a greenhouse layout yet (Greenhouse, then Layout).' };
       const n = Math.min(30, Math.max(1, Number(limit) || 10));
+      if (view === 'theft_alerts' || view === 'value_trend') {
+        const [crops, counts] = await Promise.all([
+          GreenhouseCrop.find({ user_id: userId }).lean(),
+          FruitCount.find({ user_id: userId }).sort({ count_date: -1, created_at: -1 }).limit(20000).select('crop_id crop_name greenhouse row_id plant_label recorded_count fruit_size verification.status verification.detected verification.confidence verification.health count_date entered_by entered_by_name alerts_ack').lean(),
+        ]);
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const gh = greenhouse ? String(greenhouse).trim() : null;
+        if (view === 'value_trend') return { weeks: history({ houses: houses.map((x) => x.toObject()), counts, crops, greenhouse: gh, weeks: 8, today: todayIso }).map((w) => ({ week: w.week, fruit: w.fruit, lost_to_disease_percent: w.loss_share_pct, diseased_plants: w.sick_plants, expected_value: w.money[0]?.net ?? null, currency: w.money[0]?.currency || null })) };
+        const a = theftAlerts({ counts, today: todayIso, greenhouse: gh });
+        return { summary: a.summary, alerts: a.alerts.filter((x) => !x.ack).slice(0, n).map((x) => ({ kind: x.kind, severity: x.severity, greenhouse: x.greenhouse, row: x.row_id, plant: x.plant_label, date: x.date, what: x.message })), people_often_below_the_photos: a.people.filter((p) => p.flagged).map((p) => ({ name: p.name, counts_checked: p.decided, share_below_photo_percent: p.under_share })), note: 'These are signs to look into, not proof of theft: fruit also drops after harvest, pruning, wind, pests and disease.' };
+      }
       if (view === 'harvest_value') {
         const [crops, counts] = await Promise.all([
           GreenhouseCrop.find({ user_id: userId }).lean(),

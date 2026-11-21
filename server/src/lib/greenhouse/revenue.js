@@ -66,7 +66,9 @@ export function sickFruitOf(count) {
  * @param counts  fruit counts, newest first
  * @param crops   the farmer's crops (with price_per_kg, fruit_weight_g, currency)
  */
-export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhouse = null }) {
+export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhouse = null, today = new Date().toISOString().slice(0, 10), staleDays = 7 }) {
+  const staleBefore = new Date(Date.parse(`${today}T00:00:00Z`) - staleDays * 86400000).toISOString().slice(0, 10);
+  const sickList = [];
   const cropById = new Map(crops.map((c) => [String(c._id), c]));
   const rk = Math.min(1, Math.max(0, Number.isFinite(Number(risk)) ? Number(risk) : DEFAULT_RISK));
   const list = greenhouse ? houses.filter((h) => h.name === greenhouse) : houses;
@@ -97,6 +99,7 @@ export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhous
     let active = 0;
     let counted = 0;
     let sickPlants = 0;
+    let stale = 0;
     let frozen = 0;
     for (const pos of positionsOf(h)) {
       const key = keyOf(pos.row_id, pos.plant_label);
@@ -119,7 +122,11 @@ export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhous
         fruit, sick: s.sick, atRisk: s.plantSick ? Math.round((fruit - s.sick) * rk) : 0, worstLoss: s.plantSick ? fruit : 0,
         kgEach: (crop.fruit_weight_g || 0) / 1000, price,
       };
-      if (s.plantSick) sickPlants += 1;
+      if (s.plantSick) {
+        sickPlants += 1;
+        sickList.push({ greenhouse: h.name, row_id: pos.row_id, plant_label: pos.plant_label, crop: crop.name, fruit, sick_fruit: s.sick, disease: c.verification?.health?.plant?.disease || null, date: c.count_date, state: st });
+      }
+      if (c.count_date < staleBefore) stale += 1;
       addPlant(hb, p);
       addPlant(total, p);
       const cb = byCrop.get(String(crop._id)) || { crop_id: String(crop._id), name: crop.name, price_per_kg: price, fruit_weight_g: crop.fruit_weight_g || 0, currency: crop.currency || 'USD', ...bucket() };
@@ -154,7 +161,7 @@ export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhous
     }
     byHouse.push({
       id: String(h._id), name: h.name, positions: positionsOf(h).length, active_positions: active, counted_plants: counted, uncounted_plants: uncounted,
-      sick_plants: sickPlants, frozen_plants: frozen, ...finish(hb), projected,
+      sick_plants: sickPlants, frozen_plants: frozen, stale_plants: stale, ...finish(hb), projected,
     });
   }
 
@@ -176,6 +183,7 @@ export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhous
   if (partialSize) notes.push(`${partialSize} count${partialSize === 1 ? ' is' : 's are'} for one fruit size only, so the plant may carry more fruit than counted.`);
   return {
     risk: rk,
+    sick_list: sickList.sort((a, b) => b.sick_fruit - a.sick_fruit || b.fruit - a.fruit),
     totals: {
       ...t, counted_plants: t.plants, active_plants: byHouse.reduce((n, h) => n + h.active_positions, 0),
       sick_plants: byHouse.reduce((n, h) => n + h.sick_plants, 0), unchecked_plants: uncheckedPlants,
@@ -190,4 +198,23 @@ export function estimate({ houses, counts, crops, risk = DEFAULT_RISK, greenhous
     method: 'Gross is every counted fruit sold as it is. Sick fruit and the fruit at risk on sick plants are taken off to give the expected value; plants not counted yet are filled in from the average of the counted ones.',
     generated_at: new Date().toISOString(),
   };
+}
+
+/** The same estimate as it stood at the end of each of the last `weeks` weeks: only counts made by then are used, so the line shows whether disease loss is growing. */
+export function history({ houses, counts, crops, risk = DEFAULT_RISK, greenhouse = null, weeks = 12, today = new Date().toISOString().slice(0, 10) }) {
+  const t = Date.parse(`${today}T00:00:00Z`);
+  const monday = (ms) => { const d = new Date(ms); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+  const out = [];
+  for (let i = weeks - 1; i >= 0; i -= 1) {
+    const start = monday(t - i * 7 * 86400000);
+    const end = i === 0 ? today : new Date(Date.parse(`${start}T00:00:00Z`) + 6 * 86400000).toISOString().slice(0, 10);
+    const e = estimate({ houses, counts: counts.filter((c) => c.count_date <= end), crops, risk, greenhouse, today: end });
+    const T = e.totals;
+    out.push({
+      week: start, as_of: end, counted_plants: T.counted_plants, fruit: T.fruit, healthy_fruit: T.healthy_fruit, sick_fruit: T.sick_fruit, at_risk_fruit: T.at_risk_fruit,
+      loss_share_pct: T.loss_share_pct, sick_plants: T.sick_plants, kg: T.kg, kg_net: T.kg_net,
+      money: e.money.map((m) => ({ currency: m.currency, gross: m.gross, net: m.net, loss: m.loss })),
+    });
+  }
+  return out;
 }

@@ -34,8 +34,12 @@ const FruitCountSchema = ownedSchema({
   collage: { type: mongoose.Schema.Types.Mixed, default: null }, // { photos, columns, overlap_warnings } when several photos were joined
   entered_by: { type: String, default: '' }, // the account that recorded it (the farm owner or a data collector)
   entered_by_name: { type: String, default: '' },
+  client_id: { type: String, trim: true, maxlength: 64 }, // made by the phone when a count is recorded, so a count sent twice (a lost reply, a retry after offline) is saved once
+  recorded_at: { type: Date }, // when the person recorded it, which can be earlier than when it reached the server (recorded offline)
+  alerts_ack: { type: mongoose.Schema.Types.Mixed, default: {} }, // explanations of theft/loss alerts: { under_recorded: { reason, by, at }, fall: {...} }
 });
 FruitCountSchema.index({ user_id: 1, count_date: -1 });
+FruitCountSchema.index({ user_id: 1, client_id: 1 }, { unique: true, partialFilterExpression: { client_id: { $type: 'string' } } });
 
 export const GreenhouseCrop = mongoose.model('GreenhouseCrop', GreenhouseCropSchema);
 export const FruitCount = mongoose.model('FruitCount', FruitCountSchema);
