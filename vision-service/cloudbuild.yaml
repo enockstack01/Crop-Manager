@@ -1,0 +1,9 @@
+# Builds the fruit counter with the trained models for Google Cloud Run (used by scripts/deploy-counter-cloudrun.ps1).
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--build-arg', 'WITH_YOLO=1', '-t', '${_IMAGE}', '.']
+images:
+  - '${_IMAGE}'
+options:
+  machineType: E2_HIGHCPU_8
+timeout: 1800s
